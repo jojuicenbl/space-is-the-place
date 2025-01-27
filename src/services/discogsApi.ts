@@ -12,7 +12,7 @@ const discogsApi = axios.create({
   }
 })
 
-export const getCollection = async (username: string) => {
+export const getUserCollection = async (username: string) => {
   try {
     const response = await discogsApi.get(`/users/${username}/collection/folders/0/releases`)
     return response.data
@@ -22,8 +22,7 @@ export const getCollection = async (username: string) => {
   }
 }
 
-// TODO: rename to getOneRelease
-export const getVinylDetails = async (releaseId: number) => {
+export const getOneRelease = async (releaseId: number) => {
   try {
     const response = await discogsApi.get(`/releases/${releaseId}`)
     return response.data
@@ -32,7 +31,5 @@ export const getVinylDetails = async (releaseId: number) => {
     throw error
   }
 }
-
-// Ajoutez d'autres fonctions pour les différents endpoints dont vous avez besoin
 
 export default discogsApi
