@@ -1,6 +1,9 @@
 <template>
   <!-- Page Header -->
-  <header class="masthead" style="background-image: url('img/home-bg.jpg')">
+  <header
+    class="masthead"
+    style="background-image: url(&quot;img/home-bg.jpg&quot;)"
+  >
     <div class="overlay"></div>
     <div class="container">
       <div class="row">
@@ -20,7 +23,7 @@
 
 <script>
 export default {
-  name: 'header'
+  name: "header",
 }
 </script>
 

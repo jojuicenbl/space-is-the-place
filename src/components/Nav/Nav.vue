@@ -2,7 +2,9 @@
   <!-- Navigation -->
   <nav class="navbar navbar-expand-lg navbar-light fixed-top" id="mainNav">
     <div class="container">
-      <router-link class="navbar-brand" to="/">Vue Repository Pattern</router-link>
+      <router-link class="navbar-brand" to="/"
+        >Vue Repository Pattern</router-link
+      >
       <button
         class="navbar-toggler navbar-toggler-right"
         type="button"
@@ -31,7 +33,7 @@
 
 <script>
 export default {
-  name: 'nav-bar'
+  name: "nav-bar",
 }
 </script>
 

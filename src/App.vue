@@ -1,23 +1,22 @@
+<script setup lang="ts">
+import router from "./router"
+</script>
 <template>
-  <div id="app">
-    <!-- <NavBar /> -->
-    <HeaderBar />
-    <div>Space is the place where we can escape the limitations of our earthly existence</div>
-    <router-view></router-view>
+  <div class="app">
+    <main class="main-content">
+      <router />
+    </main>
   </div>
 </template>
-
-<script>
-import NavBar from './components/Nav/Nav.vue'
-import HeaderBar from './components/Header/Header.vue'
-
-export default {
-  name: 'app',
-  components: {
-    // NavBar,
-    HeaderBar
-  }
+<style>
+.app {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
 }
-</script>
 
-<style></style>
+.main-content {
+  flex: 1;
+  padding: 1rem;
+}
+</style>
