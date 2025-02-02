@@ -1,9 +1,7 @@
 <template>
   <!-- Page Header -->
-  <header
-    class="masthead"
-    style="background-image: url(&quot;img/home-bg.jpg&quot;)"
-  >
+  <!-- TODO: to delete -->
+  <header class="masthead" style="background-image: url(&quot;img/home-bg.jpg&quot;)">
     <div class="overlay"></div>
     <div class="container">
       <div class="row">
@@ -20,11 +18,9 @@
     </div>
   </header>
 </template>
-
 <script>
 export default {
   name: "header",
 }
 </script>
-
 <style></style>
