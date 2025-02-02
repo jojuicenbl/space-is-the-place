@@ -14,7 +14,6 @@ const router = useRouter()
 const navigateToRelease = () => {
     router.push(`/release/${props.release.id}`)
 }
-console.log(props.release.basic_information.cover_image)
 
 const coverImage = computed(() =>
     getSmallImageUrl(props.release.basic_information.cover_image)
