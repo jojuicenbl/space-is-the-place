@@ -1,13 +1,16 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import { getUserCollection } from '../services/discogsApi'
 import VinylCard from '../components/VinylCard.vue'
 // import LoadingSpinner from '@/components/UI/LoadingSpinner.vue'
 import MainTitle from "@/components/UI/MainTitle.vue"
-import type { CollectionRelease, CollectionResponse } from '@/types/models/Release'
+import type { CollectionRelease } from '@/types/models/Release'
 import { useRouter } from 'vue-router'
 import BaseButton from "@/components/UI/BaseButton.vue"
 import Pager from '@/components/UI/Pager.vue'
+import CollectionFilters from '@/components/CollectionFilters.vue'
+import type { DiscogsFolder, SortField, SortOrder } from '@/services/discogsApi'
+import { getUserFolders } from '@/services/discogsApi'
 
 const releases = ref<CollectionRelease[]>([])
 const isLoading = ref(true)
@@ -15,6 +18,10 @@ const error = ref<string | null>(null)
 const username = import.meta.env.VITE_USERNAME
 const currentPage = ref(1)
 const totalPages = ref(1)
+const folders = ref<DiscogsFolder[]>([])
+const currentFolder = ref(0)
+const currentSort = ref<SortField>('added')
+const currentSortOrder = ref<SortOrder>('desc')
 
 const router = useRouter()
 
@@ -22,10 +29,24 @@ const goBack = () => {
   router.back()
 }
 
+const fetchFolders = async () => {
+  try {
+    const data = await getUserFolders(username)
+    folders.value = data.folders
+  } catch (err) {
+    console.error('Error loading folders:', err)
+  }
+}
+
 const fetchCollection = async (page: number) => {
   isLoading.value = true
   try {
-    const data = await getUserCollection(username, page) as CollectionResponse
+    const data = await getUserCollection(username, {
+      page,
+      folderId: currentFolder.value,
+      sort: currentSort.value,
+      sortOrder: currentSortOrder.value
+    })
     releases.value = data.releases
     totalPages.value = Math.ceil(data.pagination.items / data.pagination.per_page)
     currentPage.value = page
@@ -41,8 +62,13 @@ const handlePageChange = (page: number) => {
   fetchCollection(page)
 }
 
-onMounted(() => {
+watch([currentFolder, currentSort, currentSortOrder], () => {
   fetchCollection(1)
+})
+
+onMounted(async () => {
+  await fetchFolders()
+  await fetchCollection(1)
 })
 </script>
 <template>
@@ -52,6 +78,9 @@ onMounted(() => {
     </BaseButton>
     <MainTitle text="Collection" align="left" />
     <div class="vinyl-grid-container">
+      <CollectionFilters :folders="folders" :current-folder="currentFolder" :current-sort="currentSort"
+        :current-sort-order="currentSortOrder" @update:folder="currentFolder = $event"
+        @update:sort="currentSort = $event" @update:sort-order="currentSortOrder = $event" />
       <div v-if="isLoading" class="loading-state">
         loading
       </div>

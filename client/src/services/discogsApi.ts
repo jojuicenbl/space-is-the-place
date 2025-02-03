@@ -12,18 +12,56 @@ const discogsApi = axios.create({
   },
 })
 
+export interface DiscogsFolder {
+  id: number
+  name: string
+  count: number
+}
+
+export interface FoldersResponse {
+  folders: DiscogsFolder[]
+}
+
+export type SortField = 'added' | 'artist' | 'title'
+export type SortOrder = 'asc' | 'desc'
+
+export const getUserFolders = async (username: string): Promise<FoldersResponse> => {
+  try {
+    const response = await discogsApi.get(`/users/${username}/collection/folders`)
+    return response.data
+  } catch (error) {
+    console.error("Error fetching folders:", error)
+    throw error
+  }
+}
+
 export const getUserCollection = async (
   username: string,
-  page: number = 1,
-  perPage: number = 50
+  options: {
+    page?: number,
+    perPage?: number,
+    folderId?: number,
+    sort?: SortField,
+    sortOrder?: SortOrder
+  } = {}
 ): Promise<CollectionResponse> => {
+  const {
+    page = 1,
+    perPage = 50,
+    folderId = 0,
+    sort = 'added',
+    sortOrder = 'desc'
+  } = options
+
   try {
     const response = await discogsApi.get(
-      `/users/${username}/collection/folders/0/releases`,
+      `/users/${username}/collection/folders/${folderId}/releases`,
       {
         params: {
           page,
           per_page: perPage,
+          sort,
+          sort_order: sortOrder,
         },
       }
     )
