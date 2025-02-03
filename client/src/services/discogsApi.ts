@@ -14,10 +14,18 @@ const discogsApi = axios.create({
 
 export const getUserCollection = async (
   username: string,
+  page: number = 1,
+  perPage: number = 50
 ): Promise<CollectionResponse> => {
   try {
     const response = await discogsApi.get(
       `/users/${username}/collection/folders/0/releases`,
+      {
+        params: {
+          page,
+          per_page: perPage,
+        },
+      }
     )
     return response.data
   } catch (error) {

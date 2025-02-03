@@ -17,7 +17,7 @@ const navigateToCollection = () => {
       existence
     </p>
     <BaseButton class="explore-button" @click="navigateToCollection">
-      Explore Your Collection
+      Enter My Universe
     </BaseButton>
   </div>
 </template>
