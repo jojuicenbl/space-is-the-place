@@ -37,7 +37,7 @@ interface Image {
   height: number
 }
 
-interface BasicInformation {
+export interface BasicInformation {
   title: string
   year: number
   artists: Artist[]

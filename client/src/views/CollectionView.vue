@@ -72,73 +72,62 @@ onMounted(async () => {
 })
 </script>
 <template>
-  <div class="collection-container">
-    <BaseButton class="go-back-button" @click="goBack">
-      Go back
-    </BaseButton>
-    <MainTitle text="Collection" align="left" />
-    <div class="vinyl-grid-container">
-      <CollectionFilters :folders="folders" :current-folder="currentFolder" :current-sort="currentSort"
-        :current-sort-order="currentSortOrder" @update:folder="currentFolder = $event"
-        @update:sort="currentSort = $event" @update:sort-order="currentSortOrder = $event" />
-      <div v-if="isLoading" class="loading-state">
+  <div class="mx-auto px-4" style="max-width: 1400px">
+    <div class="d-flex flex-column align-center w-100">
+      <BaseButton class="mb-8" @click="goBack">
+        Go back
+      </BaseButton>
+      <MainTitle text="Collection" align="center" />
+      <div class="d-flex justify-center w-100">
+        <CollectionFilters 
+          :folders="folders" 
+          :current-folder="currentFolder" 
+          :current-sort="currentSort"
+          :current-sort-order="currentSortOrder" 
+          @update:folder="currentFolder = $event"
+          @update:sort="currentSort = $event" 
+          @update:sort-order="currentSortOrder = $event" 
+        />
+      </div>
+      <div v-if="isLoading" class="d-flex justify-center align-center min-height-300">
         loading
       </div>
-      <div v-else-if="error" class="error-state">
+      <div v-else-if="error" class="d-flex justify-center align-center min-height-300">
         {{ error }}
       </div>
       <template v-else>
-        <div class="vinyl-grid">
-          <VinylCard v-for="release in releases" :key="release.id" :release="release" />
+        <div class="d-flex flex-wrap justify-center ga-6 mt-8 w-100">
+          <VinylCard 
+            v-for="release in releases" 
+            :key="release.id" 
+            :release="release" 
+            class="vinyl-card-width"
+          />
         </div>
-        <Pager :current-page="currentPage" :total-pages="totalPages" :on-page-change="handlePageChange" />
+        <div class="d-flex justify-center w-100 mt-8">
+          <Pager 
+            :current-page="currentPage" 
+            :total-pages="totalPages" 
+            :on-page-change="handlePageChange" 
+          />
+        </div>
       </template>
     </div>
   </div>
 </template>
+
 <style scoped>
-.collection-container {
-  max-width: 1400px;
-  margin: 0 auto;
-}
-
-.vinyl-grid-container {
-  padding: 0 2rem;
-}
-
-.vinyl-grid {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 1.5rem;
-  margin-top: 2rem;
-}
-
-.vinyl-grid :deep(.vinyl-card) {
+.vinyl-card-width {
   width: 200px;
-  flex-grow: 0;
-  flex-shrink: 0;
 }
 
 @media (max-width: 768px) {
-  .vinyl-grid {
-    justify-content: center;
-    gap: 1rem;
-  }
-
-  .vinyl-grid :deep(.vinyl-card) {
+  .vinyl-card-width {
     width: 160px;
   }
 }
 
-.loading-state,
-.error-state {
-  display: flex;
-  justify-content: center;
-  align-items: center;
+.min-height-300 {
   min-height: 300px;
-}
-
-.go-back-button {
-  margin-bottom: 2rem;
 }
 </style>

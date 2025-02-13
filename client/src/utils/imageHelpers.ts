@@ -1,6 +1,6 @@
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3000"
 
-export const getSmallImageUrl = (url: string): string => {
+const getSmallImageUrl = (url?: string): string => {
   try {
     if (!url) {
       return "/default-cover.webp"
@@ -21,3 +21,17 @@ export const getSmallImageUrl = (url: string): string => {
     return "/default-cover.webp"
   }
 }
+
+const handleImageError = (event: Event) => {
+  const target = event.target as HTMLImageElement
+  if (target) {
+    target.src = '/default-cover.webp'
+  }
+}
+
+const ImageUtils = {
+  getSmallImageUrl,
+  handleImageError
+}
+
+export default ImageUtils

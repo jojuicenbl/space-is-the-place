@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import type { DiscogsFolder } from '@/services/discogsApi'
 import type { SortField, SortOrder } from '@/services/discogsApi'
+import { ref } from 'vue'
+import { VIcon } from 'vuetify/components'
 
 defineProps<{
   folders: DiscogsFolder[]
@@ -21,16 +23,23 @@ const sortOptions = [
   { value: 'title', label: 'Album Title' },
 ] as const
 
+const openSelect = ref<'folder' | 'sort' | 'order' | null>(null)
 </script>
 
 <template>
-  <div class="filters-container">
-    <div class="filter-group">
-      <label for="folder">Genre/Folder:</label>
+  <div class="d-flex ga-4 mb-8 flex-wrap">
+    <div class="d-flex flex-column">
+      <div class="d-flex align-center">
+        <label for="folder" class="font-weight-medium">Genre/Folder:</label>
+        <v-icon :icon="openSelect === 'folder' ? 'mdi-chevron-up' : 'mdi-chevron-down'" size="small" />
+      </div>
       <select 
         id="folder" 
         :value="currentFolder"
+        class="pa-2 rounded min-width-200 border border-dark"
         @change="emit('update:folder', Number(($event.target as HTMLSelectElement).value))"
+        @focus="openSelect = 'folder'"
+        @blur="openSelect = null"
       >
         <option 
           v-for="folder in folders" 
@@ -42,12 +51,18 @@ const sortOptions = [
       </select>
     </div>
 
-    <div class="filter-group">
-      <label for="sort">Sort by:</label>
+    <div class="d-flex flex-column">
+      <div class="d-flex align-center">
+        <label for="sort" class="font-weight-medium">Sort by:</label>
+        <v-icon :icon="openSelect === 'sort' ? 'mdi-chevron-up' : 'mdi-chevron-down'" size="small" />
+      </div>
       <select 
         id="sort" 
         :value="currentSort"
+        class="pa-2 rounded min-width-200 border border-dark"
         @change="emit('update:sort', ($event.target as HTMLSelectElement).value as SortField)"
+        @focus="openSelect = 'sort'"
+        @blur="openSelect = null"
       >
         <option 
           v-for="option in sortOptions" 
@@ -59,12 +74,18 @@ const sortOptions = [
       </select>
     </div>
 
-    <div class="filter-group">
-      <label for="order">Order:</label>
+    <div class="d-flex flex-column">
+      <div class="d-flex align-center">
+        <label for="order" class="font-weight-medium">Order:</label>
+        <v-icon :icon="openSelect === 'order' ? 'mdi-chevron-up' : 'mdi-chevron-down'" size="small" />
+      </div>
       <select 
         id="order" 
         :value="currentSortOrder"
+        class="pa-2 rounded min-width-200 border border-dark"
         @change="emit('update:sortOrder', ($event.target as HTMLSelectElement).value as SortOrder)"
+        @focus="openSelect = 'order'"
+        @blur="openSelect = null"
       >
         <option value="asc">Ascending (A-Z)</option>
         <option value="desc">Descending (Z-A)</option>
@@ -74,35 +95,11 @@ const sortOptions = [
 </template>
 
 <style scoped>
-.filters-container {
-  display: flex;
-  gap: 1rem;
-  margin-bottom: 2rem;
-  flex-wrap: wrap;
-}
-
-.filter-group {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-select {
-  padding: 0.5rem;
-  border-radius: 4px;
-  border: 1px solid #ccc;
+.min-width-200 {
   min-width: 200px;
 }
 
-label {
-  font-weight: 500;
-}
-
 @media (max-width: 768px) {
-  .filter-group {
-    width: 100%;
-  }
-  
   select {
     width: 100%;
   }
