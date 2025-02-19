@@ -23,20 +23,18 @@ const coverImage = computed(() =>
 <template>
     <div class="vinyl-card" @click="navigateToRelease">
         <img :src="coverImage" :alt="release.basic_information.title" class="cover-image" @error="ImageUtils.handleImageError" />
-        <!-- <div class="info">
-            <h3 class="title">{{ release.basic_information.title }}</h3>
-            <p class="artist">{{ release.basic_information.artists[0]?.name }}</p>
-        </div> -->
     </div>
 </template>
 <style scoped>
 .vinyl-card {
     cursor: pointer;
-    transition: opacity 0.2s ease-in-out;
-    border-radius: 0.5rem;
+    transition: opacity 0.1s ease-in-out;
+    /* border-radius: 4px; */
     overflow: hidden;
     background: white;
     opacity: 1;
+    display: flex;
+    line-height: 0;
 }
 
 .vinyl-card:hover {
@@ -48,5 +46,6 @@ const coverImage = computed(() =>
     aspect-ratio: 1;
     object-fit: cover;
     border-radius: inherit;
+    display: block;
 }
 </style>
