@@ -37,7 +37,7 @@ interface Image {
   height: number
 }
 
-interface BasicInformation {
+export interface BasicInformation {
   title: string
   year: number
   artists: Artist[]
@@ -49,6 +49,13 @@ interface BasicInformation {
   images?: Image[]
 }
 
+interface Pagination {
+  page: number
+  pages: number
+  items: number
+  per_page: number
+}
+
 export interface CollectionRelease {
   id: number
   basic_information: BasicInformation
@@ -57,10 +64,5 @@ export interface CollectionRelease {
 
 export interface CollectionResponse {
   releases: CollectionRelease[]
-  pagination: {
-    page: number
-    pages: number
-    items: number
-    per_page: number
-  }
+  pagination: Pagination
 }
