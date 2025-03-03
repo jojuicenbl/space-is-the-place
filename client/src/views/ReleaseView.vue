@@ -37,28 +37,20 @@ const coverImage = computed(() =>
     release.value ? ImageUtils.getSmallImageUrl(release.value.images?.[0]?.uri) : '/default-cover.webp'
 )
 </script>
-
 <template>
     <div class="mx-auto" style="max-width: 1400px">
         <BaseButton class="mb-8" @click="goBack">
             Go back
         </BaseButton>
-
         <div v-if="isLoading" class="d-flex justify-center align-center min-height-300">
             Loading...
         </div>
-
         <div v-else-if="error" class="d-flex justify-center align-center min-height-300">
             {{ error }}
         </div>
-
         <v-container v-else-if="release" class="d-flex flex-row ga-6">
-            <img
-                :src="coverImage" :alt="release.title" 
-                class="mb-4" 
-                style="max-width: 500px"
-                @error="ImageUtils.handleImageError" 
-            />
+            <img :src="coverImage" :alt="release.title" class="mb-4" style="max-width: 500px"
+                @error="ImageUtils.handleImageError" />
             <div class="d-flex flex-column">
                 <MainTitle :text="release.title" align="left" />
                 <div class="mt-4">
@@ -70,7 +62,6 @@ const coverImage = computed(() =>
         </v-container>
     </div>
 </template>
-
 <style scoped>
 .min-height-300 {
     min-height: 300px;
