@@ -1,12 +1,15 @@
 <script setup lang="ts">
 import { RouterView } from 'vue-router'
+import { VApp } from 'vuetify/components'
 </script>
 <template>
-  <div class="app">
-    <main class="main-content">
-      <RouterView />
-    </main>
-  </div>
+  <v-app>
+    <div class="app">
+      <main class="main-content">
+        <RouterView />
+      </main>
+    </div>
+  </v-app>
 </template>
 <style>
 .app {
