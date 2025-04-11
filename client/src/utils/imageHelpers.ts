@@ -25,13 +25,13 @@ const getSmallImageUrl = (url?: string): string => {
 const handleImageError = (event: Event) => {
   const target = event.target as HTMLImageElement
   if (target) {
-    target.src = '/default-cover.webp'
+    target.src = "/default-cover.webp"
   }
 }
 
 const ImageUtils = {
   getSmallImageUrl,
-  handleImageError
+  handleImageError,
 }
 
 export default ImageUtils

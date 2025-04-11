@@ -28,7 +28,7 @@ interface Track {
   duration: string
 }
 
-interface Image {
+export interface Image {
   type: "primary" | "secondary"
   uri: string
   resource_url: string
@@ -47,6 +47,8 @@ export interface BasicInformation {
   cover_image: string
   tracklist?: Track[]
   images?: Image[]
+  genres?: string[]
+  styles?: string[]
 }
 
 interface Pagination {
