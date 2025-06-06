@@ -131,11 +131,18 @@ onMounted(() => {
     position: relative;
     width: 100%;
     margin-bottom: 16px;
+    aspect-ratio: 1/1;
+    background-color: #f5f5f5;
+    border-radius: 8px;
+    overflow: hidden;
 }
 
 .image-wrapper {
-    position: relative;
+    position: absolute;
+    top: 0;
+    left: 0;
     width: 100%;
+    height: 100%;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -143,14 +150,16 @@ onMounted(() => {
 
 .carousel-image {
     width: 100%;
-    height: auto;
+    height: 100%;
     display: block;
     border-radius: 8px;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    object-fit: cover;
 }
 
 :deep(.v-skeleton-loader__image) {
-    height: 500px !important;
+    width: 100% !important;
+    height: 100% !important;
     border-radius: 8px;
 }
 
