@@ -1,12 +1,5 @@
 @import "./base.css";
 
-#app {
-  max-width: 1600px;
-  margin: 0 auto;
-  padding: 2rem 1rem;
-  font-weight: normal;
-}
-
 a,
 .green {
   text-decoration: none;
@@ -25,7 +18,4 @@ a,
   body {
     place-items: center;
   }
-
-  /* #app {
-  /*} */
 }
