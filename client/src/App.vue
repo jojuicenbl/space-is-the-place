@@ -4,21 +4,51 @@ import { VApp } from 'vuetify/components'
 </script>
 <template>
   <v-app class="app">
-    <main class="main-content">
-      <RouterView />
-    </main>
+    <RouterView v-slot="{ Component }">
+      <Transition name="page" mode="out-in">
+        <component :is="Component" />
+      </Transition>
+    </RouterView>
   </v-app>
 </template>
 <style>
-.app {
-  min-height: 100vh;
-  background-color: var(--color-background) !important; /* Force the grey background */
+html,
+body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  overflow-x: hidden;
 }
 
-.main-content {
-  max-width: 1600px;
-  margin: 0 auto;
-  padding: 2rem 1rem;
-  min-height: 100vh;
+.app {
+  width: 100vw;
+  height: 100vh;
+  margin: 0;
+  padding: 0;
+  background-color: var(--color-background) !important;
+  /* Force the grey background */
+}
+
+/* Reset any default Vuetify margins/padding */
+.v-application {
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+/* Transitions de page smooth */
+.page-enter-active,
+.page-leave-active {
+  transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.page-enter-from {
+  opacity: 0;
+  transform: translateY(20px);
+}
+
+.page-leave-to {
+  opacity: 0;
+  transform: translateY(-20px);
 }
 </style>
