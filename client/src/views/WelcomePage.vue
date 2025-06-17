@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import BaseButton from "@/components/UI/BaseButton.vue"
-import { useRouter } from 'vue-router'
-import { ref } from 'vue'
+import { useRouter } from "vue-router"
+import { ref } from "vue"
 
 const router = useRouter()
 const isNavigating = ref(false)
@@ -12,10 +12,10 @@ const navigateToCollection = async () => {
   isNavigating.value = true
 
   // lil' delay to let the animation play
-  await new Promise(resolve => setTimeout(resolve, 200))
+  await new Promise((resolve) => setTimeout(resolve, 200))
 
   try {
-    await router.push('/collection')
+    await router.push("/collection")
   } finally {
     isNavigating.value = false
   }
@@ -27,16 +27,17 @@ const navigateToCollection = async () => {
     <div class="grid-overlay"></div>
     <main class="content">
       <header class="hero">
-        <h1 class="cosmic-title">
-          SPACE IS THE PLACE
-        </h1>
+        <h1 class="cosmic-title">SPACE IS THE PLACE</h1>
         <p class="cosmic-subtitle">
           Where we escape the limitations of earthly existence
         </p>
       </header>
       <section class="cta-section">
-        <BaseButton :class="['enter-btn', { 'navigating': isNavigating }]" :disabled="isNavigating"
-          @click="navigateToCollection">
+        <BaseButton
+          :class="['enter-btn', { navigating: isNavigating }]"
+          :disabled="isNavigating"
+          @click="navigateToCollection"
+        >
           Enter My Universe
         </BaseButton>
       </section>
@@ -44,7 +45,7 @@ const navigateToCollection = async () => {
   </div>
 </template>
 <style scoped>
-@import url('https://fonts.googleapis.com/css2?family=Rubik+Mono+One&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=Rubik+Mono+One&display=swap");
 
 /* Container principal */
 .minimal-cosmic {
@@ -58,14 +59,16 @@ const navigateToCollection = async () => {
 
 /* Grid overlay subtil */
 .grid-overlay::before {
-  content: '';
+  content: "";
   position: fixed;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  background-image:
-    linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+  background-image: linear-gradient(
+      rgba(255, 255, 255, 0.02) 1px,
+      transparent 1px
+    ),
     linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
   background-size: 60px 60px;
   pointer-events: none;
@@ -260,7 +263,6 @@ const navigateToCollection = async () => {
 
 /* Performance : réduction des animations sur demande */
 @media (prefers-reduced-motion: reduce) {
-
   .cosmic-title,
   .cosmic-subtitle,
   .cta-section {

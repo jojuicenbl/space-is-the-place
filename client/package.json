@@ -39,7 +39,6 @@
     "vue-tsc": "^2.2.0"
   },
   "prettier": {
-    "semi": false,
-    "maxEmptyLines": 2
+    "semi": false
   }
 }

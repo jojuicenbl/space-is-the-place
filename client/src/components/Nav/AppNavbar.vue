@@ -1,0 +1,244 @@
+<script setup lang="ts">
+import { useRouter, useRoute } from "vue-router"
+
+const router = useRouter()
+const route = useRoute()
+const goToHome = () => {
+  router.push("/")
+}
+
+const goToCollection = () => {
+  router.push("/collection")
+}
+
+const goToAbout = () => {
+  router.push("/about")
+}
+
+const goToContact = () => {
+  router.push("/contact")
+}
+
+const isCurrentRoute = (routeName: string) => {
+  return route.name === routeName
+}
+</script>
+
+<template>
+  <nav class="app-navbar">
+    <div class="navbar-container">
+      <div class="navbar-left">
+        <button class="logo-button" @click="goToHome">
+          <!-- Logo SVG temporaire -->
+          <svg
+            width="40"
+            height="40"
+            viewBox="0 0 100 100"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <circle
+              cx="50"
+              cy="50"
+              r="45"
+              stroke="currentColor"
+              stroke-width="3"
+            />
+            <circle cx="50" cy="50" r="25" fill="currentColor" />
+            <circle cx="35" cy="35" r="3" fill="currentColor" />
+            <circle cx="65" cy="35" r="3" fill="currentColor" />
+            <circle cx="50" cy="25" r="2" fill="currentColor" />
+            <circle cx="25" cy="50" r="2" fill="currentColor" />
+            <circle cx="75" cy="50" r="2" fill="currentColor" />
+            <circle cx="35" cy="65" r="2" fill="currentColor" />
+            <circle cx="65" cy="65" r="2" fill="currentColor" />
+          </svg>
+        </button>
+      </div>
+
+      <div class="navbar-right">
+        <div class="nav-links">
+          <button
+            class="nav-button nav-link"
+            :class="{ active: isCurrentRoute('collection') }"
+            @click="goToCollection"
+          >
+            Collection
+          </button>
+          <button
+            class="nav-button nav-link"
+            :class="{ active: isCurrentRoute('about') }"
+            @click="goToAbout"
+          >
+            About
+          </button>
+          <button
+            class="nav-button nav-link"
+            :class="{ active: isCurrentRoute('contact') }"
+            @click="goToContact"
+          >
+            Contact
+          </button>
+        </div>
+      </div>
+    </div>
+  </nav>
+</template>
+
+<style scoped>
+.app-navbar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  border-bottom: 1.5px solid #000;
+  z-index: 1000;
+  transition: all 0.3s ease;
+}
+
+.navbar-container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 1rem 1.5rem;
+  height: 60px;
+}
+
+.navbar-left {
+  display: flex;
+  align-items: center;
+}
+
+.navbar-right {
+  display: flex;
+  align-items: center;
+}
+
+.logo-button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #333;
+  transition: all 0.2s ease;
+  padding: 0.5rem;
+  border-radius: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.logo-button:hover {
+  color: hsla(160, 100%, 37%, 1);
+  background-color: rgba(0, 0, 0, 0.05);
+  transform: scale(1.05);
+}
+
+.nav-links {
+  display: flex;
+  gap: 2rem;
+  align-items: center;
+}
+
+.nav-button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-family: "Rubik Mono One", monospace;
+}
+
+.nav-link {
+  color: #666;
+  position: relative;
+}
+
+.nav-link:hover {
+  color: #333;
+  background-color: rgba(0, 0, 0, 0.05);
+}
+
+.nav-link.active {
+  color: #1a1a1a;
+  background-color: rgba(0, 0, 0, 0.1);
+}
+
+.nav-link.active::after {
+  content: "";
+  position: absolute;
+  bottom: -2px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 20px;
+  height: 2px;
+  background-color: hsla(160, 100%, 37%, 1);
+  border-radius: 1px;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .navbar-container {
+    padding: 0.75rem 1rem;
+  }
+
+  .nav-links {
+    gap: 1rem;
+  }
+
+  .nav-button {
+    font-size: 0.9rem;
+    padding: 0.5rem 0.75rem;
+  }
+
+  .logo-button {
+    padding: 0.25rem;
+  }
+
+  .logo-button svg {
+    width: 32px;
+    height: 32px;
+  }
+}
+
+@media (max-width: 600px) {
+  .navbar-container {
+    padding: 0.5rem 0.75rem;
+    height: 50px;
+  }
+
+  .nav-links {
+    gap: 0.5rem;
+  }
+
+  .nav-button {
+    font-size: 0.85rem;
+    padding: 0.4rem 0.6rem;
+  }
+
+  .logo-button svg {
+    width: 28px;
+    height: 28px;
+  }
+}
+
+@media (max-width: 480px) {
+  .nav-links {
+    gap: 0.25rem;
+  }
+
+  .nav-button {
+    font-size: 0.8rem;
+    padding: 0.3rem 0.5rem;
+  }
+}
+</style>

@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { computed } from 'vue';
-import { VIcon } from 'vuetify/components'
+import { computed } from "vue"
+import { VIcon } from "vuetify/components"
 
 const props = defineProps<{
   currentPage: number
@@ -10,9 +10,9 @@ const props = defineProps<{
 
 const handlePageChange = (page: number) => {
   // Scroll to top before triggering the page change
-  window.scrollTo({ 
-    top: 0, 
-    behavior: 'smooth'
+  window.scrollTo({
+    top: 0,
+    behavior: "smooth",
   })
   props.onPageChange(page)
 }
@@ -38,7 +38,7 @@ const pages = computed(() => {
       if (i - l === 2) {
         rangeWithDots.push(l + 1)
       } else if (i - l !== 1) {
-        rangeWithDots.push('...')
+        rangeWithDots.push("...")
       }
     }
     rangeWithDots.push(i)
@@ -51,21 +51,21 @@ const pages = computed(() => {
 
 <template>
   <div class="pager">
-    <button 
+    <button
       :disabled="currentPage === 1"
       class="pager-button"
       @click="handlePageChange(currentPage - 1)"
     >
       <v-icon icon="mdi-chevron-left" size="small" />
     </button>
-    
-    <button 
-      v-for="page in pages" 
+
+    <button
+      v-for="page in pages"
       :key="page"
       :class="[
         'pager-button',
         page === currentPage ? 'active' : '',
-        page === '...' ? 'dots' : ''
+        page === '...' ? 'dots' : '',
       ]"
       :disabled="page === '...'"
       @click="page !== '...' && handlePageChange(Number(page))"
@@ -73,7 +73,7 @@ const pages = computed(() => {
       {{ page }}
     </button>
 
-    <button 
+    <button
       :disabled="currentPage === totalPages"
       class="pager-button"
       @click="handlePageChange(currentPage + 1)"
@@ -114,4 +114,4 @@ const pages = computed(() => {
   border: none;
   padding: 0.5rem;
 }
-</style> 
+</style>

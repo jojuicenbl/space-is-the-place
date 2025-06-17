@@ -6,8 +6,9 @@ import AppNavbar from "@/components/Nav/AppNavbar.vue"
   <div>
     <AppNavbar />
     <div class="page-content">
-      <div class="about">
-        <h1>This is an about page</h1>
+      <div class="contact">
+        <h1>Contact</h1>
+        <p>Cette page sera complétée plus tard.</p>
       </div>
     </div>
   </div>
@@ -19,16 +20,28 @@ import AppNavbar from "@/components/Nav/AppNavbar.vue"
 }
 
 @media (min-width: 1024px) {
-  .about {
+  .contact {
     min-height: calc(100vh - 80px);
     display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
   }
 }
 
-.about {
+.contact {
   padding: 2rem;
   text-align: center;
+}
+
+.contact h1 {
+  font-size: 2.5rem;
+  margin-bottom: 1rem;
+  color: #333;
+}
+
+.contact p {
+  font-size: 1.2rem;
+  color: #666;
 }
 </style>

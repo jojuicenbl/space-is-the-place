@@ -1,7 +1,10 @@
 <template>
   <!-- Page Header -->
   <!-- TODO: to delete -->
-  <header class="masthead" style="background-image: url(&quot;img/home-bg.jpg&quot;)">
+  <header
+    class="masthead"
+    style="background-image: url(&quot;img/home-bg.jpg&quot;)"
+  >
     <div class="overlay"></div>
     <div class="container">
       <div class="row">
