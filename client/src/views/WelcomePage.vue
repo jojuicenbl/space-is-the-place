@@ -169,38 +169,19 @@ const navigateToCollection = async () => {
   letter-spacing: 0.1em !important;
   text-transform: uppercase !important;
   border-radius: 50px !important;
-  /* Mode pills */
   position: relative !important;
   overflow: hidden !important;
   transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1) !important;
   cursor: pointer !important;
 }
 
-.enter-btn::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: #ffffff;
-  transform: scaleX(0);
-  transform-origin: left;
-  transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-  z-index: -1;
-  border-radius: inherit;
-}
-
 /* Hover effects - changement noir vers blanc */
 .enter-btn:hover {
+  background: #ffffff !important;
   border-color: #ffffff !important;
   color: #000000 !important;
   transform: translateY(-2px) !important;
   box-shadow: 0 10px 30px rgba(255, 255, 255, 0.15) !important;
-}
-
-.enter-btn:hover::before {
-  transform: scaleX(1);
 }
 
 /* Animation de clic */
@@ -211,7 +192,7 @@ const navigateToCollection = async () => {
 
 /* Animation de chargement au clic */
 .enter-btn.navigating {
-  transform: scale(0.95) !important;
+  transform: scale(1) !important;
   opacity: 0.8 !important;
   pointer-events: none !important;
 }
