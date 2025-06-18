@@ -9,11 +9,7 @@ const props = defineProps<{
 }>()
 
 const handlePageChange = (page: number) => {
-  // Scroll to top before triggering the page change
-  window.scrollTo({
-    top: 0,
-    behavior: "smooth",
-  })
+  // Let the parent handle the scroll and transitions
   props.onPageChange(page)
 }
 

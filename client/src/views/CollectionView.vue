@@ -1,78 +1,87 @@
 <script setup lang="ts">
-import { ref, onMounted, watch } from "vue"
-import { getUserCollection, prefetchNextPage } from "../services/discogsApi"
+import { ref, onMounted, nextTick } from "vue"
 import VinylCard from "../components/VinylCard.vue"
 import MainTitle from "@/components/UI/MainTitle.vue"
-import type { CollectionRelease } from "@/types/models/Release"
 
 import Pager from "@/components/UI/Pager.vue"
 import CollectionFilters from "@/components/CollectionFilters.vue"
-import type { DiscogsFolder, SortField, SortOrder } from "@/services/discogsApi"
-import { getUserFolders } from "@/services/discogsApi"
+import ResultsCounter from "@/components/UI/ResultsCounter.vue"
+import SearchIndicator from "@/components/UI/SearchIndicator.vue"
 import { VSkeletonLoader } from "vuetify/components"
 import AppNavbar from "@/components/Nav/AppNavbar.vue"
+import { useCollection } from "@/composables/useCollection"
 
-const releases = ref<CollectionRelease[]>([])
-const isLoading = ref(true)
-const error = ref<string | null>(null)
-const username = import.meta.env.VITE_USERNAME
-const currentPage = ref(1)
-const totalPages = ref(1)
-const folders = ref<DiscogsFolder[]>([])
-const currentFolder = ref(0)
-const currentSort = ref<SortField>("added")
-const currentSortOrder = ref<SortOrder>("desc")
+// UI state
 const isFiltersVisible = ref(true)
 const isContentVisible = ref(true)
 const isPagerVisible = ref(true)
+const collectionContainer = ref<HTMLElement>()
 
-const fetchFolders = async () => {
-  try {
-    const data = await getUserFolders(username)
-    folders.value = data.folders
-  } catch (err) {
-    console.error("Error loading folders:", err)
-  }
-}
-
-const fetchCollection = async (page: number) => {
-  isLoading.value = true
-  try {
-    const data = await getUserCollection(username, {
-      page,
-      folderId: currentFolder.value,
-      sort: currentSort.value,
-      sortOrder: currentSortOrder.value,
+// Smooth scroll to collection top
+const scrollToCollection = async () => {
+  await nextTick()
+  if (collectionContainer.value) {
+    collectionContainer.value.scrollIntoView({
+      behavior: 'smooth',
+      block: 'start'
     })
-    releases.value = data.releases
-    totalPages.value = Math.ceil(
-      data.pagination.items / data.pagination.per_page,
-    )
-    currentPage.value = page
-
-    // prefetch next page if not on last page
-    if (page < totalPages.value) {
-      prefetchNextPage(username, page, {
-        folderId: currentFolder.value,
-        sort: currentSort.value,
-        sortOrder: currentSortOrder.value,
-      })
-    }
-  } catch (err) {
-    error.value = "Failed to load your collection"
-    console.error("Error loading collection:", err)
-  } finally {
-    isLoading.value = false
   }
 }
 
-const handlePageChange = (page: number) => {
-  fetchCollection(page)
-}
+// Use collection composable
+const {
+  displayedReleases,
+  filteredReleases,
+  allReleases,
+  folders,
+  isLoading,
+  isSearchLoading,
+  isInitialized,
+  hasAllReleases,
+  totalReleasesCount,
+  error,
+  loadingProgress,
+  loadingPercentage,
+  isBackgroundLoading,
+  backgroundProgress,
+  backgroundLoadingPercentage,
+  isSearchingAllData,
+  canSearchLocally,
+  currentFolder,
+  currentSort,
+  currentSortOrder,
+  searchQuery,
+  currentPage,
+  totalPages,
+  isSearchActive,
+  fetchFolders,
+  fetchCollection,
+  initializeFromUrl,
+  handleSearch,
+  handleFolderChange,
+  handleSortChange,
+  handleSortOrderChange,
+  handlePageChange: originalHandlePageChange,
+} = useCollection()
 
-watch([currentFolder, currentSort, currentSortOrder], () => {
-  fetchCollection(1)
-})
+// Enhanced page change with smooth scroll and transitions
+const handlePageChange = async (page: number) => {
+  // Add a subtle loading effect
+  isContentVisible.value = false
+  
+  // Scroll to collection top
+  await scrollToCollection()
+  
+  // Slight delay for smooth transition
+  setTimeout(async () => {
+    await originalHandlePageChange(page)
+    
+    // Show content with delay for smooth appearance
+    setTimeout(() => {
+      isContentVisible.value = true
+    }, 150)
+  }, 100)
+}
 
 onMounted(async () => {
   isFiltersVisible.value = false
@@ -80,7 +89,12 @@ onMounted(async () => {
   isPagerVisible.value = false
 
   await fetchFolders()
-  await fetchCollection(1)
+  
+  // Try to initialize from URL params first, fallback to regular fetch
+  const wasInitializedFromUrl = await initializeFromUrl()
+  if (!wasInitializedFromUrl) {
+    await fetchCollection()
+  }
 
   // show outer components with slight delay
   setTimeout(() => {
@@ -89,14 +103,16 @@ onMounted(async () => {
   }, 100)
 })
 </script>
+
 <template>
   <div>
     <AppNavbar />
     <div class="page-content">
-      <div class="mx-auto collection-container">
+      <div class="mx-auto collection-container" ref="collectionContainer">
         <div class="d-flex flex-column align-center w-100">
           <MainTitle text="Collection" align="center" />
-          <!-- add fade transition for filters -->
+          
+          <!-- Filters -->
           <Transition name="fade">
             <div v-show="isFiltersVisible" class="d-flex justify-center w-100">
               <CollectionFilters
@@ -104,25 +120,54 @@ onMounted(async () => {
                 :current-folder="currentFolder"
                 :current-sort="currentSort"
                 :current-sort-order="currentSortOrder"
-                @update:folder="currentFolder = $event"
-                @update:sort="currentSort = $event"
-                @update:sort-order="currentSortOrder = $event"
+                :releases="allReleases"
+                :search-query="searchQuery"
+                @update:folder="handleFolderChange"
+                @update:sort="handleSortChange"
+                @update:sort-order="handleSortOrderChange"
+                @search="handleSearch"
               />
             </div>
           </Transition>
-          <div
-            v-show="isContentVisible"
-            style="
-              transition:
-                opacity 400ms,
-                transform 400ms;
-              transform: none;
-              opacity: 1;
-            "
-          >
+          
+          <!-- Results Counter -->
+          <Transition name="fade">
+            <div v-show="isFiltersVisible" class="d-flex justify-center w-100 mb-4">
+              <ResultsCounter 
+                :total="hasAllReleases ? allReleases.length : totalReleasesCount"
+                :filtered="filteredReleases.length"
+                :is-searching="isSearchActive"
+              />
+            </div>
+          </Transition>
+          
+          <!-- Search Loading Indicator -->
+          <Transition name="fade">
+            <SearchIndicator
+              :is-loading="isSearchLoading"
+              :search-query="searchQuery"
+              :result-count="filteredReleases.length"
+              :loading-progress="loadingProgress"
+              :loading-percentage="loadingPercentage"
+              :is-searching-all-data="isSearchingAllData"
+              :is-background-loading="isBackgroundLoading"
+              :background-progress="backgroundProgress"
+              :background-loading-percentage="backgroundLoadingPercentage"
+              :can-search-locally="canSearchLocally"
+            />
+          </Transition>
+          
+          <!-- Content -->
+          <Transition name="content-fade" mode="out-in">
+            <div
+              v-show="isContentVisible"
+              key="content"
+              class="content-container"
+            >
             <Transition name="fade" mode="out-in">
+              <!-- Loading State -->
               <div
-                v-if="isLoading"
+                v-if="isLoading && !isSearchLoading"
                 class="d-flex flex-wrap justify-center ga-3 mt-4"
               >
                 <v-skeleton-loader
@@ -133,12 +178,32 @@ onMounted(async () => {
                   :loading="true"
                 ></v-skeleton-loader>
               </div>
+              
+              <!-- Error State -->
               <div
                 v-else-if="error"
                 class="d-flex justify-center align-center min-height-300"
               >
                 {{ error }}
               </div>
+              
+              <!-- No Results State -->
+              <div
+                v-else-if="filteredReleases.length === 0 && !isLoading && !isSearchLoading && isInitialized"
+                class="d-flex flex-column justify-center align-center min-height-300"
+              >
+                <div class="text-h6 mb-2">No releases found</div>
+                <div class="text-body-2 text-medium-emphasis">
+                  <span v-if="isSearchActive">
+                    Try adjusting your search terms or filters.
+                  </span>
+                  <span v-else>
+                    No releases in this folder.
+                  </span>
+                </div>
+              </div>
+              
+              <!-- Results -->
               <TransitionGroup
                 v-else
                 name="card-list"
@@ -146,17 +211,20 @@ onMounted(async () => {
                 class="d-flex flex-wrap justify-center ga-3 mt-4 w-100"
               >
                 <VinylCard
-                  v-for="release in releases"
+                  v-for="release in displayedReleases"
                   :key="release.id"
                   :release="release"
                   class="vinyl-card-width"
                 />
               </TransitionGroup>
             </Transition>
-          </div>
+            </div>
+          </Transition>
+          
+          <!-- Pagination -->
           <Transition name="fade">
             <div
-              v-show="isPagerVisible"
+              v-show="isPagerVisible && totalPages > 1"
               class="d-flex justify-center w-100 mt-8"
             >
               <Pager
@@ -171,6 +239,7 @@ onMounted(async () => {
     </div>
   </div>
 </template>
+
 <style scoped>
 .page-content {
   padding-top: 80px; /* Espace pour la navbar fixe */
@@ -214,6 +283,26 @@ onMounted(async () => {
 .fade-enter-from,
 .fade-leave-to {
   opacity: 0;
+}
+
+/* Content transitions for page changes */
+.content-fade-enter-active,
+.content-fade-leave-active {
+  transition: all 0.4s ease;
+}
+
+.content-fade-enter-from {
+  opacity: 0;
+  transform: translateY(20px);
+}
+
+.content-fade-leave-to {
+  opacity: 0;
+  transform: translateY(-10px);
+}
+
+.content-container {
+  transition: all 0.4s ease;
 }
 
 /* Card list transitions */
