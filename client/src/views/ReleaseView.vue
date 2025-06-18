@@ -119,6 +119,22 @@ const goBack = () => {
                   </div>
                 </div>
               </div>
+
+              <!-- Section Tracklist -->
+              <div v-if="release.tracklist && release.tracklist.length > 0" class="tracklist-section">
+                <h3 class="section-title">Tracklist</h3>
+                <div class="tracklist-container">
+                  <div 
+                    v-for="track in release.tracklist" 
+                    :key="`${track.position}-${track.title}`"
+                    class="track-item"
+                  >
+                    <div class="track-position">{{ track.position }}</div>
+                    <div class="track-title">{{ track.title }}</div>
+                    <div v-if="track.duration" class="track-duration">{{ track.duration }}</div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -228,6 +244,52 @@ const goBack = () => {
   gap: 8px;
 }
 
+.tracklist-section {
+  margin: 24px 0 0 0;
+}
+
+.tracklist-container {
+  background-color: rgba(255, 255, 255, 0.02);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.track-item {
+  display: flex;
+  align-items: center;
+  padding: 12px 16px;
+  border-bottom: 1px solid #757575;
+  transition: background-color 0.2s ease;
+}
+
+.track-item:last-child {
+  border-bottom: 1px solid #757575;
+}
+
+.track-item:hover {
+  background-color: rgba(255, 255, 255, 0.02);
+}
+
+.track-position {
+  font-weight: 600;
+  color: #9e9e9e;
+  min-width: 40px;
+  font-size: 0.9rem;
+}
+
+.track-title {
+  flex: 1;
+  margin-left: 16px;
+  line-height: 1.4;
+}
+
+.track-duration {
+  color: #9e9e9e;
+  font-size: 0.9rem;
+  min-width: 60px;
+  text-align: right;
+}
+
 /* Desktop et tablettes */
 @media (min-width: 768px) {
   .content-wrapper {
@@ -278,6 +340,26 @@ const goBack = () => {
   .styles-section {
     flex: 0 0 auto;
     margin: 0;
+  }
+
+  .tracklist-section {
+    margin: 32px 0 0 0;
+  }
+
+  .track-item {
+    padding: 16px 20px;
+  }
+
+  .track-position {
+    min-width: 50px;
+  }
+
+  .track-title {
+    margin-left: 20px;
+  }
+
+  .track-duration {
+    min-width: 80px;
   }
 }
 
