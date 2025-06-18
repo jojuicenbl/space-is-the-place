@@ -255,12 +255,12 @@ const sortButtonProps = computed(() => ({
 }
 
 /* Dark theme support */
-@media (prefers-color-scheme: dark) {
+/* @media (prefers-color-scheme: dark) {
   .filters-container {
     background: rgba(33, 33, 33, 0.95);
     border: 1px solid rgba(255, 255, 255, 0.1);
   }
-}
+} */
 
 /* Custom vuetify overrides */
 :deep(.v-field--variant-outlined) {

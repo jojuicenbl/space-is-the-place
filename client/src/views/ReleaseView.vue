@@ -263,7 +263,7 @@ const goBack = () => {
 }
 
 .track-item:last-child {
-  border-bottom: 1px solid #757575;
+  border-bottom: none;
 }
 
 .track-item:hover {
