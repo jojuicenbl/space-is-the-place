@@ -6,6 +6,7 @@ import ImageUtils from "@/utils/imageHelpers"
 import MainTitle from "@/components/UI/MainTitle.vue"
 import TagPill from "@/components/UI/TagPill.vue"
 import ImageCarousel from "@/components/UI/ImageCarousel.vue"
+import AppleMusicPlayer from "@/components/UI/AppleMusicPlayer.vue"
 import type { BasicInformation } from "@/types/models/Release"
 import { VIcon } from "vuetify/components"
 import AppNavbar from "@/components/Nav/AppNavbar.vue"
@@ -37,6 +38,11 @@ const coverImage = computed(() =>
     ? ImageUtils.getSmallImageUrl(release.value.images?.[0]?.uri)
     : "/default-cover.webp",
 )
+
+// Données pour le lecteur Apple Music
+const artistName = computed(() => release.value?.artists?.[0]?.name || '')
+const albumTitle = computed(() => release.value?.title || '')
+const releaseYear = computed(() => release.value?.year)
 
 const goBack = () => {
   router.go(-1)
@@ -135,6 +141,16 @@ const goBack = () => {
                   </div>
                 </div>
               </div>
+
+              <!-- Lecteur Apple Music -->
+              <AppleMusicPlayer
+                v-if="artistName && albumTitle"
+                :artist-name="artistName"
+                :album-title="albumTitle"
+                :year="releaseYear"
+                :height="450"
+              />
+
             </div>
           </div>
         </div>
