@@ -3,6 +3,7 @@ import { ref, onMounted, computed } from "vue"
 import { useRoute, useRouter } from "vue-router"
 import { getOneRelease } from "@/services/discogsApi"
 import ImageUtils from "@/utils/imageHelpers"
+import { useResponsive } from "@/utils/responsive"
 import MainTitle from "@/components/UI/MainTitle.vue"
 import TagPill from "@/components/UI/TagPill.vue"
 import ImageCarousel from "@/components/UI/ImageCarousel.vue"
@@ -16,6 +17,9 @@ const router = useRouter()
 const release = ref<BasicInformation>()
 const isLoading = ref(true)
 const error = ref<string | null>(null)
+const hasAppleMusicMatch = ref(false)
+
+const { isMobileView } = useResponsive()
 
 onMounted(async () => {
   const releaseId = Number(route.params.id)
@@ -39,7 +43,7 @@ const coverImage = computed(() =>
     : "/default-cover.webp",
 )
 
-// Données pour le lecteur Apple Music
+// Apple Music player data
 const artistName = computed(() => release.value?.artists?.[0]?.name || '')
 const albumTitle = computed(() => release.value?.title || '')
 const releaseYear = computed(() => release.value?.year)
@@ -68,33 +72,19 @@ const goBack = () => {
         <div v-else-if="release" class="release-content">
           <div class="back-button-container">
             <button 
-              @click="goBack"
               class="back-button"
               aria-label="Retour"
+              @click="goBack"
             >
               <v-icon size="20">mdi-chevron-left</v-icon>
             </button>
           </div>
 
-          <!-- Contenu principal responsive -->
+          <!-- Main content -->
           <div class="release-main">
-            <div class="carousel-section">
-              <ImageCarousel
-                v-if="release.images && release.images.length > 0"
-                :images="release.images"
-                @vue:mounted="() => {}"
-              />
-              <img
-                v-else
-                :src="coverImage"
-                :alt="release.title"
-                class="cover-image"
-                @error="ImageUtils.handleImageError"
-              />
-            </div>
             
             <div class="info-section">
-              <MainTitle :text="release.title" align="left" />
+              <MainTitle :text="release.title" align="left" :href="release.uri" />
               <div class="release-details">
                 <p><strong>Artist:</strong> {{ release.artists?.[0]?.name }}</p>
                 <p><strong>Year:</strong> {{ release.year }}</p>
@@ -126,6 +116,22 @@ const goBack = () => {
                 </div>
               </div>
 
+              <!-- mobile style carousel -->
+              <div v-if="isMobileView" class="carousel-section mobile-carousel">
+                <ImageCarousel
+                  v-if="release.images && release.images.length > 0"
+                  :images="release.images"
+                  @vue:mounted="() => {}"
+                />
+                <img
+                  v-else
+                  :src="coverImage"
+                  :alt="release.title"
+                  class="cover-image"
+                  @error="ImageUtils.handleImageError"
+                />
+              </div>
+
               <!-- Section Tracklist -->
               <div v-if="release.tracklist && release.tracklist.length > 0" class="tracklist-section">
                 <h3 class="section-title">Tracklist</h3>
@@ -143,15 +149,36 @@ const goBack = () => {
               </div>
 
               <!-- Lecteur Apple Music -->
-              <AppleMusicPlayer
-                v-if="artistName && albumTitle"
-                :artist-name="artistName"
-                :album-title="albumTitle"
-                :year="releaseYear"
-                :height="450"
-              />
+               <div v-if="hasAppleMusicMatch" class="player-container">
+                 <h3 class="section-title">Listen now</h3>
+               </div>
+               <AppleMusicPlayer
+                 v-if="artistName && albumTitle"
+                 :artist-name="artistName"
+                 :album-title="albumTitle"
+                 :year="releaseYear"
+                 :height="450"
+                 @match-found="(hasMatch) => hasAppleMusicMatch = hasMatch"
+               />
 
             </div>
+
+            <!-- desktop style carousel -->
+            <div v-if="!isMobileView" class="carousel-section desktop-carousel">
+              <ImageCarousel
+                v-if="release.images && release.images.length > 0"
+                :images="release.images"
+                @vue:mounted="() => {}"
+              />
+              <img
+                v-else
+                :src="coverImage"
+                :alt="release.title"
+                class="cover-image"
+                @error="ImageUtils.handleImageError"
+              />
+            </div>
+
           </div>
         </div>
       </div>
@@ -219,6 +246,10 @@ const goBack = () => {
   justify-content: center;
 }
 
+.mobile-carousel {
+  margin: 24px 0;
+}
+
 .cover-image {
   width: 100%;
   max-width: 400px;
@@ -240,6 +271,10 @@ const goBack = () => {
 }
 
 .genres-styles-container {
+  margin: 12px 0;
+}
+
+.player-container {
   margin: 12px 0;
 }
 
@@ -328,9 +363,14 @@ const goBack = () => {
     align-items: flex-start;
   }
 
-  .carousel-section {
+  .desktop-carousel {
     flex: 0 0 400px;
     justify-content: flex-start;
+  }
+  
+  .mobile-carousel {
+    /* En desktop, s'assurer que mobile-carousel est caché via v-if */
+    display: none;
   }
 
   .cover-image {
@@ -381,7 +421,7 @@ const goBack = () => {
 
 /* Large desktop */
 @media (min-width: 1200px) {
-  .carousel-section {
+  .desktop-carousel {
     flex: 0 0 500px;
   }
 

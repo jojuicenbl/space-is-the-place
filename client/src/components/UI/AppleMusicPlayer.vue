@@ -27,7 +27,7 @@
       </small>
     </div>
   </div> -->
-  <div class="iframe-container">
+  <div v-if="appleMusicData" class="iframe-container">
       <iframe
         :src="embedUrl"
         :style="{ width: '100%', height: playerHeight + 'px' }"
@@ -56,6 +56,10 @@ const props = withDefaults(defineProps<Props>(), {
   height: 450,
   country: 'us'
 })
+
+const emit = defineEmits<{
+  matchFound: [hasMatch: boolean]
+}>()
 
 const appleMusicData = ref<AppleMusicMatch | null>(null)
 const isLoading = ref(true)
@@ -88,8 +92,10 @@ onMounted(async () => {
     if (result) {
       appleMusicData.value = result
       isVisible.value = true
+      emit('matchFound', true)
       console.log('Found Apple Music match:', result)
     } else {
+      emit('matchFound', false)
       console.log('No Apple Music match found for:', props.artistName, '-', props.albumTitle)
     }
     

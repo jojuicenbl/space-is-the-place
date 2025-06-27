@@ -49,6 +49,7 @@ export interface BasicInformation {
   images?: Image[]
   genres?: string[]
   styles?: string[]
+  uri?: string
 }
 
 interface Pagination {
