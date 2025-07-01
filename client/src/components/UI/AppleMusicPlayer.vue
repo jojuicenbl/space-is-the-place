@@ -8,8 +8,7 @@
       </div>
       <span class="player-title">Écouter sur Apple Music</span>
     </div> -->
-    
-    <!-- <div class="iframe-container">
+  <!-- <div class="iframe-container">
       <iframe
         :src="embedUrl"
         :style="{ width: '100%', height: playerHeight + 'px' }"
@@ -20,26 +19,19 @@
         @load="onPlayerLoad"
       ></iframe>
     </div> -->
-    
-    <!-- <div v-if="appleMusicData" class="player-info">
+  <!-- <div v-if="appleMusicData" class="player-info">
       <small class="text-muted">
         {{ appleMusicData.artistName }} • {{ appleMusicData.trackCount }} titre{{ appleMusicData.trackCount > 1 ? 's' : '' }}
       </small>
     </div>
   </div> -->
   <div v-if="appleMusicData" class="iframe-container">
-      <iframe
-        :src="embedUrl"
-        :style="{ width: '100%', height: playerHeight + 'px' }"
-        frameborder="0"
-        allow="autoplay *; encrypted-media *; fullscreen *; clipboard-write"
-        sandbox="allow-forms allow-popups allow-same-origin allow-scripts allow-storage-access-by-user-activation allow-top-navigation-by-user-activation"
-        loading="lazy"
-        @load="onPlayerLoad"
-      ></iframe>
-    </div>
+    <iframe :src="embedUrl" :style="{ width: '100%', height: playerHeight + 'px' }" frameborder="0"
+      allow="autoplay *; encrypted-media *; fullscreen *; clipboard-write"
+      sandbox="allow-forms allow-popups allow-same-origin allow-scripts allow-storage-access-by-user-activation allow-top-navigation-by-user-activation"
+      loading="lazy"></iframe>
+  </div>
 </template>
-
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import AppleMusicService, { type AppleMusicMatch } from '@/services/appleMusicApi'
@@ -75,30 +67,24 @@ const embedUrl = computed(() => {
   )
 })
 
-const onPlayerLoad = () => {
-  console.log('Apple Music player loaded successfully')
-}
-
 onMounted(async () => {
   try {
     isLoading.value = true
-    
+
     const result = await AppleMusicService.searchAlbum(
       props.artistName,
       props.albumTitle,
       props.year
     )
-    
+
     if (result) {
       appleMusicData.value = result
       isVisible.value = true
       emit('matchFound', true)
-      console.log('Found Apple Music match:', result)
     } else {
       emit('matchFound', false)
-      console.log('No Apple Music match found for:', props.artistName, '-', props.albumTitle)
     }
-    
+
   } catch (error) {
     console.error('Error loading Apple Music player:', error)
   } finally {
@@ -106,7 +92,6 @@ onMounted(async () => {
   }
 })
 </script>
-
 <style scoped>
 .apple-music-player {
   background: linear-gradient(135deg, #fa2d48 0%, #ff6b35 100%);
@@ -168,9 +153,9 @@ onMounted(async () => {
     margin: 16px 0;
     padding: 12px;
   }
-  
+
   .player-header {
     margin-bottom: 8px;
   }
 }
-</style> 
+</style>

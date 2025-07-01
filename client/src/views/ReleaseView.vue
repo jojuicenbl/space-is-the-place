@@ -28,7 +28,6 @@ onMounted(async () => {
     isLoading.value = true
     const data = await getOneRelease(releaseId)
     release.value = data
-    console.log(release)
   } catch (err) {
     error.value = "Failed to load release details"
     console.error("Error loading release:", err)
@@ -47,6 +46,9 @@ const coverImage = computed(() =>
 const artistName = computed(() => release.value?.artists?.[0]?.name || '')
 const albumTitle = computed(() => release.value?.title || '')
 const releaseYear = computed(() => release.value?.year)
+const styles = computed(() => release.value?.styles || [])
+
+console.log(computed(() => release.value?.styles))
 
 const goBack = () => {
   router.go(-1)
@@ -104,7 +106,7 @@ const goBack = () => {
                   </div>
                 </div>
                 
-                <div class="styles-section">
+                <div v-if="styles.length > 0" class="styles-section">
                   <h3 class="section-title">Styles</h3>
                   <div class="tags-container">
                     <TagPill
@@ -309,16 +311,12 @@ const goBack = () => {
   display: flex;
   align-items: center;
   padding: 12px 16px;
-  border-bottom: 1px solid #757575;
   transition: background-color 0.2s ease;
 }
 
-.track-item:last-child {
-  border-bottom: none;
-}
-
-.track-item:hover {
-  background-color: rgba(255, 255, 255, 0.02);
+.track-item:nth-child(even) {
+  background-color: #ECECEE;
+  border-radius: 8px;
 }
 
 .track-position {
