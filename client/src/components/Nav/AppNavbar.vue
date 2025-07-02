@@ -23,60 +23,23 @@ const isCurrentRoute = (routeName: string) => {
   return route.name === routeName
 }
 </script>
-
 <template>
   <nav class="app-navbar">
     <div class="navbar-container">
       <div class="navbar-left">
         <button class="logo-button" @click="goToHome">
-          <!-- Logo SVG temporaire -->
-          <svg
-            width="40"
-            height="40"
-            viewBox="0 0 100 100"
-            fill="none"
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            <circle
-              cx="50"
-              cy="50"
-              r="45"
-              stroke="currentColor"
-              stroke-width="3"
-            />
-            <circle cx="50" cy="50" r="25" fill="currentColor" />
-            <circle cx="35" cy="35" r="3" fill="currentColor" />
-            <circle cx="65" cy="35" r="3" fill="currentColor" />
-            <circle cx="50" cy="25" r="2" fill="currentColor" />
-            <circle cx="25" cy="50" r="2" fill="currentColor" />
-            <circle cx="75" cy="50" r="2" fill="currentColor" />
-            <circle cx="35" cy="65" r="2" fill="currentColor" />
-            <circle cx="65" cy="65" r="2" fill="currentColor" />
-          </svg>
+          <img src="/space-is-the-place-logo.png" alt="Space Is The Place Logo" />
         </button>
       </div>
-
       <div class="navbar-right">
         <div class="nav-links">
-          <button
-            class="nav-button nav-link"
-            :class="{ active: isCurrentRoute('collection') }"
-            @click="goToCollection"
-          >
+          <button class="nav-button nav-link" :class="{ active: isCurrentRoute('collection') }" @click="goToCollection">
             Collection
           </button>
-          <button
-            class="nav-button nav-link"
-            :class="{ active: isCurrentRoute('about') }"
-            @click="goToAbout"
-          >
+          <button class="nav-button nav-link" :class="{ active: isCurrentRoute('about') }" @click="goToAbout">
             About
           </button>
-          <button
-            class="nav-button nav-link"
-            :class="{ active: isCurrentRoute('contact') }"
-            @click="goToContact"
-          >
+          <button class="nav-button nav-link" :class="{ active: isCurrentRoute('contact') }" @click="goToContact">
             Contact
           </button>
         </div>
@@ -84,7 +47,6 @@ const isCurrentRoute = (routeName: string) => {
     </div>
   </nav>
 </template>
-
 <style scoped>
 .app-navbar {
   position: fixed;
@@ -131,9 +93,13 @@ const isCurrentRoute = (routeName: string) => {
   justify-content: center;
 }
 
+.logo-button img {
+  height: 65px;
+  width: auto;
+  object-fit: contain;
+}
+
 .logo-button:hover {
-  color: hsla(160, 100%, 37%, 1);
-  background-color: rgba(0, 0, 0, 0.05);
   transform: scale(1.05);
 }
 
@@ -181,7 +147,7 @@ const isCurrentRoute = (routeName: string) => {
   transform: translateX(-50%);
   width: 20px;
   height: 2px;
-  background-color: hsla(160, 100%, 37%, 1);
+  /* background-color: hsla(160, 100%, 37%, 1); */
   border-radius: 1px;
 }
 
@@ -204,8 +170,7 @@ const isCurrentRoute = (routeName: string) => {
     padding: 0.25rem;
   }
 
-  .logo-button svg {
-    width: 32px;
+  .logo-button img {
     height: 32px;
   }
 }
@@ -225,8 +190,7 @@ const isCurrentRoute = (routeName: string) => {
     padding: 0.4rem 0.6rem;
   }
 
-  .logo-button svg {
-    width: 28px;
+  .logo-button img {
     height: 28px;
   }
 }
