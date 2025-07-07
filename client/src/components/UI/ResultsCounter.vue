@@ -22,12 +22,7 @@ const counterColor = computed(() => {
 </script>
 
 <template>
-  <VChip
-    :color="counterColor"
-    variant="tonal"
-    size="small"
-    class="results-counter"
-  >
+  <VChip :color="counterColor" variant="tonal" size="small" class="results-counter">
     <span class="font-weight-medium">{{ counterText }}</span>
   </VChip>
 </template>
@@ -36,4 +31,4 @@ const counterColor = computed(() => {
 .results-counter {
   transition: all 0.3s ease;
 }
-</style> 
+</style>

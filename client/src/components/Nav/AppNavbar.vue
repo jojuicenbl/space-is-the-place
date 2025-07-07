@@ -1,22 +1,22 @@
 <script setup lang="ts">
-import { useRouter, useRoute } from "vue-router"
+import { useRouter, useRoute } from 'vue-router'
 
 const router = useRouter()
 const route = useRoute()
 const goToHome = () => {
-  router.push("/")
+  router.push('/')
 }
 
 const goToCollection = () => {
-  router.push("/collection")
+  router.push('/collection')
 }
 
 const goToAbout = () => {
-  router.push("/about")
+  router.push('/about')
 }
 
 const goToContact = () => {
-  router.push("/contact")
+  router.push('/contact')
 }
 
 const isCurrentRoute = (routeName: string) => {
@@ -33,13 +33,25 @@ const isCurrentRoute = (routeName: string) => {
       </div>
       <div class="navbar-right">
         <div class="nav-links">
-          <button class="nav-button nav-link" :class="{ active: isCurrentRoute('collection') }" @click="goToCollection">
+          <button
+            class="nav-button nav-link"
+            :class="{ active: isCurrentRoute('collection') }"
+            @click="goToCollection"
+          >
             Collection
           </button>
-          <button class="nav-button nav-link" :class="{ active: isCurrentRoute('about') }" @click="goToAbout">
+          <button
+            class="nav-button nav-link"
+            :class="{ active: isCurrentRoute('about') }"
+            @click="goToAbout"
+          >
             About
           </button>
-          <button class="nav-button nav-link" :class="{ active: isCurrentRoute('contact') }" @click="goToContact">
+          <button
+            class="nav-button nav-link"
+            :class="{ active: isCurrentRoute('contact') }"
+            @click="goToContact"
+          >
             Contact
           </button>
         </div>
@@ -121,7 +133,7 @@ const isCurrentRoute = (routeName: string) => {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  font-family: "Rubik Mono One", monospace;
+  font-family: 'Rubik Mono One', monospace;
 }
 
 .nav-link {
@@ -140,7 +152,7 @@ const isCurrentRoute = (routeName: string) => {
 }
 
 .nav-link.active::after {
-  content: "";
+  content: '';
   position: absolute;
   bottom: -2px;
   left: 50%;

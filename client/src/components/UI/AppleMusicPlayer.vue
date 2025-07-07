@@ -26,10 +26,14 @@
     </div>
   </div> -->
   <div v-if="appleMusicData" class="iframe-container">
-    <iframe :src="embedUrl" :style="{ width: '100%', height: playerHeight + 'px' }" frameborder="0"
+    <iframe
+      :src="embedUrl"
+      :style="{ width: '100%', height: playerHeight + 'px' }"
+      frameborder="0"
       allow="autoplay *; encrypted-media *; fullscreen *; clipboard-write"
       sandbox="allow-forms allow-popups allow-same-origin allow-scripts allow-storage-access-by-user-activation allow-top-navigation-by-user-activation"
-      loading="lazy"></iframe>
+      loading="lazy"
+    ></iframe>
   </div>
 </template>
 <script setup lang="ts">
@@ -61,10 +65,7 @@ const playerHeight = computed(() => props.height)
 
 const embedUrl = computed(() => {
   if (!appleMusicData.value) return ''
-  return AppleMusicService.getAppleMusicEmbedUrl(
-    appleMusicData.value.collectionId,
-    props.country
-  )
+  return AppleMusicService.getAppleMusicEmbedUrl(appleMusicData.value.collectionId, props.country)
 })
 
 onMounted(async () => {
@@ -84,7 +85,6 @@ onMounted(async () => {
     } else {
       emit('matchFound', false)
     }
-
   } catch (error) {
     console.error('Error loading Apple Music player:', error)
   } finally {

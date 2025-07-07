@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { computed } from "vue"
-import { VIcon } from "vuetify/components"
+import { computed } from 'vue'
+import { VIcon } from 'vuetify/components'
 
 const props = defineProps<{
   currentPage: number
@@ -34,7 +34,7 @@ const pages = computed(() => {
       if (i - l === 2) {
         rangeWithDots.push(l + 1)
       } else if (i - l !== 1) {
-        rangeWithDots.push("...")
+        rangeWithDots.push('...')
       }
     }
     rangeWithDots.push(i)
@@ -58,11 +58,7 @@ const pages = computed(() => {
     <button
       v-for="page in pages"
       :key="page"
-      :class="[
-        'pager-button',
-        page === currentPage ? 'active' : '',
-        page === '...' ? 'dots' : '',
-      ]"
+      :class="['pager-button', page === currentPage ? 'active' : '', page === '...' ? 'dots' : '']"
       :disabled="page === '...'"
       @click="page !== '...' && handlePageChange(Number(page))"
     >

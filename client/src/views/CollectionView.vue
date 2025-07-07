@@ -1,15 +1,15 @@
 <script setup lang="ts">
-import { ref, onMounted, nextTick } from "vue"
-import VinylCard from "../components/VinylCard.vue"
-import MainTitle from "@/components/UI/MainTitle.vue"
+import { ref, onMounted, nextTick } from 'vue'
+import VinylCard from '../components/VinylCard.vue'
+import MainTitle from '@/components/UI/MainTitle.vue'
 
-import Pager from "@/components/UI/Pager.vue"
-import CollectionFilters from "@/components/CollectionFilters.vue"
-import ResultsCounter from "@/components/UI/ResultsCounter.vue"
-import SearchIndicator from "@/components/UI/SearchIndicator.vue"
-import { VSkeletonLoader } from "vuetify/components"
-import AppNavbar from "@/components/Nav/AppNavbar.vue"
-import { useCollection } from "@/composables/useCollection"
+import Pager from '@/components/UI/Pager.vue'
+import CollectionFilters from '@/components/CollectionFilters.vue'
+import ResultsCounter from '@/components/UI/ResultsCounter.vue'
+import SearchIndicator from '@/components/UI/SearchIndicator.vue'
+import { VSkeletonLoader } from 'vuetify/components'
+import AppNavbar from '@/components/Nav/AppNavbar.vue'
+import { useCollection } from '@/composables/useCollection'
 
 // UI state
 const isFiltersVisible = ref(true)
@@ -22,7 +22,7 @@ const scrollToCollection = async () => {
   await nextTick()
   if (collectionContainer.value) {
     collectionContainer.value.scrollIntoView({
-      behavior: 'smooth',
+      behavior: 'smooth', // /!\ Todo: To keep or not ? /!\
       block: 'start'
     })
   }
@@ -61,21 +61,21 @@ const {
   handleFolderChange,
   handleSortChange,
   handleSortOrderChange,
-  handlePageChange: originalHandlePageChange,
+  handlePageChange: originalHandlePageChange
 } = useCollection()
 
 // Enhanced page change with smooth scroll and transitions
 const handlePageChange = async (page: number) => {
   // Add a subtle loading effect
   isContentVisible.value = false
-  
+
   // Scroll to collection top
   await scrollToCollection()
-  
+
   // Slight delay for smooth transition
   setTimeout(async () => {
     await originalHandlePageChange(page)
-    
+
     // Show content with delay for smooth appearance
     setTimeout(() => {
       isContentVisible.value = true
@@ -89,7 +89,7 @@ onMounted(async () => {
   isPagerVisible.value = false
 
   await fetchFolders()
-  
+
   // Try to initialize from URL params first, fallback to regular fetch
   const wasInitializedFromUrl = await initializeFromUrl()
   if (!wasInitializedFromUrl) {
@@ -103,15 +103,13 @@ onMounted(async () => {
   }, 100)
 })
 </script>
-
 <template>
   <div>
     <AppNavbar />
     <div class="page-content">
-      <div class="mx-auto collection-container" ref="collectionContainer">
+      <div ref="collectionContainer" class="mx-auto collection-container">
         <div class="d-flex flex-column align-center w-100">
           <MainTitle text="Collection" align="center" />
-          
           <!-- Filters -->
           <Transition name="fade">
             <div v-show="isFiltersVisible" class="d-flex justify-center w-100">
@@ -129,18 +127,16 @@ onMounted(async () => {
               />
             </div>
           </Transition>
-          
           <!-- Results Counter -->
           <Transition name="fade">
             <div v-show="isFiltersVisible" class="d-flex justify-center w-100 mb-4">
-              <ResultsCounter 
+              <ResultsCounter
                 :total="hasAllReleases ? allReleases.length : totalReleasesCount"
                 :filtered="filteredReleases.length"
                 :is-searching="isSearchActive"
               />
             </div>
           </Transition>
-          
           <!-- Search Loading Indicator -->
           <Transition name="fade">
             <SearchIndicator
@@ -156,77 +152,60 @@ onMounted(async () => {
               :can-search-locally="canSearchLocally"
             />
           </Transition>
-          
           <!-- Content -->
           <Transition name="content-fade" mode="out-in">
-            <div
-              v-show="isContentVisible"
-              key="content"
-              class="content-container"
-            >
-            <Transition name="fade" mode="out-in">
-              <!-- Loading State -->
-              <div
-                v-if="isLoading && !isSearchLoading"
-                class="d-flex flex-wrap justify-center ga-3 mt-4"
-              >
-                <v-skeleton-loader
-                  v-for="n in 12"
-                  :key="n"
-                  class="vinyl-card-width"
-                  type="image"
-                  :loading="true"
-                ></v-skeleton-loader>
-              </div>
-              
-              <!-- Error State -->
-              <div
-                v-else-if="error"
-                class="d-flex justify-center align-center min-height-300"
-              >
-                {{ error }}
-              </div>
-              
-              <!-- No Results State -->
-              <div
-                v-else-if="filteredReleases.length === 0 && !isLoading && !isSearchLoading && isInitialized"
-                class="d-flex flex-column justify-center align-center min-height-300"
-              >
-                <div class="text-h6 mb-2">No releases found</div>
-                <div class="text-body-2 text-medium-emphasis">
-                  <span v-if="isSearchActive">
-                    Try adjusting your search terms or filters.
-                  </span>
-                  <span v-else>
-                    No releases in this folder.
-                  </span>
+            <div v-show="isContentVisible" key="content" class="content-container">
+              <Transition name="fade" mode="out-in">
+                <!-- Loading State -->
+                <div
+                  v-if="isLoading && !isSearchLoading"
+                  class="d-flex flex-wrap justify-center ga-3 mt-4"
+                >
+                  <v-skeleton-loader
+                    v-for="n in 12"
+                    :key="n"
+                    class="vinyl-card-width"
+                    type="image"
+                    :loading="true"
+                  ></v-skeleton-loader>
                 </div>
-              </div>
-              
-              <!-- Results -->
-              <TransitionGroup
-                v-else
-                name="card-list"
-                tag="div"
-                class="d-flex flex-wrap justify-center ga-3 mt-4 w-100"
-              >
-                <VinylCard
-                  v-for="release in displayedReleases"
-                  :key="release.id"
-                  :release="release"
-                  class="vinyl-card-width"
-                />
-              </TransitionGroup>
-            </Transition>
+                <!-- Error State -->
+                <div v-else-if="error" class="d-flex justify-center align-center min-height-300">
+                  {{ error }}
+                </div>
+                <!-- No Results State -->
+                <div
+                  v-else-if="
+                    filteredReleases.length === 0 && !isLoading && !isSearchLoading && isInitialized
+                  "
+                  class="d-flex flex-column justify-center align-center min-height-300"
+                >
+                  <div class="text-h6 mb-2">No releases found</div>
+                  <div class="text-body-2 text-medium-emphasis">
+                    <span v-if="isSearchActive"> Try adjusting your search terms or filters. </span>
+                    <span v-else> No releases in this folder. </span>
+                  </div>
+                </div>
+                <!-- Results -->
+                <TransitionGroup
+                  v-else
+                  name="card-list"
+                  tag="div"
+                  class="d-flex flex-wrap justify-center ga-3 mt-4 w-100"
+                >
+                  <VinylCard
+                    v-for="release in displayedReleases"
+                    :key="release.id"
+                    :release="release"
+                    class="vinyl-card-width"
+                  />
+                </TransitionGroup>
+              </Transition>
             </div>
           </Transition>
-          
           <!-- Pagination -->
           <Transition name="fade">
-            <div
-              v-show="isPagerVisible && totalPages > 1"
-              class="d-flex justify-center w-100 mt-8"
-            >
+            <div v-show="isPagerVisible && totalPages > 1" class="d-flex justify-center w-100 mt-8">
               <Pager
                 :current-page="currentPage"
                 :total-pages="totalPages"
@@ -239,10 +218,10 @@ onMounted(async () => {
     </div>
   </div>
 </template>
-
 <style scoped>
 .page-content {
-  padding-top: 80px; /* Espace pour la navbar fixe */
+  padding-top: 80px;
+  /* Espace pour la navbar fixe */
 }
 
 .collection-container {

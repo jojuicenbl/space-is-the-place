@@ -1,16 +1,16 @@
 <script setup lang="ts">
-import { ref, onMounted, computed } from "vue"
-import { useRoute, useRouter } from "vue-router"
-import { getOneRelease } from "@/services/discogsApi"
-import ImageUtils from "@/utils/imageHelpers"
-import { useResponsive } from "@/utils/responsive"
-import MainTitle from "@/components/UI/MainTitle.vue"
-import TagPill from "@/components/UI/TagPill.vue"
-import ImageCarousel from "@/components/UI/ImageCarousel.vue"
-import AppleMusicPlayer from "@/components/UI/AppleMusicPlayer.vue"
-import type { BasicInformation } from "@/types/models/Release"
-import { VIcon } from "vuetify/components"
-import AppNavbar from "@/components/Nav/AppNavbar.vue"
+import { ref, onMounted, computed } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { getOneRelease } from '@/services/discogsApi'
+import ImageUtils from '@/utils/imageHelpers'
+import { useResponsive } from '@/utils/responsive'
+import MainTitle from '@/components/UI/MainTitle.vue'
+import TagPill from '@/components/UI/TagPill.vue'
+import ImageCarousel from '@/components/UI/ImageCarousel.vue'
+import AppleMusicPlayer from '@/components/UI/AppleMusicPlayer.vue'
+import type { BasicInformation } from '@/types/models/Release'
+import { VIcon } from 'vuetify/components'
+import AppNavbar from '@/components/Nav/AppNavbar.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -29,8 +29,8 @@ onMounted(async () => {
     const data = await getOneRelease(releaseId)
     release.value = data
   } catch (err) {
-    error.value = "Failed to load release details"
-    console.error("Error loading release:", err)
+    error.value = 'Failed to load release details'
+    console.error('Error loading release:', err)
   } finally {
     isLoading.value = false
   }
@@ -39,7 +39,7 @@ onMounted(async () => {
 const coverImage = computed(() =>
   release.value
     ? ImageUtils.getSmallImageUrl(release.value.images?.[0]?.uri)
-    : "/default-cover.webp",
+    : '/default-cover.webp'
 )
 
 // Apple Music player data
@@ -59,32 +59,21 @@ const goBack = () => {
     <AppNavbar />
     <div class="page-content">
       <div class="content-wrapper">
-        <div
-          v-if="isLoading"
-          class="d-flex justify-center align-center min-height-300"
-        >
+        <div v-if="isLoading" class="d-flex justify-center align-center min-height-300">
           Loading...
         </div>
-        <div
-          v-else-if="error"
-          class="d-flex justify-center align-center min-height-300"
-        >
+        <div v-else-if="error" class="d-flex justify-center align-center min-height-300">
           {{ error }}
         </div>
         <div v-else-if="release" class="release-content">
           <div class="back-button-container">
-            <button 
-              class="back-button"
-              aria-label="Retour"
-              @click="goBack"
-            >
+            <button class="back-button" aria-label="Retour" @click="goBack">
               <v-icon size="20">mdi-chevron-left</v-icon>
             </button>
           </div>
 
           <!-- Main content -->
           <div class="release-main">
-            
             <div class="info-section">
               <MainTitle :text="release.title" align="left" :href="release.uri" />
               <div class="release-details">
@@ -92,28 +81,20 @@ const goBack = () => {
                 <p><strong>Year:</strong> {{ release.year }}</p>
                 <p><strong>Label:</strong> {{ release.labels?.[0]?.name }}</p>
               </div>
-              
+
               <!-- Container pour genres et styles -->
               <div class="genres-styles-container">
                 <div class="genres-section">
                   <h3 class="section-title">Genres</h3>
                   <div class="tags-container">
-                    <TagPill
-                      v-for="genre in release.genres"
-                      :key="genre"
-                      :text="genre"
-                    />
+                    <TagPill v-for="genre in release.genres" :key="genre" :text="genre" />
                   </div>
                 </div>
-                
+
                 <div v-if="styles.length > 0" class="styles-section">
                   <h3 class="section-title">Styles</h3>
                   <div class="tags-container">
-                    <TagPill
-                      v-for="style in release.styles"
-                      :key="style"
-                      :text="style"
-                    />
+                    <TagPill v-for="style in release.styles" :key="style" :text="style" />
                   </div>
                 </div>
               </div>
@@ -135,11 +116,14 @@ const goBack = () => {
               </div>
 
               <!-- Section Tracklist -->
-              <div v-if="release.tracklist && release.tracklist.length > 0" class="tracklist-section">
+              <div
+                v-if="release.tracklist && release.tracklist.length > 0"
+                class="tracklist-section"
+              >
                 <h3 class="section-title">Tracklist</h3>
                 <div class="tracklist-container">
-                  <div 
-                    v-for="track in release.tracklist" 
+                  <div
+                    v-for="track in release.tracklist"
                     :key="`${track.position}-${track.title}`"
                     class="track-item"
                   >
@@ -151,18 +135,17 @@ const goBack = () => {
               </div>
 
               <!-- Lecteur Apple Music -->
-               <div v-if="hasAppleMusicMatch" class="player-container">
-                 <h3 class="section-title">Listen now</h3>
-               </div>
-               <AppleMusicPlayer
-                 v-if="artistName && albumTitle"
-                 :artist-name="artistName"
-                 :album-title="albumTitle"
-                 :year="releaseYear"
-                 :height="450"
-                 @match-found="(hasMatch) => hasAppleMusicMatch = hasMatch"
-               />
-
+              <div v-if="hasAppleMusicMatch" class="player-container">
+                <h3 class="section-title">Listen now</h3>
+              </div>
+              <AppleMusicPlayer
+                v-if="artistName && albumTitle"
+                :artist-name="artistName"
+                :album-title="albumTitle"
+                :year="releaseYear"
+                :height="450"
+                @match-found="hasMatch => (hasAppleMusicMatch = hasMatch)"
+              />
             </div>
 
             <!-- desktop style carousel -->
@@ -180,7 +163,6 @@ const goBack = () => {
                 @error="ImageUtils.handleImageError"
               />
             </div>
-
           </div>
         </div>
       </div>
@@ -315,7 +297,7 @@ const goBack = () => {
 }
 
 .track-item:nth-child(even) {
-  background-color: #ECECEE;
+  background-color: #ececee;
   border-radius: 8px;
 }
 
@@ -365,7 +347,7 @@ const goBack = () => {
     flex: 0 0 400px;
     justify-content: flex-start;
   }
-  
+
   .mobile-carousel {
     /* En desktop, s'assurer que mobile-carousel est caché via v-if */
     display: none;

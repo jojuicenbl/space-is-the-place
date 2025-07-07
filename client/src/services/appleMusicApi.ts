@@ -52,7 +52,7 @@ class AppleMusicService {
       // Nettoyer les termes de recherche
       const cleanArtist = this.cleanSearchTerm(artistName)
       const cleanAlbum = this.cleanSearchTerm(albumTitle)
-      
+
       // Construire la requête de recherche
       const searchTerm = `${cleanArtist} ${cleanAlbum}`
       const params = new URLSearchParams({
@@ -64,20 +64,20 @@ class AppleMusicService {
       })
 
       const response = await fetch(`${this.ITUNES_SEARCH_BASE_URL}?${params}`)
-      
+
       if (!response.ok) {
         throw new Error(`iTunes Search API error: ${response.status}`)
       }
 
       const data: iTunesSearchResult = await response.json()
-      
+
       if (data.resultCount === 0) {
         return null
       }
 
       // Chercher la meilleure correspondance
       const bestMatch = this.findBestMatch(data.results, artistName, albumTitle, year)
-      
+
       if (!bestMatch) {
         return null
       }
@@ -91,7 +91,6 @@ class AppleMusicService {
         releaseDate: bestMatch.releaseDate,
         trackCount: bestMatch.trackCount
       }
-      
     } catch (error) {
       console.error('Error searching iTunes API:', error)
       return null
@@ -130,7 +129,7 @@ class AppleMusicService {
     for (const result of results) {
       // Calculer un score de correspondance
       let score = 0
-      
+
       // Score artiste (plus important)
       const artistSimilarity = this.calculateSimilarity(
         targetArtist.toLowerCase(),
@@ -153,7 +152,8 @@ class AppleMusicService {
         }
       }
 
-      if (score > bestScore && score > 0.7) { // Seuil minimum de correspondance
+      if (score > bestScore && score > 0.7) {
+        // Seuil minimum de correspondance
         bestScore = score
         bestMatch = result
       }
@@ -168,9 +168,9 @@ class AppleMusicService {
   private static calculateSimilarity(str1: string, str2: string): number {
     const words1 = str1.split(/\s+/)
     const words2 = str2.split(/\s+/)
-    
+
     let matchCount = 0
-    
+
     for (const word1 of words1) {
       for (const word2 of words2) {
         if (word1.includes(word2) || word2.includes(word1)) {
@@ -179,9 +179,9 @@ class AppleMusicService {
         }
       }
     }
-    
+
     return matchCount / Math.max(words1.length, words2.length)
   }
 }
 
-export default AppleMusicService 
+export default AppleMusicService

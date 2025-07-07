@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { useRouter } from "vue-router"
-import type { CollectionRelease } from "@/types/models/Release"
-import ImageUtils from "@/utils/imageHelpers"
-import { computed } from "vue"
+import { useRouter } from 'vue-router'
+import type { CollectionRelease } from '@/types/models/Release'
+import ImageUtils from '@/utils/imageHelpers'
+import { computed } from 'vue'
 
 interface Props {
   release: CollectionRelease
@@ -16,7 +16,7 @@ const navigateToRelease = () => {
 }
 
 const coverImage = computed(() =>
-  ImageUtils.getSmallImageUrl(props.release.basic_information.cover_image),
+  ImageUtils.getSmallImageUrl(props.release.basic_information.cover_image)
 )
 </script>
 <template>

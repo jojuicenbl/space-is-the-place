@@ -1,24 +1,18 @@
 <script setup lang="ts">
 interface Props {
   text: string
-  align?: "left" | "center" | "right"
+  align?: 'left' | 'center' | 'right'
   href?: string
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  align: "left",
+  align: 'left'
 })
 </script>
 
 <template>
   <h1 class="main-title" :class="[`text-${props.align}`]">
-    <a 
-      v-if="href" 
-      :href="href" 
-      target="_blank" 
-      rel="noopener noreferrer"
-      class="title-link"
-    >
+    <a v-if="href" :href="href" target="_blank" rel="noopener noreferrer" class="title-link">
       {{ text }}
     </a>
     <span v-else>{{ text }}</span>

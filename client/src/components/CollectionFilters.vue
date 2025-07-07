@@ -1,17 +1,9 @@
 <script setup lang="ts">
-import type { DiscogsFolder } from "@/services/discogsApi"
-import type { SortField, SortOrder } from "@/services/discogsApi"
-import type { CollectionRelease } from "@/types/models/Release"
-import { ref, computed, watch } from "vue"
-import { 
-  VBtn, 
-  VIcon, 
-  VSelect, 
-  VTextField,
-  VCard,
-  VCardText,
-  VListItem
-} from "vuetify/components"
+import type { DiscogsFolder } from '@/services/discogsApi'
+import type { SortField, SortOrder } from '@/services/discogsApi'
+import type { CollectionRelease } from '@/types/models/Release'
+import { ref, computed, watch } from 'vue'
+import { VBtn, VIcon, VSelect, VTextField, VCard, VCardText, VListItem } from 'vuetify/components'
 
 const props = defineProps<{
   folders: DiscogsFolder[]
@@ -23,19 +15,19 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  (e: "update:folder", folderId: number): void
-  (e: "update:sort", sort: SortField): void
-  (e: "update:sortOrder", order: SortOrder): void
-  (e: "search", query: string): void
+  (e: 'update:folder', folderId: number): void
+  (e: 'update:sort', sort: SortField): void
+  (e: 'update:sortOrder', order: SortOrder): void
+  (e: 'search', query: string): void
 }>()
 
 // Reactive states
-const searchQuery = ref(props.searchQuery || "")
+const searchQuery = ref(props.searchQuery || '')
 const isSearchFocused = ref(false)
 
 console.log(props.folders)
 // Computed options for dropdowns
-const folderOptions = computed(() => 
+const folderOptions = computed(() =>
   props.folders
     .filter(folder => folder.id !== 1) // Exclude "Uncategorized" folder
     .map(folder => ({
@@ -45,53 +37,50 @@ const folderOptions = computed(() =>
     }))
 )
 
-
-
 // Sort options with Date Added as default
 const filterOptions = [
-  { title: "Date Added", value: "added" },
-  { title: "Artist", value: "artist" },
-  { title: "Album", value: "title" }
+  { title: 'Date Added', value: 'added' },
+  { title: 'Artist', value: 'artist' },
+  { title: 'Album', value: 'title' }
 ] as const
 
 // Handlers
 const toggleSortOrder = () => {
-  const newOrder: SortOrder = props.currentSortOrder === "asc" ? "desc" : "asc"
-  emit("update:sortOrder", newOrder)
+  const newOrder: SortOrder = props.currentSortOrder === 'asc' ? 'desc' : 'asc'
+  emit('update:sortOrder', newOrder)
 }
 
 const handleFolderChange = (folderId: number) => {
-  emit("update:folder", folderId)
+  emit('update:folder', folderId)
 }
 
 const handleSortChange = (sort: SortField) => {
-  emit("update:sort", sort)
+  emit('update:sort', sort)
 }
 
 // Watch for search query changes and emit search event
-watch(searchQuery, (newQuery) => {
-  emit("search", (newQuery || "").trim())
+watch(searchQuery, newQuery => {
+  emit('search', (newQuery || '').trim())
 })
 
 // Watch for prop changes to sync searchQuery
-watch(() => props.searchQuery, (newSearchQuery) => {
-  searchQuery.value = newSearchQuery || ""
-})
+watch(
+  () => props.searchQuery,
+  newSearchQuery => {
+    searchQuery.value = newSearchQuery || ''
+  }
+)
 
 // Computed sort button properties
 const sortButtonProps = computed(() => ({
-  icon: props.currentSortOrder === "asc" ? "mdi-arrow-up" : "mdi-arrow-down",
-  tooltip: props.currentSortOrder === "asc" ? "Ascending (A-Z)" : "Descending (Z-A)",
-  color: props.currentSortOrder === "asc" ? "primary" : "secondary"
+  icon: props.currentSortOrder === 'asc' ? 'mdi-arrow-up' : 'mdi-arrow-down',
+  tooltip: props.currentSortOrder === 'asc' ? 'Ascending (A-Z)' : 'Descending (Z-A)',
+  color: props.currentSortOrder === 'asc' ? 'primary' : 'secondary'
 }))
 </script>
 
 <template>
-  <VCard 
-    class="filters-container mx-4 mb-4" 
-    elevation="2"
-    rounded="lg"
-  >
+  <VCard class="filters-container mx-4 mb-4" elevation="2" rounded="lg">
     <VCardText class="pa-6">
       <div class="d-flex align-center ga-4 flex-wrap">
         <!-- Sort Order Toggle Button -->
@@ -101,8 +90,8 @@ const sortButtonProps = computed(() => ({
             :color="sortButtonProps.color"
             variant="outlined"
             size="large"
-            @click="toggleSortOrder"
             class="sort-toggle-btn-new"
+            @click="toggleSortOrder"
           >
             <VIcon :icon="sortButtonProps.icon" size="large" />
           </VBtn>
@@ -172,8 +161,8 @@ const sortButtonProps = computed(() => ({
             @blur="isSearchFocused = false"
           >
             <template #prepend-inner>
-              <VIcon 
-                icon="mdi-magnify" 
+              <VIcon
+                icon="mdi-magnify"
                 size="small"
                 :color="isSearchFocused ? 'primary' : 'grey'"
               />
@@ -233,21 +222,21 @@ const sortButtonProps = computed(() => ({
     min-width: unset;
     width: 100%;
   }
-  
+
   .filter-item-search {
     min-width: unset;
     width: 100%;
   }
-  
+
   .filter-item-toggle {
     min-width: unset;
     width: auto;
   }
-  
+
   .search-field {
     min-width: unset;
   }
-  
+
   .d-flex.align-center.ga-4.flex-wrap {
     flex-direction: column;
     gap: 16px !important;

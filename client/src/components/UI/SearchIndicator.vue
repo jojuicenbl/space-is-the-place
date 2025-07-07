@@ -19,14 +19,8 @@ defineProps<{
   <div v-if="isLoading" class="search-indicator">
     <!-- Search Loading -->
     <div v-if="isSearchingAllData" class="search-loading">
-      <VProgressCircular
-        indeterminate
-        color="primary"
-        size="32"
-        width="3"
-        class="mb-3"
-      />
-      
+      <VProgressCircular indeterminate color="primary" size="32" width="3" class="mb-3" />
+
       <!-- Progress bar for search data loading -->
       <div v-if="loadingProgress && loadingProgress.total > 1" class="progress-container">
         <VProgressLinear
@@ -44,49 +38,28 @@ defineProps<{
           </span>
         </div>
       </div>
-      
+
       <!-- Simple loading text for search -->
-      <div v-else class="text-caption text-medium-emphasis">
-        Preparing search data...
-      </div>
+      <div v-else class="text-caption text-medium-emphasis">Preparing search data...</div>
     </div>
-    
+
     <!-- Regular loading (page load) -->
     <div v-else class="regular-loading">
-      <VProgressCircular
-        indeterminate
-        color="secondary"
-        size="28"
-        width="3"
-        class="mb-2"
-      />
-      <div class="text-caption text-medium-emphasis">
-        Loading page...
-      </div>
+      <VProgressCircular indeterminate color="secondary" size="28" width="3" class="mb-2" />
+      <div class="text-caption text-medium-emphasis">Loading page...</div>
     </div>
   </div>
-  
+
   <!-- Background Loading Indicator (non-blocking) -->
   <div v-else-if="isBackgroundLoading" class="background-indicator">
-    <VChip
-      color="info"
-      variant="tonal"
-      size="small"
-      class="mb-2"
-    >
-      <VProgressCircular
-        indeterminate
-        size="16"
-        width="2"
-        color="info"
-        class="mr-2"
-      />
+    <VChip color="info" variant="tonal" size="small" class="mb-2">
+      <VProgressCircular indeterminate size="16" width="2" color="info" class="mr-2" />
       Loading collection in background...
       <span v-if="backgroundProgress && backgroundProgress.total > 1">
         {{ backgroundLoadingPercentage }}%
       </span>
     </VChip>
-    
+
     <!-- Subtle hint about search capabilities -->
     <div v-if="!canSearchLocally" class="text-caption text-medium-emphasis">
       Search will be faster once background loading completes
@@ -127,4 +100,4 @@ defineProps<{
 .progress-text {
   min-height: 20px;
 }
-</style> 
+</style>

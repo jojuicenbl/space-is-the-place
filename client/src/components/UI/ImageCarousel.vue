@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from "vue"
-import type { Image } from "@/types/models/Release"
-import ImageUtils from "@/utils/imageHelpers"
-import { VSkeletonLoader } from "vuetify/components"
+import { ref, computed, onMounted } from 'vue'
+import type { Image } from '@/types/models/Release'
+import ImageUtils from '@/utils/imageHelpers'
+import { VSkeletonLoader } from 'vuetify/components'
 
 const props = defineProps<{
   images: Image[]
@@ -16,7 +16,7 @@ const currentImage = computed(() => {
 })
 
 const currentImageUrl = computed(() => {
-  if (!currentImage.value) return ""
+  if (!currentImage.value) return ''
   return ImageUtils.getSmallImageUrl(currentImage.value.uri)
 })
 
@@ -38,14 +38,13 @@ const nextImage = async () => {
     await loadImage(nextUrl)
     currentIndex.value = nextIndex
   } catch (error) {
-    console.error("Failed to load next image:", error)
+    console.error('Failed to load next image:', error)
   }
   isImageLoading.value = false
 }
 
 const previousImage = async () => {
-  const prevIndex =
-    currentIndex.value === 0 ? props.images.length - 1 : currentIndex.value - 1
+  const prevIndex = currentIndex.value === 0 ? props.images.length - 1 : currentIndex.value - 1
   const prevUrl = ImageUtils.getSmallImageUrl(props.images[prevIndex].uri)
 
   isImageLoading.value = true
@@ -53,7 +52,7 @@ const previousImage = async () => {
     await loadImage(prevUrl)
     currentIndex.value = prevIndex
   } catch (error) {
-    console.error("Failed to load previous image:", error)
+    console.error('Failed to load previous image:', error)
   }
   isImageLoading.value = false
 }
@@ -67,7 +66,7 @@ const goToImage = async (index: number) => {
     await loadImage(targetUrl)
     currentIndex.value = index
   } catch (error) {
-    console.error("Failed to load image:", error)
+    console.error('Failed to load image:', error)
   }
   isImageLoading.value = false
 }
@@ -110,18 +109,10 @@ onMounted(() => {
           </Transition>
         </div>
         <!-- Navigation buttons -->
-        <button
-          class="carousel-button prev"
-          aria-label="Previous image"
-          @click="previousImage"
-        >
+        <button class="carousel-button prev" aria-label="Previous image" @click="previousImage">
           <span class="material-icons">chevron_left</span>
         </button>
-        <button
-          class="carousel-button next"
-          aria-label="Next image"
-          @click="nextImage"
-        >
+        <button class="carousel-button next" aria-label="Next image" @click="nextImage">
           <span class="material-icons">chevron_right</span>
         </button>
       </div>

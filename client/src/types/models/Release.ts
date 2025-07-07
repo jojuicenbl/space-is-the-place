@@ -29,7 +29,7 @@ interface Track {
 }
 
 export interface Image {
-  type: "primary" | "secondary"
+  type: 'primary' | 'secondary'
   uri: string
   resource_url: string
   uri150: string

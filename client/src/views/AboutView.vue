@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import AppNavbar from "@/components/Nav/AppNavbar.vue"
+import AppNavbar from '@/components/Nav/AppNavbar.vue'
 </script>
 
 <template>
@@ -11,9 +11,7 @@ import AppNavbar from "@/components/Nav/AppNavbar.vue"
         <section class="hero-section">
           <div class="hero-content">
             <h1 class="page-title">ABOUT THE DIGGER</h1>
-            <div class="hero-subtitle">
-              A journey through sound, wax, and endless exploration
-            </div>
+            <div class="hero-subtitle">A journey through sound, wax, and endless exploration</div>
           </div>
         </section>
 
@@ -39,15 +37,25 @@ import AppNavbar from "@/components/Nav/AppNavbar.vue"
             <div class="text-content">
               <div class="story-section">
                 <p class="story-paragraph">
-                  Behind every record lies a story. A moment in time, a vibration, a quest. Mine began years ago, fingers deep in record bins, chasing that elusive feeling. Today, my collection is a reflection of my sonic explorations — a journey through spiritual jazz, psychedelic rock, hypnotic dub, frenetic jungle, abstract beats, and far beyond.
+                  Behind every record lies a story. A moment in time, a vibration, a quest. Mine
+                  began years ago, fingers deep in record bins, chasing that elusive feeling. Today,
+                  my collection is a reflection of my sonic explorations — a journey through
+                  spiritual jazz, psychedelic rock, hypnotic dub, frenetic jungle, abstract beats,
+                  and far beyond.
                 </p>
 
                 <p class="story-paragraph">
-                  I'm a digger. A music lover. A wax collector drawn to the warm imperfection of vinyl, the analog hiss, the visual poetry of record sleeves. My collection is a mosaic of influences — Black Jazz and roots reggae, punk rebellion and Detroit house, meditative world grooves and raw hip-hop. Each record is a meeting, a memory, a pulse frozen in time.
+                  I'm a digger. A music lover. A wax collector drawn to the warm imperfection of
+                  vinyl, the analog hiss, the visual poetry of record sleeves. My collection is a
+                  mosaic of influences — Black Jazz and roots reggae, punk rebellion and Detroit
+                  house, meditative world grooves and raw hip-hop. Each record is a meeting, a
+                  memory, a pulse frozen in time.
                 </p>
 
                 <p class="story-paragraph">
-                  <strong>Space Is The Place</strong> isn't just a project. It's my space, my tempo, my tribute to the music that inspires me. Through this app, I'm opening a window into my universe — a visual and sonic archive of the sounds that move me.
+                  <strong>Space Is The Place</strong> isn't just a project. It's my space, my tempo,
+                  my tribute to the music that inspires me. Through this app, I'm opening a window
+                  into my universe — a visual and sonic archive of the sounds that move me.
                 </p>
 
                 <div class="closing-question">
@@ -70,7 +78,7 @@ import AppNavbar from "@/components/Nav/AppNavbar.vue"
 </template>
 
 <style scoped>
-@import url("https://fonts.googleapis.com/css2?family=Rubik+Mono+One&display=swap");
+@import url('https://fonts.googleapis.com/css2?family=Rubik+Mono+One&display=swap');
 
 .about-page {
   min-height: 100vh;
@@ -104,7 +112,7 @@ import AppNavbar from "@/components/Nav/AppNavbar.vue"
 }
 
 .page-title {
-  font-family: "Rubik Mono One", monospace;
+  font-family: 'Rubik Mono One', monospace;
   font-size: clamp(2.5rem, 8vw, 4rem);
   font-weight: 400;
   color: var(--color-heading);
@@ -220,7 +228,7 @@ import AppNavbar from "@/components/Nav/AppNavbar.vue"
 }
 
 .question-text {
-  font-family: "Rubik Mono One", monospace;
+  font-family: 'Rubik Mono One', monospace;
   font-size: 1.4rem;
   color: var(--color-heading);
   margin: 0;
@@ -244,7 +252,14 @@ import AppNavbar from "@/components/Nav/AppNavbar.vue"
   width: 120px;
   height: 120px;
   border-radius: 50%;
-  background: radial-gradient(circle at center, #1a1a1a 25%, #333 26%, #333 45%, #1a1a1a 46%, #1a1a1a 100%);
+  background: radial-gradient(
+    circle at center,
+    #1a1a1a 25%,
+    #333 26%,
+    #333 45%,
+    #1a1a1a 46%,
+    #1a1a1a 100%
+  );
   opacity: 0.03;
   animation: rotate 30s linear infinite;
 }

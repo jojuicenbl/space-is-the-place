@@ -1,4 +1,4 @@
-import { ref, onMounted, onUnmounted } from "vue"
+import { ref, onMounted, onUnmounted } from 'vue'
 
 /**
  * responsive utils
@@ -25,16 +25,16 @@ export function useResponsive() {
   }
 
   onMounted(() => {
-    window.addEventListener("resize", updateView)
+    window.addEventListener('resize', updateView)
   })
 
   onUnmounted(() => {
-    window.removeEventListener("resize", updateView)
+    window.removeEventListener('resize', updateView)
   })
 
   return {
     isMobileView,
-    isMobile: () => isMobileView.value,
+    isMobile: () => isMobileView.value
   }
 }
 

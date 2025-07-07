@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import BaseButton from "@/components/UI/BaseButton.vue"
-import { useRouter } from "vue-router"
-import { ref } from "vue"
+import BaseButton from '@/components/UI/BaseButton.vue'
+import { useRouter } from 'vue-router'
+import { ref } from 'vue'
 
 const router = useRouter()
 const isNavigating = ref(false)
@@ -12,10 +12,10 @@ const navigateToCollection = async () => {
   isNavigating.value = true
 
   // lil' delay to let the animation play
-  await new Promise((resolve) => setTimeout(resolve, 200))
+  await new Promise(resolve => setTimeout(resolve, 200))
 
   try {
-    await router.push("/collection")
+    await router.push('/collection')
   } finally {
     isNavigating.value = false
   }
@@ -28,9 +28,7 @@ const navigateToCollection = async () => {
     <main class="content">
       <header class="hero">
         <h1 class="cosmic-title">SPACE IS THE PLACE</h1>
-        <p class="cosmic-subtitle">
-          Where we escape the limitations of earthly existence
-        </p>
+        <p class="cosmic-subtitle">Where we escape the limitations of earthly existence</p>
       </header>
       <section class="cta-section">
         <BaseButton
@@ -45,7 +43,7 @@ const navigateToCollection = async () => {
   </div>
 </template>
 <style scoped>
-@import url("https://fonts.googleapis.com/css2?family=Rubik+Mono+One&display=swap");
+@import url('https://fonts.googleapis.com/css2?family=Rubik+Mono+One&display=swap');
 
 /* Container principal */
 .minimal-cosmic {
@@ -54,21 +52,18 @@ const navigateToCollection = async () => {
   color: #ffffff;
   position: relative;
   overflow: hidden;
-  font-family: "Rubik Mono One", monospace;
+  font-family: 'Rubik Mono One', monospace;
 }
 
 /* Grid overlay subtil */
 .grid-overlay::before {
-  content: "";
+  content: '';
   position: fixed;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  background-image: linear-gradient(
-      rgba(255, 255, 255, 0.02) 1px,
-      transparent 1px
-    ),
+  background-image: linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
     linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
   background-size: 60px 60px;
   pointer-events: none;
@@ -114,7 +109,7 @@ const navigateToCollection = async () => {
 
 /* Titre principal - typographie forte */
 .cosmic-title {
-  font-family: "Rubik Mono One", monospace;
+  font-family: 'Rubik Mono One', monospace;
   font-weight: 400;
   font-size: clamp(8rem, 12vw, 20rem);
   line-height: 0.85;
@@ -139,7 +134,7 @@ const navigateToCollection = async () => {
 
 /* Sous-titre */
 .cosmic-subtitle {
-  font-family: "Rubik Mono One", monospace;
+  font-family: 'Rubik Mono One', monospace;
   font-weight: 300;
   font-size: clamp(1.1rem, 2.5vw, 1.8rem);
   line-height: 1.4;
