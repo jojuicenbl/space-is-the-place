@@ -1,7 +1,14 @@
+import dotenv from 'dotenv'
+
+// Load environment variables first
+dotenv.config()
+
 import express, { Request, Response, RequestHandler } from 'express'
 import cors from 'cors'
 import axios, { AxiosError } from 'axios'
 import { URL } from 'url'
+import { collectionService } from './services/collectionService'
+import type { CollectionFilters } from './types/discogs'
 
 const app = express()
 
@@ -12,6 +19,7 @@ const corsOptions = {
   optionsSuccessStatus: 200
 }
 app.use(cors(corsOptions))
+app.use(express.json())
 
 interface ImageRouteParams {
   '0': string
@@ -92,11 +100,65 @@ const proxyImageHandler: ImageRequestHandler = async (req, res) => {
   }
 }
 
+// Collection endpoints
+app.get('/api/collection', async (req: Request, res: Response): Promise<void> => {
+  try {
+    const filters: CollectionFilters = {
+      page: req.query.page ? parseInt(req.query.page as string) : undefined,
+      perPage: req.query.perPage ? parseInt(req.query.perPage as string) : undefined,
+      folderId: req.query.folder ? parseInt(req.query.folder as string) : undefined,
+      sort: req.query.sort as 'added' | 'artist' | 'title',
+      sortOrder: req.query.order as 'asc' | 'desc',
+      search: req.query.search as string
+    }
+
+    const result = await collectionService.getCollection(filters)
+    res.json(result)
+  } catch (error) {
+    console.error('Collection API error:', error)
+    res.status(500).json({ error: 'Failed to fetch collection' })
+  }
+})
+
+app.get('/api/collection/search', async (req: Request, res: Response): Promise<void> => {
+  try {
+    const query = req.query.q as string
+    if (!query || query.trim() === '') {
+      res.status(400).json({ error: 'Search query is required' })
+      return
+    }
+
+    const filters: CollectionFilters = {
+      page: req.query.page ? parseInt(req.query.page as string) : undefined,
+      perPage: req.query.perPage ? parseInt(req.query.perPage as string) : undefined,
+      folderId: req.query.folder ? parseInt(req.query.folder as string) : undefined,
+      sort: req.query.sort as 'added' | 'artist' | 'title',
+      sortOrder: req.query.order as 'asc' | 'desc'
+    }
+
+    const result = await collectionService.searchCollection(query, filters)
+    res.json(result)
+  } catch (error) {
+    console.error('Search API error:', error)
+    res.status(500).json({ error: 'Failed to search collection' })
+  }
+})
+
+app.get('/api/folders', async (req: Request, res: Response): Promise<void> => {
+  try {
+    const folders = await collectionService.getFolders()
+    res.json({ folders })
+  } catch (error) {
+    console.error('Folders API error:', error)
+    res.status(500).json({ error: 'Failed to fetch folders' })
+  }
+})
+
 // Register routes
 app.get('/api/proxy/images/*', setCacheHeaders, proxyImageHandler)
 
 // Error handling middleware
-app.use((err: Error, req: Request, res: Response, next: express.NextFunction) => {
+app.use((err: Error, _req: Request, res: Response) => {
   console.error('Unhandled error:', err)
   res.status(500).json({ error: 'Internal server error' })
 })

@@ -28,25 +28,14 @@ const scrollToCollection = async () => {
   }
 }
 
-// Use collection composable
+// Use collection composable - much simpler now
 const {
-  displayedReleases,
-  filteredReleases,
-  allReleases,
+  releases,
   folders,
   isLoading,
-  isSearchLoading,
   isInitialized,
-  hasAllReleases,
-  totalReleasesCount,
+  totalItems,
   error,
-  loadingProgress,
-  loadingPercentage,
-  isBackgroundLoading,
-  backgroundProgress,
-  backgroundLoadingPercentage,
-  isSearchingAllData,
-  canSearchLocally,
   currentFolder,
   currentSort,
   currentSortOrder,
@@ -113,43 +102,37 @@ onMounted(async () => {
           <!-- Filters -->
           <Transition name="fade">
             <div v-show="isFiltersVisible" class="d-flex justify-center w-100">
-              <CollectionFilters
-                :folders="folders"
-                :current-folder="currentFolder"
-                :current-sort="currentSort"
-                :current-sort-order="currentSortOrder"
-                :releases="allReleases"
-                :search-query="searchQuery"
-                @update:folder="handleFolderChange"
-                @update:sort="handleSortChange"
-                @update:sort-order="handleSortOrderChange"
-                @search="handleSearch"
-              />
+                        <CollectionFilters
+            :folders="folders"
+            :current-folder="currentFolder"
+            :current-sort="currentSort"
+            :current-sort-order="currentSortOrder"
+            :releases="releases"
+            :search-query="searchQuery"
+            @update:folder="handleFolderChange"
+            @update:sort="handleSortChange"
+            @update:sort-order="handleSortOrderChange"
+            @search="handleSearch"
+          />
             </div>
           </Transition>
           <!-- Results Counter -->
           <Transition name="fade">
             <div v-show="isFiltersVisible" class="d-flex justify-center w-100 mb-4">
               <ResultsCounter
-                :total="hasAllReleases ? allReleases.length : totalReleasesCount"
-                :filtered="filteredReleases.length"
+                :total="totalItems"
+                :filtered="releases.length"
                 :is-searching="isSearchActive"
               />
             </div>
           </Transition>
-          <!-- Search Loading Indicator -->
+          <!-- Search Loading Indicator - simplified -->
           <Transition name="fade">
             <SearchIndicator
-              :is-loading="isSearchLoading"
+              v-if="isSearchActive && isLoading"
+              :is-loading="isLoading"
               :search-query="searchQuery"
-              :result-count="filteredReleases.length"
-              :loading-progress="loadingProgress"
-              :loading-percentage="loadingPercentage"
-              :is-searching-all-data="isSearchingAllData"
-              :is-background-loading="isBackgroundLoading"
-              :background-progress="backgroundProgress"
-              :background-loading-percentage="backgroundLoadingPercentage"
-              :can-search-locally="canSearchLocally"
+              :result-count="releases.length"
             />
           </Transition>
           <!-- Content -->
@@ -158,7 +141,7 @@ onMounted(async () => {
               <Transition name="fade" mode="out-in">
                 <!-- Loading State -->
                 <div
-                  v-if="isLoading && !isSearchLoading"
+                  v-if="isLoading"
                   class="d-flex flex-wrap justify-center ga-3 mt-4"
                 >
                   <v-skeleton-loader
@@ -176,7 +159,7 @@ onMounted(async () => {
                 <!-- No Results State -->
                 <div
                   v-else-if="
-                    filteredReleases.length === 0 && !isLoading && !isSearchLoading && isInitialized
+                    releases.length === 0 && !isLoading && isInitialized
                   "
                   class="d-flex flex-column justify-center align-center min-height-300"
                 >
@@ -194,7 +177,7 @@ onMounted(async () => {
                   class="d-flex flex-wrap justify-center ga-3 mt-4 w-100"
                 >
                   <VinylCard
-                    v-for="release in displayedReleases"
+                    v-for="release in releases"
                     :key="release.id"
                     :release="release"
                     class="vinyl-card-width"
