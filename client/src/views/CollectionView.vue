@@ -89,7 +89,7 @@ onMounted(async () => {
     <div class="page-content">
       <div ref="collectionContainer" class="mx-auto collection-container">
         <div class="d-flex flex-column align-center w-100">
-          <MainTitle text="Collection" align="center" />
+          <MainTitle text="The Collection" align="center" />
           <div class="text-center text-caption mt-2 mb-4">
             Data provided by <a href="https://www.discogs.com/" target="_blank" rel="noopener noreferrer" class="text-decoration-none">Discogs</a>
           </div>

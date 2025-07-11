@@ -104,7 +104,6 @@ const goBack = () => {
                 <ImageCarousel
                   v-if="release.images && release.images.length > 0"
                   :images="release.images"
-                  @vue:mounted="() => {}"
                 />
                 <img
                   v-else
@@ -153,7 +152,6 @@ const goBack = () => {
               <ImageCarousel
                 v-if="release.images && release.images.length > 0"
                 :images="release.images"
-                @vue:mounted="() => {}"
               />
               <img
                 v-else
@@ -321,7 +319,7 @@ const goBack = () => {
   text-align: right;
 }
 
-/* Desktop et tablettes */
+/* Tablettes et small desktop */
 @media (min-width: 768px) {
   .content-wrapper {
     padding: 0 24px;
@@ -339,12 +337,12 @@ const goBack = () => {
 
   .release-main {
     flex-direction: row;
-    gap: 48px;
+    gap: 32px;
     align-items: flex-start;
   }
 
   .desktop-carousel {
-    flex: 0 0 400px;
+    flex: 0 0 320px;
     justify-content: flex-start;
   }
 
@@ -354,7 +352,7 @@ const goBack = () => {
   }
 
   .cover-image {
-    max-width: 400px;
+    max-width: 320px;
   }
 
   .info-section {
@@ -368,7 +366,8 @@ const goBack = () => {
 
   .genres-styles-container {
     display: flex;
-    gap: 32px;
+    flex-direction: column;
+    gap: 16px;
     margin: 32px 0;
   }
 
@@ -396,6 +395,26 @@ const goBack = () => {
 
   .track-duration {
     min-width: 80px;
+  }
+}
+
+/* Medium desktop - tailles plus confortables */
+@media (min-width: 900px) {
+  .release-main {
+    gap: 48px;
+  }
+
+  .desktop-carousel {
+    flex: 0 0 400px;
+  }
+
+  .cover-image {
+    max-width: 400px;
+  }
+
+  .genres-styles-container {
+    flex-direction: row;
+    gap: 32px;
   }
 }
 
