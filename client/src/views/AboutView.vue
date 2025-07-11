@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import AppNavbar from '@/components/Nav/AppNavbar.vue'
 </script>
-
 <template>
   <div class="about-page">
     <AppNavbar />
@@ -14,7 +13,6 @@ import AppNavbar from '@/components/Nav/AppNavbar.vue'
             <div class="hero-subtitle">A journey through sound, wax, and endless exploration</div>
           </div>
         </section>
-
         <!-- Main Content -->
         <section class="main-content">
           <div class="content-grid">
@@ -23,16 +21,14 @@ import AppNavbar from '@/components/Nav/AppNavbar.vue'
               <div class="photo-container">
                 <div class="photo-placeholder">
                   <div class="placeholder-content">
-                    <div class="placeholder-icon">📀</div>
-                    <div class="placeholder-text">
-                      Photo coming soon<br />
-                      <span class="placeholder-subtext">Digger in action</span>
-                    </div>
+                    <img src="/the-digger.jpeg" alt="the juice in digging process" class="digger-photo" />
                   </div>
                 </div>
               </div>
+              <div class="photo-caption">
+                Juice man digging crates in Rough Trade East, Bricklane, London, 2017
+              </div>
             </div>
-
             <!-- Text Content -->
             <div class="text-content">
               <div class="story-section">
@@ -43,7 +39,6 @@ import AppNavbar from '@/components/Nav/AppNavbar.vue'
                   spiritual jazz, psychedelic rock, hypnotic dub, frenetic jungle, abstract beats,
                   and far beyond.
                 </p>
-
                 <p class="story-paragraph">
                   I'm a digger. A music lover. A wax collector drawn to the warm imperfection of
                   vinyl, the analog hiss, the visual poetry of record sleeves. My collection is a
@@ -51,13 +46,11 @@ import AppNavbar from '@/components/Nav/AppNavbar.vue'
                   house, meditative world grooves and raw hip-hop. Each record is a meeting, a
                   memory, a pulse frozen in time.
                 </p>
-
                 <p class="story-paragraph">
                   <strong>Space Is The Place</strong> isn't just a project. It's my space, my tempo,
                   my tribute to the music that inspires me. Through this app, I'm opening a window
                   into my universe — a visual and sonic archive of the sounds that move me.
                 </p>
-
                 <div class="closing-question">
                   <p class="question-text">Can you dig it?</p>
                 </div>
@@ -65,7 +58,6 @@ import AppNavbar from '@/components/Nav/AppNavbar.vue'
             </div>
           </div>
         </section>
-
         <!-- Decorative Elements -->
         <!-- <div class="decorative-vinyl">
           <div class="vinyl-record vinyl-1"></div>
@@ -76,7 +68,6 @@ import AppNavbar from '@/components/Nav/AppNavbar.vue'
     </div>
   </div>
 </template>
-
 <style scoped>
 @import url('https://fonts.googleapis.com/css2?family=Rubik+Mono+One&display=swap');
 
@@ -174,6 +165,10 @@ import AppNavbar from '@/components/Nav/AppNavbar.vue'
   padding: 2rem;
 }
 
+.photo-placeholder:has(.digger-photo) {
+  padding: 0;
+}
+
 .placeholder-icon {
   font-size: 4rem;
   margin-bottom: 1rem;
@@ -193,6 +188,24 @@ import AppNavbar from '@/components/Nav/AppNavbar.vue'
   font-weight: 300;
   opacity: 0.6;
   font-style: italic;
+}
+
+.digger-photo {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  border-radius: inherit;
+}
+
+.photo-caption {
+  font-style: italic;
+  color: #888;
+  font-size: 0.9rem;
+  text-align: center;
+  margin-top: 1rem;
+  line-height: 1.4;
+  font-weight: 300;
 }
 
 /* Text Content */
@@ -223,7 +236,6 @@ import AppNavbar from '@/components/Nav/AppNavbar.vue'
   padding: 2rem;
   background: rgba(0, 0, 0, 0.02);
   border-radius: 12px;
-  border-left: 4px solid hsla(160, 100%, 37%, 1);
   text-align: center;
 }
 
@@ -252,14 +264,12 @@ import AppNavbar from '@/components/Nav/AppNavbar.vue'
   width: 120px;
   height: 120px;
   border-radius: 50%;
-  background: radial-gradient(
-    circle at center,
-    #1a1a1a 25%,
-    #333 26%,
-    #333 45%,
-    #1a1a1a 46%,
-    #1a1a1a 100%
-  );
+  background: radial-gradient(circle at center,
+      #1a1a1a 25%,
+      #333 26%,
+      #333 45%,
+      #1a1a1a 46%,
+      #1a1a1a 100%);
   opacity: 0.03;
   animation: rotate 30s linear infinite;
 }
@@ -301,6 +311,7 @@ import AppNavbar from '@/components/Nav/AppNavbar.vue'
   from {
     transform: rotate(0deg);
   }
+
   to {
     transform: rotate(360deg);
   }
