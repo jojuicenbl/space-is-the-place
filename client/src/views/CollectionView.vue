@@ -55,21 +55,12 @@ const {
 
 // Enhanced page change with smooth scroll and transitions
 const handlePageChange = async (page: number) => {
-  // Add a subtle loading effect
-  isContentVisible.value = false
-
-  // Scroll to collection top
+  // Scroll to collection top first
   await scrollToCollection()
 
-  // Slight delay for smooth transition
-  setTimeout(async () => {
-    await originalHandlePageChange(page)
-
-    // Show content with delay for smooth appearance
-    setTimeout(() => {
-      isContentVisible.value = true
-    }, 150)
-  }, 100)
+  // Call the original handler which will set isLoading = true
+  // This allows the skeleton loader to show during the loading
+  await originalHandlePageChange(page)
 }
 
 onMounted(async () => {
