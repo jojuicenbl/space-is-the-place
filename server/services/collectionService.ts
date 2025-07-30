@@ -404,10 +404,36 @@ class CollectionService {
   }
 
   // Method to force refresh cache
-  async refreshCache(folderId: number = 0): Promise<void> {
+  async refreshCache(folderId: number = 0): Promise<{
+    success: boolean
+    message: string
+    cacheCleared: boolean
+    dataRefreshed: boolean
+  }> {
     const cacheKey = this.getCacheKey(folderId)
+    const hadCache = this.cache.has(cacheKey)
+    
+    // Clear the cache
     this.cache.delete(cacheKey)
-    await this.getCollection({ folderId })
+    
+    try {
+      // Trigger a fresh fetch
+      await this.getCollection({ folderId })
+      
+      return {
+        success: true,
+        message: `Cache refreshed successfully for folder ${folderId}`,
+        cacheCleared: hadCache,
+        dataRefreshed: true
+      }
+    } catch (error) {
+      return {
+        success: false,
+        message: `Failed to refresh cache for folder ${folderId}: ${(error as Error).message}`,
+        cacheCleared: hadCache,
+        dataRefreshed: false
+      }
+    }
   }
 
   // Cleanup method

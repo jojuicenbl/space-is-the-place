@@ -25,7 +25,6 @@ const emit = defineEmits<{
 const searchQuery = ref(props.searchQuery || '')
 const isSearchFocused = ref(false)
 
-console.log(props.folders)
 // Computed options for dropdowns
 const folderOptions = computed(() =>
   props.folders
