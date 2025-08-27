@@ -1,22 +1,20 @@
 <script setup lang="ts">
 import AppNavbar from '@/components/Nav/AppNavbar.vue'
 </script>
-
 <template>
   <div>
     <AppNavbar />
     <div class="page-content">
       <div class="contact">
-        <h1>Contact</h1>
+        <h1 class="page-title">CONTACT</h1>
         <p>Cette page sera complétée plus tard.</p>
       </div>
     </div>
   </div>
 </template>
-
 <style>
 .page-content {
-  padding-top: 80px; /* Espace pour la navbar fixe */
+  padding-top: 80px;
 }
 
 @media (min-width: 1024px) {
@@ -27,6 +25,16 @@ import AppNavbar from '@/components/Nav/AppNavbar.vue'
     align-items: center;
     justify-content: center;
   }
+}
+
+.page-title {
+  font-family: 'Rubik Mono One', monospace;
+  font-size: clamp(2.5rem, 8vw, 4rem);
+  font-weight: 400;
+  color: var(--color-heading);
+  margin-bottom: 1rem;
+  letter-spacing: 0.05em;
+  line-height: 1.1;
 }
 
 .contact {

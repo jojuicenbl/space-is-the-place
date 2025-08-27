@@ -35,25 +35,25 @@ import AppNavbar from '@/components/Nav/AppNavbar.vue'
                 <p class="story-paragraph">
                   Behind every record lies a story. A moment in time, a vibration, a quest. Mine
                   began years ago, fingers deep in record bins, chasing that elusive feeling. Today,
-                  my collection is a reflection of my sonic explorations — a journey through
+                  my collection is a reflection of my sonic explorations. A journey through
                   spiritual jazz, psychedelic rock, hypnotic dub, frenetic jungle, abstract beats,
                   and far beyond.
                 </p>
                 <p class="story-paragraph">
                   I'm a digger. A music lover. A wax collector drawn to the warm imperfection of
                   vinyl, the analog hiss, the visual poetry of record sleeves. My collection is a
-                  mosaic of influences — Black Jazz and roots reggae, punk rebellion and Detroit
+                  mosaic of influences : Black Jazz and roots reggae, punk rebellion and Detroit
                   house, meditative world grooves and raw hip-hop. Each record is a meeting, a
                   memory, a pulse frozen in time.
                 </p>
                 <p class="story-paragraph">
                   <strong>Space Is The Place</strong> isn't just a project. It's my space, my tempo,
                   my tribute to the music that inspires me. Through this app, I'm opening a window
-                  into my universe — a visual and sonic archive of the sounds that move me.
+                  into my universe, a visual and sonic archive of the sounds that move me.
                 </p>
-                <div class="closing-question">
-                  <p class="question-text">Can you dig it?</p>
-                </div>
+                <p class="story-paragraph">
+                  <i>Can you dig it ?</i>
+                </p>
               </div>
             </div>
           </div>
@@ -92,7 +92,7 @@ import AppNavbar from '@/components/Nav/AppNavbar.vue'
 /* Hero Section */
 .hero-section {
   text-align: center;
-  padding: 4rem 0 3rem 0;
+  padding: 0 0 3rem 0;
   border-bottom: 1px solid var(--color-border);
   margin-bottom: 4rem;
 }
@@ -229,14 +229,6 @@ import AppNavbar from '@/components/Nav/AppNavbar.vue'
 .story-paragraph:first-child {
   font-size: 1.3rem;
   font-weight: 500;
-}
-
-.closing-question {
-  margin-top: 3rem;
-  padding: 2rem;
-  background: rgba(0, 0, 0, 0.02);
-  border-radius: 12px;
-  text-align: center;
 }
 
 .question-text {

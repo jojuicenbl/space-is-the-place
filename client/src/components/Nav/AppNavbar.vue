@@ -33,25 +33,13 @@ const isCurrentRoute = (routeName: string) => {
       </div>
       <div class="navbar-right">
         <div class="nav-links">
-          <button
-            class="nav-button nav-link"
-            :class="{ active: isCurrentRoute('collection') }"
-            @click="goToCollection"
-          >
+          <button class="nav-button nav-link" :class="{ active: isCurrentRoute('collection') }" @click="goToCollection">
             Collection
           </button>
-          <button
-            class="nav-button nav-link"
-            :class="{ active: isCurrentRoute('about') }"
-            @click="goToAbout"
-          >
+          <button class="nav-button nav-link" :class="{ active: isCurrentRoute('about') }" @click="goToAbout">
             About
           </button>
-          <button
-            class="nav-button nav-link"
-            :class="{ active: isCurrentRoute('contact') }"
-            @click="goToContact"
-          >
+          <button class="nav-button nav-link" :class="{ active: isCurrentRoute('contact') }" @click="goToContact">
             Contact
           </button>
         </div>
@@ -65,9 +53,8 @@ const isCurrentRoute = (routeName: string) => {
   top: 0;
   left: 0;
   right: 0;
-  background: rgba(255, 255, 255, 0.95);
+  background: rgba(247, 247, 249, 0.85);
   backdrop-filter: blur(10px);
-  border-bottom: 1.5px solid #000;
   z-index: 1000;
   transition: all 0.3s ease;
 }

@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted, nextTick } from 'vue'
 import VinylCard from '../components/VinylCard.vue'
-import MainTitle from '@/components/UI/MainTitle.vue'
 
 import Pager from '@/components/UI/Pager.vue'
 import CollectionFilters from '@/components/CollectionFilters.vue'
@@ -89,74 +88,48 @@ onMounted(async () => {
     <div class="page-content">
       <div ref="collectionContainer" class="mx-auto collection-container">
         <div class="d-flex flex-column align-center w-100">
-          <MainTitle text="The Collection" align="center" />
+          <h1 class="page-title">THE COLLECTION</h1>
           <div class="text-center text-caption mt-2 mb-4">
-            Data provided by <a href="https://www.discogs.com/" target="_blank" rel="noopener noreferrer" class="text-decoration-none">Discogs</a>
+            Data provided by <a href="https://www.discogs.com/" target="_blank" rel="noopener noreferrer"
+              class="text-decoration-none">Discogs</a>
           </div>
           <!-- Filters -->
           <Transition name="fade">
             <div v-show="isFiltersVisible" class="d-flex justify-center w-100">
-                        <CollectionFilters
-            :folders="folders"
-            :current-folder="currentFolder"
-            :current-sort="currentSort"
-            :current-sort-order="currentSortOrder"
-            :releases="releases"
-            :search-query="searchQuery"
-            @update:folder="handleFolderChange"
-            @update:sort="handleSortChange"
-            @update:sort-order="handleSortOrderChange"
-            @search="handleSearch"
-          />
+              <CollectionFilters :folders="folders" :current-folder="currentFolder" :current-sort="currentSort"
+                :current-sort-order="currentSortOrder" :releases="releases" :search-query="searchQuery"
+                @update:folder="handleFolderChange" @update:sort="handleSortChange"
+                @update:sort-order="handleSortOrderChange" @search="handleSearch" />
             </div>
           </Transition>
           <!-- Results Counter -->
           <Transition name="fade">
             <div v-show="isFiltersVisible" class="d-flex justify-center w-100 mb-4">
-              <ResultsCounter
-                :total="totalItems"
-                :filtered="releases.length"
-                :is-searching="isSearchActive"
-              />
+              <ResultsCounter :total="totalItems" :filtered="releases.length" :is-searching="isSearchActive" />
             </div>
           </Transition>
           <!-- Search Loading Indicator - simplified -->
           <Transition name="fade">
-            <SearchIndicator
-              v-if="isSearchActive && isLoading"
-              :is-loading="isLoading"
-              :search-query="searchQuery"
-              :result-count="releases.length"
-            />
+            <SearchIndicator v-if="isSearchActive && isLoading" :is-loading="isLoading" :search-query="searchQuery"
+              :result-count="releases.length" />
           </Transition>
           <!-- Content -->
           <Transition name="content-fade" mode="out-in">
             <div v-show="isContentVisible" key="content" class="content-container">
               <Transition name="fade" mode="out-in">
                 <!-- Loading State -->
-                <div
-                  v-if="isLoading"
-                  class="d-flex flex-wrap justify-center ga-3 mt-4"
-                >
-                  <v-skeleton-loader
-                    v-for="n in 12"
-                    :key="n"
-                    class="vinyl-card-width"
-                    type="image"
-                    :loading="true"
-                  ></v-skeleton-loader>
+                <div v-if="isLoading" class="d-flex flex-wrap justify-center ga-3 mt-4">
+                  <v-skeleton-loader v-for="n in 12" :key="n" class="vinyl-card-width" type="image"
+                    :loading="true"></v-skeleton-loader>
                 </div>
                 <!-- Error State -->
                 <div v-else-if="error" class="d-flex justify-center align-center min-height-300">
                   {{ error }}
                 </div>
                 <!-- No Results State -->
-                <div
-                  v-else-if="
-                    releases.length === 0 && !isLoading && isInitialized
-                  "
-                  class="d-flex flex-column justify-center align-center min-height-300"
-                >
+                <div v-else-if="
+                  releases.length === 0 && !isLoading && isInitialized
+                " class="d-flex flex-column justify-center align-center min-height-300">
                   <div class="text-h6 mb-2">No releases found</div>
                   <div class="text-body-2 text-medium-emphasis">
                     <span v-if="isSearchActive"> Try adjusting your search terms or filters. </span>
@@ -164,18 +137,10 @@ onMounted(async () => {
                   </div>
                 </div>
                 <!-- Results -->
-                <TransitionGroup
-                  v-else
-                  name="card-list"
-                  tag="div"
-                  class="d-flex flex-wrap justify-center ga-3 mt-4 w-100"
-                >
-                  <VinylCard
-                    v-for="release in releases"
-                    :key="release.id"
-                    :release="release"
-                    class="vinyl-card-width"
-                  />
+                <TransitionGroup v-else name="card-list" tag="div"
+                  class="d-flex flex-wrap justify-center ga-3 mt-4 w-100">
+                  <VinylCard v-for="release in releases" :key="release.id" :release="release"
+                    class="vinyl-card-width" />
                 </TransitionGroup>
               </Transition>
             </div>
@@ -183,11 +148,7 @@ onMounted(async () => {
           <!-- Pagination -->
           <Transition name="fade">
             <div v-show="isPagerVisible && totalPages > 1" class="d-flex justify-center w-100 mt-8">
-              <Pager
-                :current-page="currentPage"
-                :total-pages="totalPages"
-                :on-page-change="handlePageChange"
-              />
+              <Pager :current-page="currentPage" :total-pages="totalPages" :on-page-change="handlePageChange" />
             </div>
           </Transition>
         </div>
@@ -212,6 +173,16 @@ onMounted(async () => {
     padding-left: 8px;
     padding-right: 8px;
   }
+}
+
+.page-title {
+  font-family: 'Rubik Mono One', monospace;
+  font-size: clamp(2.5rem, 8vw, 4rem);
+  font-weight: 400;
+  color: var(--color-heading);
+  margin-bottom: 1rem;
+  letter-spacing: 0.05em;
+  line-height: 1.1;
 }
 
 .vinyl-card-width {
