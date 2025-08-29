@@ -1,9 +1,7 @@
 <script setup lang="ts">
-import AppNavbar from '@/components/Nav/AppNavbar.vue'
 </script>
 <template>
   <div class="about-page">
-    <AppNavbar />
     <div class="page-content">
       <div class="about-container">
         <!-- Hero Section -->

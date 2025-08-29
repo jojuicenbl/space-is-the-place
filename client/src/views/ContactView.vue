@@ -1,9 +1,7 @@
 <script setup lang="ts">
-import AppNavbar from '@/components/Nav/AppNavbar.vue'
 </script>
 <template>
   <div>
-    <AppNavbar />
     <div class="page-content">
       <div class="contact">
         <h1 class="page-title">CONTACT</h1>

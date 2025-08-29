@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { ref, onMounted, onUnmounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 
 const router = useRouter()
@@ -22,9 +23,32 @@ const goToContact = () => {
 const isCurrentRoute = (routeName: string) => {
   return route.name === routeName
 }
+
+const hasScrolled = ref(false)
+let scrollTarget: HTMLElement | null = null
+
+const handleScroll = () => {
+  if (scrollTarget) {
+    hasScrolled.value = scrollTarget.scrollTop > 0
+  }
+}
+
+onMounted(() => {
+  scrollTarget = document.getElementById('main-scroll')
+  if (scrollTarget) {
+    scrollTarget.addEventListener('scroll', handleScroll)
+    handleScroll()
+  }
+})
+
+onUnmounted(() => {
+  if (scrollTarget) {
+    scrollTarget.removeEventListener('scroll', handleScroll)
+  }
+})
 </script>
 <template>
-  <nav class="app-navbar">
+  <nav class="app-navbar" :class="{ 'scrolled': hasScrolled }">
     <div class="navbar-container">
       <div class="navbar-left">
         <button class="logo-button" @click="goToHome">
@@ -56,7 +80,10 @@ const isCurrentRoute = (routeName: string) => {
   background: rgba(247, 247, 249, 0.85);
   backdrop-filter: blur(10px);
   z-index: 1000;
-  transition: all 0.3s ease;
+}
+
+.app-navbar.scrolled {
+  border-bottom: 1.5px solid #e5e5e5;
 }
 
 .navbar-container {

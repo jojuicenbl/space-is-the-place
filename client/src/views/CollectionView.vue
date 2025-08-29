@@ -7,22 +7,21 @@ import CollectionFilters from '@/components/CollectionFilters.vue'
 import ResultsCounter from '@/components/UI/ResultsCounter.vue'
 import SearchIndicator from '@/components/UI/SearchIndicator.vue'
 import { VSkeletonLoader, VRow, VCol, VContainer } from 'vuetify/components'
-import AppNavbar from '@/components/Nav/AppNavbar.vue'
 import { useCollection } from '@/composables/useCollection'
 
 // UI state
 const isFiltersVisible = ref(true)
 const isContentVisible = ref(true)
 const isPagerVisible = ref(true)
-const collectionContainer = ref<HTMLElement>()
 
 // Smooth scroll to collection top
 const scrollToCollection = async () => {
   await nextTick()
-  if (collectionContainer.value) {
-    collectionContainer.value.scrollIntoView({
-      behavior: 'smooth', // /!\ Todo: To keep or not ? /!\
-      block: 'start'
+  const mainScroll = document.getElementById('main-scroll')
+  if (mainScroll) {
+    mainScroll.scrollTo({
+      top: 0,
+      behavior: 'smooth'
     })
   }
 }
@@ -86,89 +85,81 @@ onMounted(async () => {
 </script>
 <template>
   <div>
-    <AppNavbar />
-    <div class="page-content">
-      <div ref="collectionContainer" class="mx-auto collection-container">
-        <div class="d-flex flex-column align-center w-100">
-          <h1 class="page-title">THE COLLECTION</h1>
-          <div class="text-center text-caption mt-2 mb-4">
-            Data provided by <a href="https://www.discogs.com/" target="_blank" rel="noopener noreferrer"
-              class="text-decoration-none">Discogs</a>
-          </div>
-          <!-- Filters -->
-          <Transition name="fade">
-            <div v-show="isFiltersVisible" class="d-flex justify-center w-100">
-              <CollectionFilters :folders="folders" :current-folder="currentFolder" :current-sort="currentSort"
-                :current-sort-order="currentSortOrder" :releases="releases" :search-query="searchQuery"
-                @update:folder="handleFolderChange" @update:sort="handleSortChange"
-                @update:sort-order="handleSortOrderChange" @search="handleSearch" />
-            </div>
-          </Transition>
-          <!-- Results Counter -->
-          <Transition name="fade">
-            <div v-show="isFiltersVisible" class="d-flex justify-center w-100 mb-4">
-              <ResultsCounter :total="totalItems" :filtered="releases.length" :is-searching="isSearchActive" />
-            </div>
-          </Transition>
-          <!-- Search Loading Indicator - simplified -->
-          <Transition name="fade">
-            <SearchIndicator v-if="isSearchActive && isLoading" :is-loading="isLoading" :search-query="searchQuery"
-              :result-count="releases.length" />
-          </Transition>
-          <!-- Content -->
-          <Transition name="content-fade" mode="out-in">
-            <div v-show="isContentVisible" key="content" class="content-container">
-              <Transition name="fade" mode="out-in">
-                <!-- LOADING State -->
-                <div v-if="isLoading" class="d-flex flex-wrap justify-center ga-3 mt-4">
-                  <v-skeleton-loader v-for="n in 12" :key="n" class="vinyl-card-width" type="image"
-                    :loading="true"></v-skeleton-loader>
-                </div>
-                <!-- Error State -->
-                <div v-else-if="error" class="d-flex justify-center align-center min-height-300">
-                  {{ error }}
-                </div>
-                <!-- No Results State -->
-                <div v-else-if="
-                  releases.length === 0 && !isLoading && isInitialized
-                " class="d-flex flex-column justify-center align-center min-height-300">
-                  <div class="text-h6 mb-2">No releases found</div>
-                  <div class="text-body-2 text-medium-emphasis">
-                    <span v-if="isSearchActive"> Try adjusting your search terms or filters. </span>
-                    <span v-else> No releases in this folder. </span>
-                  </div>
-                </div>
-                <!-- Results -->
-                <TransitionGroup v-else name="card-list" tag="div" class="mt-4 w-100">
-                  <v-container fluid class="pa-0">
-                    <v-row no-gutters>
-                      <v-col v-for="release in releases" :key="release.id" cols="6" sm="4" md="3" lg="2"
-                        class="d-flex justify-center vinyl-card-col">
-                        <VinylCard :release="release" class="vinyl-card-width" />
-                      </v-col>
-                    </v-row>
-                  </v-container>
-                </TransitionGroup>
-              </Transition>
-            </div>
-          </Transition>
-          <!-- Pagination -->
-          <Transition name="fade">
-            <div v-show="isPagerVisible && totalPages > 1" class="d-flex justify-center w-100 mt-8">
-              <Pager :current-page="currentPage" :total-pages="totalPages" :on-page-change="handlePageChange" />
-            </div>
-          </Transition>
+    <div class="mx-auto collection-container">
+      <div class="d-flex flex-column align-center w-100">
+        <h1 class="page-title">THE COLLECTION</h1>
+        <div class="text-center text-caption mt-2 mb-4">
+          Data provided by <a href="https://www.discogs.com/" target="_blank" rel="noopener noreferrer"
+            class="text-decoration-none">Discogs</a>
         </div>
+        <!-- Filters -->
+        <Transition name="fade">
+          <div v-show="isFiltersVisible" class="d-flex justify-center w-100">
+            <CollectionFilters :folders="folders" :current-folder="currentFolder" :current-sort="currentSort"
+              :current-sort-order="currentSortOrder" :releases="releases" :search-query="searchQuery"
+              @update:folder="handleFolderChange" @update:sort="handleSortChange"
+              @update:sort-order="handleSortOrderChange" @search="handleSearch" />
+          </div>
+        </Transition>
+        <!-- Results Counter -->
+        <Transition name="fade">
+          <div v-show="isFiltersVisible" class="d-flex justify-center w-100 mb-4">
+            <ResultsCounter :total="totalItems" :filtered="releases.length" :is-searching="isSearchActive" />
+          </div>
+        </Transition>
+        <!-- Search Loading Indicator - simplified -->
+        <Transition name="fade">
+          <SearchIndicator v-if="isSearchActive && isLoading" :is-loading="isLoading" :search-query="searchQuery"
+            :result-count="releases.length" />
+        </Transition>
+        <!-- Content -->
+        <Transition name="content-fade" mode="out-in">
+          <div v-show="isContentVisible" key="content" class="content-container">
+            <Transition name="fade" mode="out-in">
+              <!-- LOADING State -->
+              <div v-if="isLoading" class="d-flex flex-wrap justify-center ga-3 mt-4">
+                <v-skeleton-loader v-for="n in 12" :key="n" class="vinyl-card-width" type="image"
+                  :loading="true"></v-skeleton-loader>
+              </div>
+              <!-- Error State -->
+              <div v-else-if="error" class="d-flex justify-center align-center min-height-300">
+                {{ error }}
+              </div>
+              <!-- No Results State -->
+              <div v-else-if="
+                releases.length === 0 && !isLoading && isInitialized
+              " class="d-flex flex-column justify-center align-center min-height-300">
+                <div class="text-h6 mb-2">No releases found</div>
+                <div class="text-body-2 text-medium-emphasis">
+                  <span v-if="isSearchActive"> Try adjusting your search terms or filters. </span>
+                  <span v-else> No releases in this folder. </span>
+                </div>
+              </div>
+              <!-- Results -->
+              <TransitionGroup v-else name="card-list" tag="div" class="mt-4 w-100">
+                <v-container fluid class="pa-0">
+                  <v-row no-gutters>
+                    <v-col v-for="release in releases" :key="release.id" cols="6" sm="4" md="3" lg="2"
+                      class="d-flex justify-center vinyl-card-col">
+                      <VinylCard :release="release" class="vinyl-card-width" />
+                    </v-col>
+                  </v-row>
+                </v-container>
+              </TransitionGroup>
+            </Transition>
+          </div>
+        </Transition>
+        <!-- Pagination -->
+        <Transition name="fade">
+          <div v-show="isPagerVisible && totalPages > 1" class="d-flex justify-center w-100 mt-8">
+            <Pager :current-page="currentPage" :total-pages="totalPages" :on-page-change="handlePageChange" />
+          </div>
+        </Transition>
       </div>
     </div>
   </div>
 </template>
 <style scoped>
-.page-content {
-  padding-top: 80px;
-  /* Espace pour la navbar fixe */
-}
-
 .collection-container {
   max-width: 1400px;
   padding-left: 16px;

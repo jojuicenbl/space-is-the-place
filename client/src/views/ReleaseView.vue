@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+// import { useRoute, useRouter } from 'vue-router'
+import { useRoute } from 'vue-router'
 import { getOneRelease } from '@/services/discogsApi'
 import ImageUtils from '@/utils/imageHelpers'
 import { useResponsive } from '@/utils/responsive'
@@ -9,11 +10,10 @@ import TagPill from '@/components/UI/TagPill.vue'
 import ImageCarousel from '@/components/UI/ImageCarousel.vue'
 import AppleMusicPlayer from '@/components/UI/AppleMusicPlayer.vue'
 import type { BasicInformation } from '@/types/models/Release'
-import { VIcon } from 'vuetify/components'
-import AppNavbar from '@/components/Nav/AppNavbar.vue'
+// import { VIcon } from 'vuetify/components'
 
 const route = useRoute()
-const router = useRouter()
+// const router = useRouter()
 const release = ref<BasicInformation>()
 const isLoading = ref(true)
 const error = ref<string | null>(null)
@@ -48,119 +48,78 @@ const albumTitle = computed(() => release.value?.title || '')
 const releaseYear = computed(() => release.value?.year)
 const styles = computed(() => release.value?.styles || [])
 
-console.log(computed(() => release.value?.styles))
-
-const goBack = () => {
-  router.go(-1)
-}
+// const goBack = () => {
+//   router.go(-1)
+// }
 </script>
 <template>
   <div>
-    <AppNavbar />
-    <div class="page-content">
-      <div class="content-wrapper">
-        <div v-if="isLoading" class="d-flex justify-center align-center min-height-300">
-          Loading...
-        </div>
-        <div v-else-if="error" class="d-flex justify-center align-center min-height-300">
-          {{ error }}
-        </div>
-        <div v-else-if="release" class="release-content">
-          <div class="back-button-container">
+    <div class="content-wrapper">
+      <div v-if="isLoading" class="d-flex justify-center align-center min-height-300">
+        Loading...
+      </div>
+      <div v-else-if="error" class="d-flex justify-center align-center min-height-300">
+        {{ error }}
+      </div>
+      <div v-else-if="release" class="release-content">
+        <!-- <div class="back-button-container">
             <button class="back-button" aria-label="Retour" @click="goBack">
               <v-icon size="20">mdi-chevron-left</v-icon>
             </button>
+          </div> -->
+        <!-- Main content -->
+        <div class="release-main">
+          <div class="info-section">
+            <MainTitle :text="release.title" align="left" :href="release.uri" />
+            <div class="release-details">
+              <p><strong>Artist:</strong> {{ release.artists?.[0]?.name }}</p>
+              <p><strong>Year:</strong> {{ release.year }}</p>
+              <p><strong>Label:</strong> {{ release.labels?.[0]?.name }}</p>
+            </div>
+            <!-- Container pour genres et styles -->
+            <div class="genres-styles-container">
+              <div class="genres-section">
+                <h3 class="section-title">Genres</h3>
+                <div class="tags-container">
+                  <TagPill v-for="genre in release.genres" :key="genre" :text="genre" />
+                </div>
+              </div>
+              <div v-if="styles.length > 0" class="styles-section">
+                <h3 class="section-title">Styles</h3>
+                <div class="tags-container">
+                  <TagPill v-for="style in release.styles" :key="style" :text="style" />
+                </div>
+              </div>
+            </div>
+            <!-- mobile style carousel -->
+            <div v-if="isMobileView" class="carousel-section mobile-carousel">
+              <ImageCarousel v-if="release.images && release.images.length > 0" :images="release.images" />
+              <img v-else :src="coverImage" :alt="release.title" class="cover-image"
+                @error="ImageUtils.handleImageError" />
+            </div>
+            <!-- Section Tracklist -->
+            <div v-if="release.tracklist && release.tracklist.length > 0" class="tracklist-section">
+              <h3 class="section-title">Tracklist</h3>
+              <div class="tracklist-container">
+                <div v-for="track in release.tracklist" :key="`${track.position}-${track.title}`" class="track-item">
+                  <div class="track-position">{{ track.position }}</div>
+                  <div class="track-title">{{ track.title }}</div>
+                  <div v-if="track.duration" class="track-duration">{{ track.duration }}</div>
+                </div>
+              </div>
+            </div>
+            <!-- Lecteur Apple Music -->
+            <div v-if="hasAppleMusicMatch" class="player-container">
+              <h3 class="section-title">Listen now</h3>
+            </div>
+            <AppleMusicPlayer v-if="artistName && albumTitle" :artist-name="artistName" :album-title="albumTitle"
+              :year="releaseYear" :height="450" @match-found="hasMatch => (hasAppleMusicMatch = hasMatch)" />
           </div>
-
-          <!-- Main content -->
-          <div class="release-main">
-            <div class="info-section">
-              <MainTitle :text="release.title" align="left" :href="release.uri" />
-              <div class="release-details">
-                <p><strong>Artist:</strong> {{ release.artists?.[0]?.name }}</p>
-                <p><strong>Year:</strong> {{ release.year }}</p>
-                <p><strong>Label:</strong> {{ release.labels?.[0]?.name }}</p>
-              </div>
-
-              <!-- Container pour genres et styles -->
-              <div class="genres-styles-container">
-                <div class="genres-section">
-                  <h3 class="section-title">Genres</h3>
-                  <div class="tags-container">
-                    <TagPill v-for="genre in release.genres" :key="genre" :text="genre" />
-                  </div>
-                </div>
-
-                <div v-if="styles.length > 0" class="styles-section">
-                  <h3 class="section-title">Styles</h3>
-                  <div class="tags-container">
-                    <TagPill v-for="style in release.styles" :key="style" :text="style" />
-                  </div>
-                </div>
-              </div>
-
-              <!-- mobile style carousel -->
-              <div v-if="isMobileView" class="carousel-section mobile-carousel">
-                <ImageCarousel
-                  v-if="release.images && release.images.length > 0"
-                  :images="release.images"
-                />
-                <img
-                  v-else
-                  :src="coverImage"
-                  :alt="release.title"
-                  class="cover-image"
-                  @error="ImageUtils.handleImageError"
-                />
-              </div>
-
-              <!-- Section Tracklist -->
-              <div
-                v-if="release.tracklist && release.tracklist.length > 0"
-                class="tracklist-section"
-              >
-                <h3 class="section-title">Tracklist</h3>
-                <div class="tracklist-container">
-                  <div
-                    v-for="track in release.tracklist"
-                    :key="`${track.position}-${track.title}`"
-                    class="track-item"
-                  >
-                    <div class="track-position">{{ track.position }}</div>
-                    <div class="track-title">{{ track.title }}</div>
-                    <div v-if="track.duration" class="track-duration">{{ track.duration }}</div>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Lecteur Apple Music -->
-              <div v-if="hasAppleMusicMatch" class="player-container">
-                <h3 class="section-title">Listen now</h3>
-              </div>
-              <AppleMusicPlayer
-                v-if="artistName && albumTitle"
-                :artist-name="artistName"
-                :album-title="albumTitle"
-                :year="releaseYear"
-                :height="450"
-                @match-found="hasMatch => (hasAppleMusicMatch = hasMatch)"
-              />
-            </div>
-
-            <!-- desktop style carousel -->
-            <div v-if="!isMobileView" class="carousel-section desktop-carousel">
-              <ImageCarousel
-                v-if="release.images && release.images.length > 0"
-                :images="release.images"
-              />
-              <img
-                v-else
-                :src="coverImage"
-                :alt="release.title"
-                class="cover-image"
-                @error="ImageUtils.handleImageError"
-              />
-            </div>
+          <!-- desktop style carousel -->
+          <div v-if="!isMobileView" class="carousel-section desktop-carousel">
+            <ImageCarousel v-if="release.images && release.images.length > 0" :images="release.images" />
+            <img v-else :src="coverImage" :alt="release.title" class="cover-image"
+              @error="ImageUtils.handleImageError" />
           </div>
         </div>
       </div>
@@ -168,10 +127,6 @@ const goBack = () => {
   </div>
 </template>
 <style scoped>
-.page-content {
-  padding-top: 80px; /* Espace pour la navbar fixe */
-}
-
 .min-height-300 {
   min-height: 300px;
 }
@@ -357,7 +312,8 @@ const goBack = () => {
 
   .info-section {
     flex: 1;
-    min-width: 0; /* Évite que le texte déborde */
+    min-width: 0;
+    /* Évite que le texte déborde */
   }
 
   .release-details {
