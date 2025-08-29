@@ -56,7 +56,7 @@ const styles = computed(() => release.value?.styles || [])
   <div>
     <div class="content-wrapper">
       <div v-if="isLoading" class="d-flex justify-center align-center min-height-300">
-        Loading...
+        <div class="vinyl-loader"></div>
       </div>
       <div v-else-if="error" class="d-flex justify-center align-center min-height-300">
         {{ error }}
@@ -272,6 +272,37 @@ const styles = computed(() => release.value?.styles || [])
   font-size: 0.9rem;
   min-width: 60px;
   text-align: right;
+}
+
+.vinyl-loader {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #333 30%, #111 31%, #111 100%);
+  position: relative;
+  animation: spin 1.5s linear infinite;
+}
+
+.vinyl-loader::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 20px;
+  height: 20px;
+  background: #fff;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 /* Tablettes et small desktop */

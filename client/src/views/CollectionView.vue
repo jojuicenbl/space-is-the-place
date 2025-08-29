@@ -51,8 +51,6 @@ const {
   handlePageChange: originalHandlePageChange
 } = useCollection()
 
-console.log(releases)
-
 // Enhanced page change with smooth scroll and transitions
 const handlePageChange = async (page: number) => {
   // Scroll to collection top first
