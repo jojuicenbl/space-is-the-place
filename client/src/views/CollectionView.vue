@@ -6,7 +6,7 @@ import Pager from '@/components/UI/Pager.vue'
 import CollectionFilters from '@/components/CollectionFilters.vue'
 import ResultsCounter from '@/components/UI/ResultsCounter.vue'
 import SearchIndicator from '@/components/UI/SearchIndicator.vue'
-import { VSkeletonLoader } from 'vuetify/components'
+import { VSkeletonLoader, VRow, VCol, VContainer } from 'vuetify/components'
 import AppNavbar from '@/components/Nav/AppNavbar.vue'
 import { useCollection } from '@/composables/useCollection'
 
@@ -51,6 +51,8 @@ const {
   handleSortOrderChange,
   handlePageChange: originalHandlePageChange
 } = useCollection()
+
+console.log(releases)
 
 // Enhanced page change with smooth scroll and transitions
 const handlePageChange = async (page: number) => {
@@ -117,7 +119,7 @@ onMounted(async () => {
           <Transition name="content-fade" mode="out-in">
             <div v-show="isContentVisible" key="content" class="content-container">
               <Transition name="fade" mode="out-in">
-                <!-- Loading State -->
+                <!-- LOADING State -->
                 <div v-if="isLoading" class="d-flex flex-wrap justify-center ga-3 mt-4">
                   <v-skeleton-loader v-for="n in 12" :key="n" class="vinyl-card-width" type="image"
                     :loading="true"></v-skeleton-loader>
@@ -137,10 +139,15 @@ onMounted(async () => {
                   </div>
                 </div>
                 <!-- Results -->
-                <TransitionGroup v-else name="card-list" tag="div"
-                  class="d-flex flex-wrap justify-center ga-3 mt-4 w-100">
-                  <VinylCard v-for="release in releases" :key="release.id" :release="release"
-                    class="vinyl-card-width" />
+                <TransitionGroup v-else name="card-list" tag="div" class="mt-4 w-100">
+                  <v-container fluid class="pa-0">
+                    <v-row no-gutters>
+                      <v-col v-for="release in releases" :key="release.id" cols="6" sm="4" md="3" lg="2"
+                        class="d-flex justify-center vinyl-card-col">
+                        <VinylCard :release="release" class="vinyl-card-width" />
+                      </v-col>
+                    </v-row>
+                  </v-container>
                 </TransitionGroup>
               </Transition>
             </div>
@@ -183,6 +190,7 @@ onMounted(async () => {
   margin-bottom: 1rem;
   letter-spacing: 0.05em;
   line-height: 1.1;
+  text-align: center;
 }
 
 .vinyl-card-width {
@@ -195,6 +203,10 @@ onMounted(async () => {
 
 .vinyl-card:hover {
   opacity: 0.8;
+}
+
+.vinyl-card-col {
+  padding: 6px !important;
 }
 
 .min-height-300 {

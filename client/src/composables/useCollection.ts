@@ -1,10 +1,6 @@
 import { ref, computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import {
-  getCollection,
-  searchCollection,
-  getFolders
-} from '@/services/collectionApi'
+import { getCollection, searchCollection, getFolders } from '@/services/collectionApi'
 import type { CollectionRelease } from '@/types/models/Release'
 import type { DiscogsFolder, SortField, SortOrder } from '@/services/collectionApi'
 
@@ -65,7 +61,7 @@ export function useCollection() {
 
       const filters = {
         page: currentPage.value,
-        perPage: 50,
+        perPage: 48,
         folderId: currentFolder.value,
         sort: currentSort.value,
         sortOrder: currentSortOrder.value,
