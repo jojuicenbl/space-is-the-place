@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import BaseButton from "@/components/UI/BaseButton.vue"
+import BaseButton from '@/components/UI/BaseButton.vue'
 import { useRouter } from 'vue-router'
 import { ref } from 'vue'
 
@@ -27,16 +27,15 @@ const navigateToCollection = async () => {
     <div class="grid-overlay"></div>
     <main class="content">
       <header class="hero">
-        <h1 class="cosmic-title">
-          SPACE IS THE PLACE
-        </h1>
-        <p class="cosmic-subtitle">
-          Where we escape the limitations of earthly existence
-        </p>
+        <h1 class="cosmic-title">SPACE IS THE PLACE</h1>
+        <p class="cosmic-subtitle">Where we escape the limitations of earthly existence</p>
       </header>
       <section class="cta-section">
-        <BaseButton :class="['enter-btn', { 'navigating': isNavigating }]" :disabled="isNavigating"
-          @click="navigateToCollection">
+        <BaseButton
+          :class="['enter-btn', { navigating: isNavigating }]"
+          :disabled="isNavigating"
+          @click="navigateToCollection"
+        >
           Enter My Universe
         </BaseButton>
       </section>
@@ -53,7 +52,7 @@ const navigateToCollection = async () => {
   color: #ffffff;
   position: relative;
   overflow: hidden;
-  font-family: "Rubik Mono One", monospace;
+  font-family: 'Rubik Mono One', monospace;
 }
 
 /* Grid overlay subtil */
@@ -64,8 +63,7 @@ const navigateToCollection = async () => {
   left: 0;
   width: 100%;
   height: 100%;
-  background-image:
-    linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+  background-image: linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
     linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
   background-size: 60px 60px;
   pointer-events: none;
@@ -111,7 +109,7 @@ const navigateToCollection = async () => {
 
 /* Titre principal - typographie forte */
 .cosmic-title {
-  font-family: "Rubik Mono One", monospace;
+  font-family: 'Rubik Mono One', monospace;
   font-weight: 400;
   font-size: clamp(8rem, 12vw, 20rem);
   line-height: 0.85;
@@ -136,7 +134,7 @@ const navigateToCollection = async () => {
 
 /* Sous-titre */
 .cosmic-subtitle {
-  font-family: "Rubik Mono One", monospace;
+  font-family: 'Rubik Mono One', monospace;
   font-weight: 300;
   font-size: clamp(1.1rem, 2.5vw, 1.8rem);
   line-height: 1.4;
@@ -260,7 +258,6 @@ const navigateToCollection = async () => {
 
 /* Performance : réduction des animations sur demande */
 @media (prefers-reduced-motion: reduce) {
-
   .cosmic-title,
   .cosmic-subtitle,
   .cta-section {

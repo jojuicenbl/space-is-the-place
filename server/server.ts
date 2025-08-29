@@ -1,17 +1,25 @@
-import express, { Request, Response, RequestHandler } from 'express'
+import dotenv from 'dotenv'
+
+// Load environment variables first
+dotenv.config()
+
+import express, { Request, Response, RequestHandler, NextFunction } from 'express'
 import cors from 'cors'
 import axios, { AxiosError } from 'axios'
 import { URL } from 'url'
+import { collectionService } from './services/collectionService'
+import type { CollectionFilters } from './types/discogs'
 
 const app = express()
 
 // Security: Configure CORS properly
 const corsOptions = {
   origin: process.env.VITE_CLIENT_URL || 'http://localhost:5173',
-  methods: ['GET'],
+  methods: ['GET', 'POST'],
   optionsSuccessStatus: 200
 }
 app.use(cors(corsOptions))
+app.use(express.json())
 
 interface ImageRouteParams {
   '0': string
@@ -92,13 +100,72 @@ const proxyImageHandler: ImageRequestHandler = async (req, res) => {
   }
 }
 
+type AsyncHandler = (req: Request, res: Response) => Promise<void>
+
+// Collection endpoints
+const asyncHandler = (fn: AsyncHandler) => (req: Request, res: Response, next: NextFunction) => {
+  Promise.resolve(fn(req, res)).catch(next)
+}
+
+app.get('/api/collection', asyncHandler(async (req: Request, res: Response) => {
+  const filters: CollectionFilters = {
+    page: req.query.page ? parseInt(req.query.page as string) : undefined,
+    perPage: req.query.perPage ? parseInt(req.query.perPage as string) : undefined,
+    folderId: req.query.folder ? parseInt(req.query.folder as string) : undefined,
+    sort: req.query.sort as 'added' | 'artist' | 'title',
+    sortOrder: req.query.order as 'asc' | 'desc',
+    search: req.query.search as string
+  }
+
+  const result = await collectionService.getCollection(filters)
+  res.json(result)
+}))
+
+app.get('/api/collection/search', asyncHandler(async (req: Request, res: Response) => {
+  const query = req.query.q as string
+  if (!query || query.trim() === '') {
+    res.status(400).json({ error: 'Search query is required' })
+    return
+  }
+
+  const filters: CollectionFilters = {
+    page: req.query.page ? parseInt(req.query.page as string) : undefined,
+    perPage: req.query.perPage ? parseInt(req.query.perPage as string) : undefined,
+    folderId: req.query.folder ? parseInt(req.query.folder as string) : undefined,
+    sort: req.query.sort as 'added' | 'artist' | 'title',
+    sortOrder: req.query.order as 'asc' | 'desc'
+  }
+
+  const result = await collectionService.searchCollection(query, filters)
+  res.json(result)
+}))
+
+app.get('/api/folders', asyncHandler(async (req: Request, res: Response) => {
+  const folders = await collectionService.getFolders()
+  res.json({ folders })
+}))
+
+app.post('/api/collection/refresh', asyncHandler(async (req: Request, res: Response) => {
+  const folderId = req.query.folder ? parseInt(req.query.folder as string) : 0
+  const result = await collectionService.refreshCache(folderId)
+  res.json(result)
+}))
+
 // Register routes
 app.get('/api/proxy/images/*', setCacheHeaders, proxyImageHandler)
 
 // Error handling middleware
-app.use((err: Error, req: Request, res: Response, next: express.NextFunction) => {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+app.use((err: Error, _req: Request, res: Response, next: NextFunction) => {
   console.error('Unhandled error:', err)
-  res.status(500).json({ error: 'Internal server error' })
+  
+  // Don't send stack trace in production
+  const errorResponse = {
+    error: 'Internal server error',
+    ...(process.env.NODE_ENV === 'development' && { details: err.message })
+  }
+  
+  res.status(500).json(errorResponse)
 })
 
 const PORT = process.env.PORT || 3000

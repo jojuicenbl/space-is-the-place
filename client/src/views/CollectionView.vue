@@ -1,82 +1,65 @@
 <script setup lang="ts">
-import { ref, onMounted, watch } from 'vue'
-import { getUserCollection, prefetchNextPage } from '../services/discogsApi'
+import { ref, onMounted, nextTick } from 'vue'
 import VinylCard from '../components/VinylCard.vue'
-import MainTitle from "@/components/UI/MainTitle.vue"
-import type { CollectionRelease } from '@/types/models/Release'
-import { useRouter } from 'vue-router'
-import BaseButton from "@/components/UI/BaseButton.vue"
+
 import Pager from '@/components/UI/Pager.vue'
 import CollectionFilters from '@/components/CollectionFilters.vue'
-import type { DiscogsFolder, SortField, SortOrder } from '@/services/discogsApi'
-import { getUserFolders } from '@/services/discogsApi'
-import { VSkeletonLoader } from 'vuetify/components'
+import ResultsCounter from '@/components/UI/ResultsCounter.vue'
+import SearchIndicator from '@/components/UI/SearchIndicator.vue'
+import { VSkeletonLoader, VRow, VCol, VContainer } from 'vuetify/components'
+import { useCollection } from '@/composables/useCollection'
 
-const releases = ref<CollectionRelease[]>([])
-const isLoading = ref(true)
-const error = ref<string | null>(null)
-const username = import.meta.env.VITE_USERNAME
-const currentPage = ref(1)
-const totalPages = ref(1)
-const folders = ref<DiscogsFolder[]>([])
-const currentFolder = ref(0)
-const currentSort = ref<SortField>('added')
-const currentSortOrder = ref<SortOrder>('desc')
+// UI state
 const isFiltersVisible = ref(true)
 const isContentVisible = ref(true)
 const isPagerVisible = ref(true)
 
-const router = useRouter()
-
-const goBack = () => {
-  router.back()
-}
-
-const fetchFolders = async () => {
-  try {
-    const data = await getUserFolders(username)
-    folders.value = data.folders
-  } catch (err) {
-    console.error('Error loading folders:', err)
-  }
-}
-
-const fetchCollection = async (page: number) => {
-  isLoading.value = true
-  try {
-    const data = await getUserCollection(username, {
-      page,
-      folderId: currentFolder.value,
-      sort: currentSort.value,
-      sortOrder: currentSortOrder.value
+// Smooth scroll to collection top
+const scrollToCollection = async () => {
+  await nextTick()
+  const mainScroll = document.getElementById('main-scroll')
+  if (mainScroll) {
+    mainScroll.scrollTo({
+      top: 0,
+      behavior: 'smooth'
     })
-    releases.value = data.releases
-    totalPages.value = Math.ceil(data.pagination.items / data.pagination.per_page)
-    currentPage.value = page
-
-    // prefetch next page if not on last page
-    if (page < totalPages.value) {
-      prefetchNextPage(username, page, {
-        folderId: currentFolder.value,
-        sort: currentSort.value,
-        sortOrder: currentSortOrder.value
-      })
-    }
-  } catch (err) {
-    error.value = 'Failed to load your collection'
-    console.error('Error loading collection:', err)
-  } finally {
-    isLoading.value = false
   }
 }
 
-const handlePageChange = (page: number) => {
-  fetchCollection(page)
-}
+// Use collection composable - much simpler now
+const {
+  releases,
+  folders,
+  isLoading,
+  isInitialized,
+  totalItems,
+  error,
+  currentFolder,
+  currentSort,
+  currentSortOrder,
+  searchQuery,
+  currentPage,
+  totalPages,
+  isSearchActive,
+  fetchFolders,
+  fetchCollection,
+  initializeFromUrl,
+  handleSearch,
+  handleFolderChange,
+  handleSortChange,
+  handleSortOrderChange,
+  handlePageChange: originalHandlePageChange
+} = useCollection()
 
-watch([currentFolder, currentSort, currentSortOrder], () => {
-  fetchCollection(1)
-})
+// Enhanced page change with smooth scroll and transitions
+const handlePageChange = async (page: number) => {
+  // Scroll to collection top first
+  await scrollToCollection()
+
+  // Call the original handler which will set isLoading = true
+  // This allows the skeleton loader to show during the loading
+  await originalHandlePageChange(page)
+}
 
 onMounted(async () => {
   isFiltersVisible.value = false
@@ -84,7 +67,12 @@ onMounted(async () => {
   isPagerVisible.value = false
 
   await fetchFolders()
-  await fetchCollection(1)
+
+  // Try to initialize from URL params first, fallback to regular fetch
+  const wasInitializedFromUrl = await initializeFromUrl()
+  if (!wasInitializedFromUrl) {
+    await fetchCollection()
+  }
 
   // show outer components with slight delay
   setTimeout(() => {
@@ -94,39 +82,78 @@ onMounted(async () => {
 })
 </script>
 <template>
-  <div class="mx-auto collection-container">
-    <div class="d-flex flex-column align-center w-100">
-      <BaseButton class="mb-8" @click="goBack">
-        Go back
-      </BaseButton>
-      <MainTitle text="Collection" align="center" />
-      <!-- add fade transition for filters -->
-      <Transition name="fade">
-        <div v-show="isFiltersVisible" class="d-flex justify-center w-100">
-          <CollectionFilters :folders="folders" :current-folder="currentFolder" :current-sort="currentSort"
-            :current-sort-order="currentSortOrder" @update:folder="currentFolder = $event"
-            @update:sort="currentSort = $event" @update:sort-order="currentSortOrder = $event" />
+  <div>
+    <div class="mx-auto collection-container">
+      <div class="d-flex flex-column align-center w-100">
+        <h1 class="page-title">THE COLLECTION</h1>
+        <div class="text-center text-caption mt-2 mb-4">
+          Data provided by <a href="https://www.discogs.com/" target="_blank" rel="noopener noreferrer"
+            class="text-decoration-none">Discogs</a>
         </div>
-      </Transition>
-      <div v-show="isContentVisible" style="transition: opacity 400ms, transform 400ms; transform: none; opacity: 1">
-        <Transition name="fade" mode="out-in">
-          <div v-if="isLoading" class="d-flex flex-wrap justify-center ga-3 mt-4">
-            <v-skeleton-loader v-for="n in 12" :key="n" class="vinyl-card-width" type="image"
-              :loading="true"></v-skeleton-loader>
+        <!-- Filters -->
+        <Transition name="fade">
+          <div v-show="isFiltersVisible" class="d-flex justify-center w-100">
+            <CollectionFilters :folders="folders" :current-folder="currentFolder" :current-sort="currentSort"
+              :current-sort-order="currentSortOrder" :releases="releases" :search-query="searchQuery"
+              @update:folder="handleFolderChange" @update:sort="handleSortChange"
+              @update:sort-order="handleSortOrderChange" @search="handleSearch" />
           </div>
-          <div v-else-if="error" class="d-flex justify-center align-center min-height-300">
-            {{ error }}
+        </Transition>
+        <!-- Results Counter -->
+        <Transition name="fade">
+          <div v-show="isFiltersVisible" class="d-flex justify-center w-100 mb-4">
+            <ResultsCounter :total="totalItems" :filtered="releases.length" :is-searching="isSearchActive" />
           </div>
-          <TransitionGroup v-else name="card-list" tag="div" class="d-flex flex-wrap justify-center ga-3 mt-4 w-100">
-            <VinylCard v-for="(release) in releases" :key="release.id" :release="release" class="vinyl-card-width" />
-          </TransitionGroup>
+        </Transition>
+        <!-- Search Loading Indicator - simplified -->
+        <Transition name="fade">
+          <SearchIndicator v-if="isSearchActive && isLoading" :is-loading="isLoading" :search-query="searchQuery"
+            :result-count="releases.length" />
+        </Transition>
+        <!-- Content -->
+        <Transition name="content-fade" mode="out-in">
+          <div v-show="isContentVisible" key="content" class="content-container">
+            <Transition name="fade" mode="out-in">
+              <!-- LOADING State -->
+              <div v-if="isLoading" class="d-flex flex-wrap justify-center ga-3 mt-4">
+                <v-skeleton-loader v-for="n in 12" :key="n" class="vinyl-card-width" type="image"
+                  :loading="true"></v-skeleton-loader>
+              </div>
+              <!-- Error State -->
+              <div v-else-if="error" class="d-flex justify-center align-center min-height-300">
+                {{ error }}
+              </div>
+              <!-- No Results State -->
+              <div v-else-if="
+                releases.length === 0 && !isLoading && isInitialized
+              " class="d-flex flex-column justify-center align-center min-height-300">
+                <div class="text-h6 mb-2">No releases found</div>
+                <div class="text-body-2 text-medium-emphasis">
+                  <span v-if="isSearchActive"> Try adjusting your search terms or filters. </span>
+                  <span v-else> No releases in this folder. </span>
+                </div>
+              </div>
+              <!-- Results -->
+              <TransitionGroup v-else name="card-list" tag="div" class="mt-4 w-100">
+                <v-container fluid class="pa-0">
+                  <v-row no-gutters>
+                    <v-col v-for="release in releases" :key="release.id" cols="6" sm="4" md="3" lg="2"
+                      class="d-flex justify-center vinyl-card-col">
+                      <VinylCard :release="release" class="vinyl-card-width" />
+                    </v-col>
+                  </v-row>
+                </v-container>
+              </TransitionGroup>
+            </Transition>
+          </div>
+        </Transition>
+        <!-- Pagination -->
+        <Transition name="fade">
+          <div v-show="isPagerVisible && totalPages > 1" class="d-flex justify-center w-100 mt-8">
+            <Pager :current-page="currentPage" :total-pages="totalPages" :on-page-change="handlePageChange" />
+          </div>
         </Transition>
       </div>
-      <Transition name="fade">
-        <div v-show="isPagerVisible" class="d-flex justify-center w-100 mt-8">
-          <Pager :current-page="currentPage" :total-pages="totalPages" :on-page-change="handlePageChange" />
-        </div>
-      </Transition>
     </div>
   </div>
 </template>
@@ -144,6 +171,17 @@ onMounted(async () => {
   }
 }
 
+.page-title {
+  font-family: 'Rubik Mono One', monospace;
+  font-size: clamp(2.5rem, 8vw, 4rem);
+  font-weight: 400;
+  color: var(--color-heading);
+  margin-bottom: 1rem;
+  letter-spacing: 0.05em;
+  line-height: 1.1;
+  text-align: center;
+}
+
 .vinyl-card-width {
   width: 200px;
 }
@@ -154,6 +192,10 @@ onMounted(async () => {
 
 .vinyl-card:hover {
   opacity: 0.8;
+}
+
+.vinyl-card-col {
+  padding: 6px !important;
 }
 
 .min-height-300 {
@@ -169,6 +211,26 @@ onMounted(async () => {
 .fade-enter-from,
 .fade-leave-to {
   opacity: 0;
+}
+
+/* Content transitions for page changes */
+.content-fade-enter-active,
+.content-fade-leave-active {
+  transition: all 0.4s ease;
+}
+
+.content-fade-enter-from {
+  opacity: 0;
+  transform: translateY(20px);
+}
+
+.content-fade-leave-to {
+  opacity: 0;
+  transform: translateY(-10px);
+}
+
+.content-container {
+  transition: all 0.4s ease;
 }
 
 /* Card list transitions */

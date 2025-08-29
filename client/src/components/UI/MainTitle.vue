@@ -1,17 +1,21 @@
 <script setup lang="ts">
 interface Props {
   text: string
-  align?: "left" | "center" | "right"
+  align?: 'left' | 'center' | 'right'
+  href?: string
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  align: "left",
+  align: 'left'
 })
 </script>
 
 <template>
   <h1 class="main-title" :class="[`text-${props.align}`]">
-    {{ text }}
+    <a v-if="href" :href="href" target="_blank" rel="noopener noreferrer" class="title-link">
+      {{ text }}
+    </a>
+    <span v-else>{{ text }}</span>
   </h1>
 </template>
 
@@ -32,5 +36,17 @@ const props = withDefaults(defineProps<Props>(), {
 
 .text-right {
   text-align: right;
+}
+
+.title-link {
+  color: inherit;
+  text-decoration: none;
+  transition: 0.3s ease;
+}
+
+.title-link:hover {
+  /* color: #1976d2; */
+  text-decoration: underline;
+  /* transition: 0.3s ease; */
 }
 </style>

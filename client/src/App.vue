@@ -1,14 +1,18 @@
 <script setup lang="ts">
 import { RouterView } from 'vue-router'
 import { VApp } from 'vuetify/components'
+import AppNavbar from '@/components/Nav/AppNavbar.vue'
 </script>
 <template>
   <v-app class="app">
-    <RouterView v-slot="{ Component }">
-      <Transition name="page" mode="out-in">
-        <component :is="Component" />
-      </Transition>
-    </RouterView>
+    <AppNavbar />
+    <div id="main-scroll" class="main-scroll">
+      <RouterView v-slot="{ Component }">
+        <Transition name="page" mode="out-in">
+          <component :is="Component" />
+        </Transition>
+      </RouterView>
+    </div>
   </v-app>
 </template>
 <style>
@@ -19,6 +23,12 @@ body {
   width: 100%;
   height: 100%;
   overflow-x: hidden;
+}
+
+.main-scroll {
+  height: 100vh;
+  overflow-y: auto;
+  padding-top: 80px;
 }
 
 .app {
