@@ -36,7 +36,7 @@ async function handleSubmit() {
         <section class="hero-section">
           <div class="hero-content">
             <h1 class="page-title">CONTACT</h1>
-            <div class="hero-subtitle">Any questions ? Ideas ? Or, just want to talk about music ? Just shoot a message
+            <div class="hero-subtitle">Any questions, ideas, or just want to talk about music? Drop me a message
             </div>
           </div>
         </section>
