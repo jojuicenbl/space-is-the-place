@@ -195,7 +195,7 @@ onMounted(async () => {
 }
 
 .vinyl-card-col {
-  padding: 6px !important;
+  padding: 6px 0px !important;
 }
 
 .min-height-300 {
