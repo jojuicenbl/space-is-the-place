@@ -116,7 +116,7 @@ onMounted(async () => {
             <Transition name="fade" mode="out-in">
               <!-- LOADING State -->
               <div v-if="isLoading" class="d-flex flex-wrap justify-center ga-3 mt-4">
-                <v-skeleton-loader v-for="n in 12" :key="n" class="vinyl-card-width" type="image"
+                <v-skeleton-loader v-for="n in 12" :key="n" class="skeleton-vinyl-card-width" type="image"
                   :loading="true"></v-skeleton-loader>
               </div>
               <!-- Error State -->
@@ -181,9 +181,9 @@ onMounted(async () => {
   text-align: center;
 }
 
-/* .vinyl-card-width {
-  width: 200px;
-} */
+.skeleton-vinyl-card-width {
+  width: 222px;
+}
 
 .vinyl-card {
   transition: opacity 0.1s ease-in-out;
