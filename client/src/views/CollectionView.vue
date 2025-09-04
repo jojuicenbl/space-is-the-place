@@ -137,9 +137,8 @@ onMounted(async () => {
               <TransitionGroup v-else name="card-list" tag="div" class="mt-4 w-100">
                 <v-container fluid class="pa-0">
                   <v-row no-gutters>
-                    <v-col v-for="release in releases" :key="release.id" cols="6" sm="4" md="3" lg="2"
-                      class="d-flex justify-center vinyl-card-col">
-                      <VinylCard :release="release" class="vinyl-card-width" />
+                    <v-col v-for="release in releases" :key="release.id" cols="6" sm="4" md="3" lg="2" class="pa-1">
+                      <VinylCard :release="release" class="w-100" />
                     </v-col>
                   </v-row>
                 </v-container>
@@ -182,9 +181,9 @@ onMounted(async () => {
   text-align: center;
 }
 
-.vinyl-card-width {
+/* .vinyl-card-width {
   width: 200px;
-}
+} */
 
 .vinyl-card {
   transition: opacity 0.1s ease-in-out;
@@ -195,7 +194,15 @@ onMounted(async () => {
 }
 
 .vinyl-card-col {
-  padding: 6px 0px !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+  padding-top: 6px !important;
+  padding-bottom: 6px !important;
+}
+
+:deep(.v-col) {
+  padding-left: 0 !important;
+  padding-right: 0 !important;
 }
 
 .min-height-300 {
