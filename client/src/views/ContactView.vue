@@ -200,6 +200,7 @@ async function handleSubmit() {
   color: var(--color-heading);
   font-size: 1.2rem;
   font-weight: 600;
+  text-align: center;
 }
 
 @media (max-width: 480px) {
