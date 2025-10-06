@@ -132,9 +132,9 @@ app.get(
 
 app.get(
   '/api/collection/search',
-  asyncHandler(async (req: Request, res: Response) => {
-    const query = req.query.q as string
-    if (!query || query.trim() === '') {
+  asyncHandler(async (req, res): Promise<void> => {
+    const query = (req.query.q as string) || ''
+    if (!query.trim()) {
       res.status(400).json({ error: 'Search query is required' })
       return
     }
@@ -144,9 +144,11 @@ app.get(
       perPage: req.query.perPage ? parseInt(req.query.perPage as string) : undefined,
       folderId: req.query.folder ? parseInt(req.query.folder as string) : undefined,
       sort: req.query.sort as 'added' | 'artist' | 'title',
+      // IMPORTANT : le type s’appelle "sortOrder"
       sortOrder: req.query.order as 'asc' | 'desc'
     }
 
+    // <-- ici: 2 arguments, la query string PUIS l'objet filters
     const result = await collectionService.searchCollection(query, filters)
     res.json(result)
   })
@@ -189,4 +191,17 @@ app.use((err: Error, _req: Request, res: Response, next: NextFunction) => {
 const PORT = process.env.PORT || 3000
 app.listen(PORT, () => {
   console.log(`Image proxy server running on port ${PORT}`)
+
+  // Warm-up non bloquant
+  void collectionService
+    .getCollection({
+      folderId: 0,
+      page: 1,
+      perPage: 50,
+      sort: 'added',
+      sortOrder: 'desc',
+      search: 'a'
+    })
+    .then(() => console.log('[warmup] cache prêt'))
+    .catch(err => console.warn('[warmup] échec', err))
 })

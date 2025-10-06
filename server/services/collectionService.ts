@@ -1,4 +1,5 @@
 import axios from 'axios'
+import MiniSearch from 'minisearch'
 import type {
   DiscogsCollectionResponse,
   DiscogsCollectionRelease,
@@ -102,7 +103,9 @@ class CollectionService {
 
   private async fetchFolders(): Promise<DiscogsFolder[]> {
     return this.fetchWithRetry(async () => {
-      const response = await discogsApi.get<DiscogsFoldersResponse>(`/users/${USERNAME}/collection/folders`)
+      const response = await discogsApi.get<DiscogsFoldersResponse>(
+        `/users/${USERNAME}/collection/folders`
+      )
       return response.data.folders
     })
   }
@@ -178,7 +181,11 @@ class CollectionService {
     }
   }
 
-  private sortReleases(releases: DiscogsCollectionRelease[], sort: SortField, order: SortOrder): DiscogsCollectionRelease[] {
+  private sortReleases(
+    releases: DiscogsCollectionRelease[],
+    sort: SortField,
+    order: SortOrder
+  ): DiscogsCollectionRelease[] {
     const sortedReleases = [...releases]
 
     sortedReleases.sort((a, b) => {
@@ -195,7 +202,9 @@ class CollectionService {
           break
         }
         case 'title':
-          comparison = a.basic_information.title.toLowerCase().localeCompare(b.basic_information.title.toLowerCase())
+          comparison = a.basic_information.title
+            .toLowerCase()
+            .localeCompare(b.basic_information.title.toLowerCase())
           break
       }
 
@@ -205,7 +214,10 @@ class CollectionService {
     return sortedReleases
   }
 
-  private filterReleases(releases: DiscogsCollectionRelease[], search?: string): DiscogsCollectionRelease[] {
+  private filterReleases(
+    releases: DiscogsCollectionRelease[],
+    search?: string
+  ): DiscogsCollectionRelease[] {
     if (!search || search.trim() === '') {
       return releases
     }
@@ -224,14 +236,12 @@ class CollectionService {
       const titleMatch = basicInfo.title.toLowerCase().includes(query)
 
       // Search in genres
-      const genreMatch = basicInfo.genres?.some(genre => 
-        genre.toLowerCase().includes(query)
-      ) || false
+      const genreMatch =
+        basicInfo.genres?.some(genre => genre.toLowerCase().includes(query)) || false
 
       // Search in styles
-      const styleMatch = basicInfo.styles?.some(style => 
-        style.toLowerCase().includes(query)
-      ) || false
+      const styleMatch =
+        basicInfo.styles?.some(style => style.toLowerCase().includes(query)) || false
 
       return artistMatch || titleMatch || genreMatch || styleMatch
     })
@@ -285,7 +295,7 @@ class CollectionService {
 
     // For normal pagination, fetch only the requested page from Discogs directly
     console.log(`Fetching page ${page} directly from Discogs API...`)
-    
+
     const response = await this.fetchWithRetry(async () => {
       return discogsApi.get<DiscogsCollectionResponse>(
         `/users/${USERNAME}/collection/folders/${folderId}/releases`,
@@ -339,18 +349,21 @@ class CollectionService {
       console.log(`Search initiated - loading full collection for folder ${folderId}...`)
 
       // Create loading promise to prevent multiple simultaneous fetches
-      const loadingPromise = this.fetchAllReleases(folderId).then(data => {
-        const cachedData: CachedCollection = {
-          releases: data.releases,
-          totalItems: data.totalItems,
-          folders: data.folders,
-          lastUpdated: Date.now()
-        }
-        this.cache.set(cacheKey, cachedData)
-        return cachedData
-      }).finally(() => {
-        this.loadingPromises.delete(cacheKey)
-      })
+      const loadingPromise = this.fetchAllReleases(folderId)
+        .then(data => {
+          const cachedData: CachedCollection = {
+            releases: data.releases,
+            totalItems: data.totalItems,
+            folders: data.folders,
+            lastUpdated: Date.now()
+          }
+          this.cache.set(cacheKey, cachedData)
+          this.buildIndex(folderId, cachedData.releases)
+          return cachedData
+        })
+        .finally(() => {
+          this.loadingPromises.delete(cacheKey)
+        })
 
       this.loadingPromises.set(cacheKey, loadingPromise)
       cached = await loadingPromise
@@ -372,21 +385,76 @@ class CollectionService {
     }
   }
 
-  async searchCollection(query: string, filters: CollectionFilters = {}): Promise<{
-    releases: DiscogsCollectionRelease[]
-    pagination: DiscogsPagination
-    folders: DiscogsFolder[]
-    totalResults: number
-  }> {
-    // Delegate to getCollection with search parameter
-    const result = await this.getCollection({
-      ...filters,
-      search: query
+  private indexByFolder: Map<number, MiniSearch<unknown>> = new Map()
+
+  private buildIndex(folderId: number, releases: DiscogsCollectionRelease[]) {
+    const mini = new MiniSearch({
+      fields: ['title', 'artists', 'label', 'catno', 'genre', 'style'], // champs indexés
+      storeFields: ['id', 'basic_information', 'folder_id'] // champs renvoyés
     })
 
+    const docs = releases.map(r => {
+      const bi = r.basic_information
+      return {
+        id: r.id,
+        folder_id: r.folder_id,
+        title: bi.title,
+        artists: bi.artists?.map(a => a.name).join(' ') || '',
+        label: bi.labels?.map(l => l.name).join(' ') || '',
+        catno: bi.labels?.map(l => l.catno).join(' ') || '',
+        genre: bi.genres?.join(' ') || '',
+        style: bi.styles?.join(' ') || '',
+        basic_information: bi
+      }
+    })
+    mini.addAll(docs)
+    this.indexByFolder.set(folderId, mini)
+  }
+
+  private searchIndex(folderId: number, q: string) {
+    const mini = this.indexByFolder.get(folderId)
+    if (!mini) return []
+    return mini.search(q, { prefix: true, fuzzy: 0.2 })
+  }
+
+  // searchCollection(...)
+  async searchCollection(query: string, filters: CollectionFilters = {}) {
+    const {
+      page = 1,
+      perPage = this.DEFAULT_PER_PAGE,
+      folderId = 0,
+      sort = 'added',
+      sortOrder = 'desc'
+    } = filters
+
+    // 1) si cache et index chauds → réponse immédiate
+    const cacheKey = this.getCacheKey(folderId)
+    const cached = this.cache.get(cacheKey)
+    if (cached && this.isCacheValid(cached) && this.indexByFolder.get(folderId)) {
+      const hits = this.searchIndex(folderId, query.trim())
+
+      // transformer les hits -> releases (reprendre basic_information depuis storeFields/cached map)
+      const byId = new Map(cached.releases.map(r => [r.id, r]))
+      let releases = hits.map(h => byId.get(h.id)).filter(Boolean) as DiscogsCollectionRelease[]
+
+      // tri + pagination existants
+      releases = this.sortReleases(releases, sort, sortOrder)
+      const result = this.paginateReleases(releases, page, perPage)
+
+      return {
+        releases: result.releases,
+        pagination: result.pagination,
+        folders: cached.folders,
+        totalResults: releases.length
+      }
+    }
+
+    // 2) sinon on hydrate le cache (une seule fois), construit l’index puis on recommence
+    const hydrated = await this.getCollectionWithSearch({ ...filters, search: query })
+    // getCollectionWithSearch applique déjà tri+pagination ; total = items
     return {
-      ...result,
-      totalResults: result.pagination.items
+      ...hydrated,
+      totalResults: hydrated.pagination.items
     }
   }
 
@@ -394,7 +462,7 @@ class CollectionService {
     // Try to get folders from cache first
     const cacheKey = this.getCacheKey(0)
     const cached = this.cache.get(cacheKey)
-    
+
     if (cached && this.isCacheValid(cached)) {
       return cached.folders
     }
@@ -412,14 +480,14 @@ class CollectionService {
   }> {
     const cacheKey = this.getCacheKey(folderId)
     const hadCache = this.cache.has(cacheKey)
-    
+
     // Clear the cache
     this.cache.delete(cacheKey)
-    
+
     try {
       // Trigger a fresh fetch
       await this.getCollection({ folderId })
-      
+
       return {
         success: true,
         message: `Cache refreshed successfully for folder ${folderId}`,
@@ -449,6 +517,9 @@ class CollectionService {
 export const collectionService = new CollectionService()
 
 // Run cleanup every 30 minutes
-setInterval(() => {
-  collectionService.cleanup()
-}, 30 * 60 * 1000) 
+setInterval(
+  () => {
+    collectionService.cleanup()
+  },
+  30 * 60 * 1000
+)

@@ -1,5 +1,6 @@
 import { ref, computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { useDebounceFn } from '@vueuse/core'
 import { getCollection, searchCollection, getFolders } from '@/services/collectionApi'
 import type { CollectionRelease } from '@/types/models/Release'
 import type { DiscogsFolder, SortField, SortOrder } from '@/services/collectionApi'
@@ -7,6 +8,9 @@ import type { DiscogsFolder, SortField, SortOrder } from '@/services/collectionA
 export function useCollection() {
   const route = useRoute()
   const router = useRouter()
+
+  let controller: AbortController | null = null
+  let lastQuery = ''
 
   // State - much simplified since server handles caching and processing
   const releases = ref<CollectionRelease[]>([])
@@ -101,6 +105,73 @@ export function useCollection() {
     }
   }
 
+  const doSearch = async (q: string, page = 1) => {
+    // Annule la requête précédente si elle est en vol
+    if (controller) controller.abort()
+    controller = new AbortController()
+
+    // Garde-fou: pas de requête si < 2 caractères
+    if (q.trim().length < 2) {
+      searchQuery.value = q
+      isSearchActive.value = false
+      currentPage.value = 1
+      // recharge la page normale si tu veux ; sinon vide les résultats:
+      // releases.value = []; totalItems.value = 0; totalPages.value = 0
+      return
+    }
+
+    try {
+      isLoading.value = true
+      error.value = null
+      currentPage.value = page
+      const filters = {
+        page: currentPage.value,
+        perPage: 48,
+        folderId: currentFolder.value,
+        sort: currentSort.value,
+        sortOrder: currentSortOrder.value
+      }
+      const res = await searchCollection(q.trim(), filters, { signal: controller.signal })
+      releases.value = res.releases
+      totalPages.value = res.pagination.pages
+      totalItems.value = res.pagination.items
+      isSearchActive.value = true
+      lastSearchQuery.value = q.trim()
+    } catch (e) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      if ((e as any).name !== 'CanceledError' && (e as any).name !== 'AbortError') {
+        console.error(e)
+        error.value = 'Failed to load collection'
+      }
+    } finally {
+      isLoading.value = false
+      isInitialized.value = true
+    }
+  }
+
+  const debouncedSearch = useDebounceFn((q: string) => doSearch(q, 1), 350, { maxWait: 800 })
+
+  const clearSearchAndReload = async () => {
+    // Annule la requête en cours (search ou autre)
+    if (controller) controller.abort()
+
+    isSearchActive.value = false
+    searchQuery.value = ''
+    currentPage.value = 1
+
+    isLoading.value = true
+    error.value = null
+    try {
+      await fetchCollection(false) // <- ta méthode existante de fetch "normal"
+    } finally {
+      isLoading.value = false
+      isInitialized.value = true
+    }
+
+    // (optionnel) Nettoyer l’URL: retirer le paramètre "q"
+    router.replace({ query: { ...route.query, q: undefined } })
+  }
+
   // Fetch folders separately
   const fetchFolders = async () => {
     try {
@@ -113,9 +184,16 @@ export function useCollection() {
   }
 
   // Simplified search handler
-  const handleSearch = async (query: string) => {
+  const handleSearch = (query: string) => {
+    if (query.trim().length < 1) {
+      lastQuery = query
+      void clearSearchAndReload()
+      return
+    }
+    if (query === lastQuery) return // distinctUntilChanged
+    lastQuery = query
     searchQuery.value = query
-    await fetchCollection(true) // Reset to page 1 for search
+    debouncedSearch(query)
   }
 
   // Folder change handler
@@ -138,8 +216,12 @@ export function useCollection() {
 
   // Page change handler
   const handlePageChange = async (page: number) => {
-    currentPage.value = page
-    await fetchCollection(false) // Don't reset page obviously
+    if (isSearchActive.value) {
+      await doSearch(searchQuery.value, page)
+    } else {
+      currentPage.value = page
+      await fetchCollection(false)
+    }
   }
 
   // Initialize with URL params
