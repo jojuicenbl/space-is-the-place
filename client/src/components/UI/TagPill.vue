@@ -3,13 +3,11 @@ defineProps<{
   text: string
 }>()
 </script>
-
 <template>
   <span class="tag-pill">
     {{ text }}
   </span>
 </template>
-
 <style scoped>
 .tag-pill {
   display: inline-block;
@@ -20,6 +18,9 @@ defineProps<{
   color: #666;
   margin: 4px;
   transition: all 0.2s ease;
+  flex: 0 1 auto;
+  white-space: no-wrap;
+  max-width: 100%;
 }
 
 .tag-pill:hover {
