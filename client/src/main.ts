@@ -1,4 +1,5 @@
 import './assets/main.css'
+import './assets/tailwind.css' // Tailwind CSS (new)
 import '@mdi/font/css/materialdesignicons.css'
 import 'vuetify/styles'
 
