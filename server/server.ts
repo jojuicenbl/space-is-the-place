@@ -21,6 +21,9 @@ const corsOptions = {
 app.use(cors(corsOptions))
 app.use(express.json())
 
+import { sendContactMail } from './services/contactService'
+// ...middlewares...
+
 interface ImageRouteParams {
   '0': string
 }
@@ -107,49 +110,66 @@ const asyncHandler = (fn: AsyncHandler) => (req: Request, res: Response, next: N
   Promise.resolve(fn(req, res)).catch(next)
 }
 
-app.get('/api/collection', asyncHandler(async (req: Request, res: Response) => {
-  const filters: CollectionFilters = {
-    page: req.query.page ? parseInt(req.query.page as string) : undefined,
-    perPage: req.query.perPage ? parseInt(req.query.perPage as string) : undefined,
-    folderId: req.query.folder ? parseInt(req.query.folder as string) : undefined,
-    sort: req.query.sort as 'added' | 'artist' | 'title',
-    sortOrder: req.query.order as 'asc' | 'desc',
-    search: req.query.search as string
-  }
+// Route pour le formulaire de contact (après déclaration de app et middlewares)
+app.post('/api/contact', asyncHandler(sendContactMail))
 
-  const result = await collectionService.getCollection(filters)
-  res.json(result)
-}))
+app.get(
+  '/api/collection',
+  asyncHandler(async (req: Request, res: Response) => {
+    const filters: CollectionFilters = {
+      page: req.query.page ? parseInt(req.query.page as string) : undefined,
+      perPage: req.query.perPage ? parseInt(req.query.perPage as string) : undefined,
+      folderId: req.query.folder ? parseInt(req.query.folder as string) : undefined,
+      sort: req.query.sort as 'added' | 'artist' | 'title',
+      sortOrder: req.query.order as 'asc' | 'desc',
+      search: req.query.search as string
+    }
 
-app.get('/api/collection/search', asyncHandler(async (req: Request, res: Response) => {
-  const query = req.query.q as string
-  if (!query || query.trim() === '') {
-    res.status(400).json({ error: 'Search query is required' })
-    return
-  }
+    const result = await collectionService.getCollection(filters)
+    res.json(result)
+  })
+)
 
-  const filters: CollectionFilters = {
-    page: req.query.page ? parseInt(req.query.page as string) : undefined,
-    perPage: req.query.perPage ? parseInt(req.query.perPage as string) : undefined,
-    folderId: req.query.folder ? parseInt(req.query.folder as string) : undefined,
-    sort: req.query.sort as 'added' | 'artist' | 'title',
-    sortOrder: req.query.order as 'asc' | 'desc'
-  }
+app.get(
+  '/api/collection/search',
+  asyncHandler(async (req, res): Promise<void> => {
+    const query = (req.query.q as string) || ''
+    if (!query.trim()) {
+      res.status(400).json({ error: 'Search query is required' })
+      return
+    }
 
-  const result = await collectionService.searchCollection(query, filters)
-  res.json(result)
-}))
+    const filters: CollectionFilters = {
+      page: req.query.page ? parseInt(req.query.page as string) : undefined,
+      perPage: req.query.perPage ? parseInt(req.query.perPage as string) : undefined,
+      folderId: req.query.folder ? parseInt(req.query.folder as string) : undefined,
+      sort: req.query.sort as 'added' | 'artist' | 'title',
+      // IMPORTANT : le type s’appelle "sortOrder"
+      sortOrder: req.query.order as 'asc' | 'desc'
+    }
 
-app.get('/api/folders', asyncHandler(async (req: Request, res: Response) => {
-  const folders = await collectionService.getFolders()
-  res.json({ folders })
-}))
+    // <-- ici: 2 arguments, la query string PUIS l'objet filters
+    const result = await collectionService.searchCollection(query, filters)
+    res.json(result)
+  })
+)
 
-app.post('/api/collection/refresh', asyncHandler(async (req: Request, res: Response) => {
-  const folderId = req.query.folder ? parseInt(req.query.folder as string) : 0
-  const result = await collectionService.refreshCache(folderId)
-  res.json(result)
-}))
+app.get(
+  '/api/folders',
+  asyncHandler(async (req: Request, res: Response) => {
+    const folders = await collectionService.getFolders()
+    res.json({ folders })
+  })
+)
+
+app.post(
+  '/api/collection/refresh',
+  asyncHandler(async (req: Request, res: Response) => {
+    const folderId = req.query.folder ? parseInt(req.query.folder as string) : 0
+    const result = await collectionService.refreshCache(folderId)
+    res.json(result)
+  })
+)
 
 // Register routes
 app.get('/api/proxy/images/*', setCacheHeaders, proxyImageHandler)
@@ -158,17 +178,30 @@ app.get('/api/proxy/images/*', setCacheHeaders, proxyImageHandler)
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 app.use((err: Error, _req: Request, res: Response, next: NextFunction) => {
   console.error('Unhandled error:', err)
-  
+
   // Don't send stack trace in production
   const errorResponse = {
     error: 'Internal server error',
     ...(process.env.NODE_ENV === 'development' && { details: err.message })
   }
-  
+
   res.status(500).json(errorResponse)
 })
 
 const PORT = process.env.PORT || 3000
 app.listen(PORT, () => {
   console.log(`Image proxy server running on port ${PORT}`)
+
+  // Warm-up non bloquant
+  void collectionService
+    .getCollection({
+      folderId: 0,
+      page: 1,
+      perPage: 50,
+      sort: 'added',
+      sortOrder: 'desc',
+      search: 'a'
+    })
+    .then(() => console.log('[warmup] cache prêt'))
+    .catch(err => console.warn('[warmup] échec', err))
 })

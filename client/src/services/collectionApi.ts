@@ -5,7 +5,7 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000'
 
 const collectionApi = axios.create({
   baseURL: API_URL,
-  timeout: 30000, // Increased timeout for initial collection loading
+  timeout: 30000 // Increased timeout for initial collection loading
 })
 
 export interface DiscogsFolder {
@@ -52,10 +52,12 @@ export interface SearchApiResponse extends CollectionApiResponse {
 }
 
 // Get paginated collection with filters
-export const getCollection = async (filters: CollectionFilters = {}): Promise<CollectionApiResponse> => {
+export const getCollection = async (
+  filters: CollectionFilters = {}
+): Promise<CollectionApiResponse> => {
   try {
     const params = new URLSearchParams()
-    
+
     if (filters.page) params.append('page', filters.page.toString())
     if (filters.perPage) params.append('perPage', filters.perPage.toString())
     if (filters.folderId) params.append('folder', filters.folderId.toString())
@@ -63,7 +65,9 @@ export const getCollection = async (filters: CollectionFilters = {}): Promise<Co
     if (filters.sortOrder) params.append('order', filters.sortOrder)
     if (filters.search) params.append('search', filters.search)
 
-    const response = await collectionApi.get<CollectionApiResponse>(`/api/collection?${params.toString()}`)
+    const response = await collectionApi.get<CollectionApiResponse>(
+      `/api/collection?${params.toString()}`
+    )
     return response.data
   } catch (error) {
     console.error('Error fetching collection:', error)
@@ -73,20 +77,24 @@ export const getCollection = async (filters: CollectionFilters = {}): Promise<Co
 
 // Search collection
 export const searchCollection = async (
-  query: string, 
-  filters: CollectionFilters = {}
+  query: string,
+  filters: CollectionFilters = {},
+  opts?: { signal?: AbortSignal } // +++
 ): Promise<SearchApiResponse> => {
   try {
     const params = new URLSearchParams()
     params.append('q', query)
-    
+
     if (filters.page) params.append('page', filters.page.toString())
     if (filters.perPage) params.append('perPage', filters.perPage.toString())
     if (filters.folderId) params.append('folder', filters.folderId.toString())
     if (filters.sort) params.append('sort', filters.sort)
     if (filters.sortOrder) params.append('order', filters.sortOrder)
 
-    const response = await collectionApi.get<SearchApiResponse>(`/api/collection/search?${params.toString()}`)
+    const response = await collectionApi.get<SearchApiResponse>(
+      `/api/collection/search?${params.toString()}`,
+      { signal: opts?.signal } // +++
+    )
     return response.data
   } catch (error) {
     console.error('Error searching collection:', error)
@@ -126,7 +134,7 @@ export const getUserCollection = async (
   }
 
   const result = await getCollection(filters)
-  
+
   // Transform response to match legacy format
   return {
     releases: result.releases,
@@ -134,9 +142,9 @@ export const getUserCollection = async (
   }
 }
 
-// Legacy function for compatibility 
+// Legacy function for compatibility
 export const getUserFolders = async (): Promise<FoldersResponse> => {
   return getFolders()
 }
 
-export default collectionApi 
+export default collectionApi

@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
-// import { useRoute, useRouter } from 'vue-router'
 import { useRoute } from 'vue-router'
 import { getOneRelease } from '@/services/discogsApi'
 import ImageUtils from '@/utils/imageHelpers'
@@ -10,10 +9,8 @@ import TagPill from '@/components/UI/TagPill.vue'
 import ImageCarousel from '@/components/UI/ImageCarousel.vue'
 import AppleMusicPlayer from '@/components/UI/AppleMusicPlayer.vue'
 import type { BasicInformation } from '@/types/models/Release'
-// import { VIcon } from 'vuetify/components'
 
 const route = useRoute()
-// const router = useRouter()
 const release = ref<BasicInformation>()
 const isLoading = ref(true)
 const error = ref<string | null>(null)
@@ -47,10 +44,6 @@ const artistName = computed(() => release.value?.artists?.[0]?.name || '')
 const albumTitle = computed(() => release.value?.title || '')
 const releaseYear = computed(() => release.value?.year)
 const styles = computed(() => release.value?.styles || [])
-
-// const goBack = () => {
-//   router.go(-1)
-// }
 </script>
 <template>
   <div>
@@ -62,12 +55,6 @@ const styles = computed(() => release.value?.styles || [])
         {{ error }}
       </div>
       <div v-else-if="release" class="release-content">
-        <!-- <div class="back-button-container">
-            <button class="back-button" aria-label="Retour" @click="goBack">
-              <v-icon size="20">mdi-chevron-left</v-icon>
-            </button>
-          </div> -->
-        <!-- Main content -->
         <div class="release-main">
           <div class="info-section">
             <MainTitle :text="release.title" align="left" :href="release.uri" />
@@ -91,13 +78,11 @@ const styles = computed(() => release.value?.styles || [])
                 </div>
               </div>
             </div>
-            <!-- mobile style carousel -->
             <div v-if="isMobileView" class="carousel-section mobile-carousel">
               <ImageCarousel v-if="release.images && release.images.length > 0" :images="release.images" />
               <img v-else :src="coverImage" :alt="release.title" class="cover-image"
                 @error="ImageUtils.handleImageError" />
             </div>
-            <!-- Section Tracklist -->
             <div v-if="release.tracklist && release.tracklist.length > 0" class="tracklist-section">
               <h3 class="section-title">Tracklist</h3>
               <div class="tracklist-container">
@@ -108,14 +93,12 @@ const styles = computed(() => release.value?.styles || [])
                 </div>
               </div>
             </div>
-            <!-- Lecteur Apple Music -->
             <div v-if="hasAppleMusicMatch" class="player-container">
               <h3 class="section-title">Listen now</h3>
             </div>
             <AppleMusicPlayer v-if="artistName && albumTitle" :artist-name="artistName" :album-title="albumTitle"
               :year="releaseYear" :height="450" @match-found="hasMatch => (hasAppleMusicMatch = hasMatch)" />
           </div>
-          <!-- desktop style carousel -->
           <div v-if="!isMobileView" class="carousel-section desktop-carousel">
             <ImageCarousel v-if="release.images && release.images.length > 0" :images="release.images" />
             <img v-else :src="coverImage" :alt="release.title" class="cover-image"
@@ -195,6 +178,8 @@ const styles = computed(() => release.value?.styles || [])
 }
 
 .info-section {
+  flex: 1;
+  min-width: 0;
   width: 100%;
 }
 
@@ -205,10 +190,6 @@ const styles = computed(() => release.value?.styles || [])
 .release-details p {
   margin: 8px 0;
   line-height: 1.5;
-}
-
-.genres-styles-container {
-  margin: 12px 0;
 }
 
 .player-container {
@@ -230,6 +211,8 @@ const styles = computed(() => release.value?.styles || [])
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
+  width: 100%;
+  max-width: 100%;
 }
 
 .tracklist-section {
@@ -344,24 +327,21 @@ const styles = computed(() => release.value?.styles || [])
   .info-section {
     flex: 1;
     min-width: 0;
-    /* Évite que le texte déborde */
   }
 
   .release-details {
-    margin: 24px 0 32px 0;
+    margin: 24px 0 0px 0;
   }
 
   .genres-styles-container {
     display: flex;
-    flex-direction: column;
+    flex-wrap: wrap;
     gap: 16px;
-    margin: 32px 0;
   }
 
   .genres-section,
   .styles-section {
-    flex: 0 0 auto;
-    margin: 0;
+    flex: 1 1 260px;
   }
 
   .tracklist-section {
@@ -402,6 +382,7 @@ const styles = computed(() => release.value?.styles || [])
   .genres-styles-container {
     flex-direction: row;
     gap: 32px;
+    max-width: 100%;
   }
 }
 
@@ -414,5 +395,12 @@ const styles = computed(() => release.value?.styles || [])
   .cover-image {
     max-width: 500px;
   }
+}
+
+.info-section,
+.genres-styles-container,
+.genres-section,
+.styles-section {
+  min-width: 0;
 }
 </style>

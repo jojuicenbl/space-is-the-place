@@ -111,40 +111,35 @@ onMounted(async () => {
             :result-count="releases.length" />
         </Transition>
         <!-- Content -->
-        <Transition name="content-fade" mode="out-in">
-          <div v-show="isContentVisible" key="content" class="content-container">
-            <Transition name="fade" mode="out-in">
-              <!-- LOADING State -->
-              <div v-if="isLoading" class="d-flex flex-wrap justify-center ga-3 mt-4">
-                <v-skeleton-loader v-for="n in 12" :key="n" class="vinyl-card-width" type="image"
-                  :loading="true"></v-skeleton-loader>
-              </div>
-              <!-- Error State -->
-              <div v-else-if="error" class="d-flex justify-center align-center min-height-300">
-                {{ error }}
-              </div>
-              <!-- No Results State -->
-              <div v-else-if="
-                releases.length === 0 && !isLoading && isInitialized
-              " class="d-flex flex-column justify-center align-center min-height-300">
-                <div class="text-h6 mb-2">No releases found</div>
-                <div class="text-body-2 text-medium-emphasis">
-                  <span v-if="isSearchActive"> Try adjusting your search terms or filters. </span>
-                  <span v-else> No releases in this folder. </span>
-                </div>
-              </div>
-              <!-- Results -->
-              <TransitionGroup v-else name="card-list" tag="div" class="mt-4 w-100">
-                <v-container fluid class="pa-0">
-                  <v-row no-gutters>
-                    <v-col v-for="release in releases" :key="release.id" cols="6" sm="4" md="3" lg="2"
-                      class="d-flex justify-center vinyl-card-col">
-                      <VinylCard :release="release" class="vinyl-card-width" />
-                    </v-col>
-                  </v-row>
-                </v-container>
-              </TransitionGroup>
-            </Transition>
+        <!-- Results -->
+        <Transition name="fade" mode="out-in">
+          <!-- LOADING -->
+          <div v-if="isLoading" key="loading" class="d-flex flex-wrap justify-center ga-3 mt-4">
+            <v-skeleton-loader v-for="n in 40" :key="n" class="skeleton-vinyl-card-width" type="image"
+              :loading="true" />
+          </div>
+          <!-- ERROR -->
+          <div v-else-if="error" key="error" class="d-flex justify-center align-center min-height-300">
+            {{ error }}
+          </div>
+          <!-- EMPTY -->
+          <div v-else-if="releases.length === 0 && isInitialized" key="empty"
+            class="d-flex flex-column justify-center align-center min-height-300">
+            <div class="text-h6 mb-2">No releases found</div>
+            <div class="text-body-2 text-medium-emphasis">
+              <span v-if="isSearchActive">Try adjusting your search terms or filters.</span>
+              <span v-else>No releases in this folder.</span>
+            </div>
+          </div>
+          <!-- GRID -->
+          <div v-else key="grid" class="mt-4 w-100">
+            <v-container fluid class="pa-0">
+              <v-row no-gutters :class="{ 'justify-center': releases.length === 1 }">
+                <v-col v-for="release in releases" :key="release.id" cols="6" sm="4" md="3" lg="2" class="pa-1 d-flex">
+                  <VinylCard :release="release" class="w-100 vinyl-card" />
+                </v-col>
+              </v-row>
+            </v-container>
           </div>
         </Transition>
         <!-- Pagination -->
@@ -182,8 +177,8 @@ onMounted(async () => {
   text-align: center;
 }
 
-.vinyl-card-width {
-  width: 200px;
+.skeleton-vinyl-card-width {
+  width: 222px;
 }
 
 .vinyl-card {
@@ -195,7 +190,15 @@ onMounted(async () => {
 }
 
 .vinyl-card-col {
-  padding: 6px !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+  padding-top: 6px !important;
+  padding-bottom: 6px !important;
+}
+
+:deep(.v-col) {
+  padding-left: 0 !important;
+  padding-right: 0 !important;
 }
 
 .min-height-300 {
