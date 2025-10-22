@@ -80,7 +80,7 @@ export interface DiscogsFoldersResponse {
   folders: DiscogsFolder[]
 }
 
-export type SortField = 'added' | 'artist' | 'title'
+export type SortField = 'added' | 'artist' | 'title' | 'year'
 export type SortOrder = 'asc' | 'desc'
 
 export interface CollectionFilters {
