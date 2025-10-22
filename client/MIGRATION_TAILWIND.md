@@ -106,24 +106,45 @@ src/components/
 
 ---
 
-### Phase 3 : Composants Métier (PRIORITÉ 3)
-**Durée estimée** : 3-4h
+### Phase 3 : Composants Métier ✅ (TERMINÉ)
+**Durée réelle** : ~3h
 **Impact** : Fonctionnalités principales
 
-- [ ] **VinylCard** (refonte complète)
-  - Utilise `ui-tailwind/Card.vue`
-  - Lazy-loading images
-  - Animations optimisées
+- [x] **VinylCard** (refonte complète)
+  - Utilise `ui-tailwind/Card.vue` avec `padding="none"`
+  - Lazy-loading images avec `loading="lazy"`
+  - Tooltip natif avec `:title` attribute
+  - Hover effect avec group opacity transition
+  - Removed 56 lignes de `<style scoped>`
 
-- [ ] **CollectionFilters** (refonte)
-  - Utilise `ui-tailwind/Input.vue` + `Select.vue`
-  - Mobile-first
+- [x] **Select** (nouveau composant créé)
+  - Native `<select>` avec styling Tailwind
+  - Support label, placeholder, error states
+  - Icon slot (left side)
+  - Type conversion automatique (string ↔ number)
+  - Dark mode support
 
-- [ ] **Pagination** (`Pager.vue` refactoré)
-  - Navigation fluide
-  - Accessible (keyboard nav)
+- [x] **CollectionFilters** (refonte)
+  - Utilise `ui-tailwind/Input.vue` + `Select.vue` + `Button.vue`
+  - Heroicons : FolderIcon, BarsArrowUpIcon, MagnifyingGlassIcon, ArrowUp/DownIcon
+  - Mobile-first avec flexbox responsive
+  - Removed 275 lignes de `<style scoped>`
 
-**Test** : Collection complète fonctionnelle
+- [x] **Pagination** (`Pager.vue` refactoré)
+  - Heroicons : ChevronLeftIcon, ChevronRightIcon
+  - Navigation fluide avec transitions
+  - ARIA accessibilité complète (aria-label, aria-current)
+  - Removed 109 lignes de `<style scoped>`
+
+**CSS éliminé** : 440 lignes → 0 lignes (-100%)
+
+**Fixes techniques** :
+- CORS configuration dynamique (accepte tous les ports localhost)
+- TypeScript : Input.vue `inputId` type annotation
+- TypeScript : CollectionFilters handlers avec type conversion
+
+**Test** : ✅ Filtres, recherche, pagination testés et validés en production
+**Commit** : `feat(ui): complete Phase 3 migration - business components` (9fee45d)
 
 ---
 
