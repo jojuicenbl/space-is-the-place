@@ -6,12 +6,16 @@
 
 import { ref } from 'vue'
 import { Button, Badge, Input } from '@/components/ui-tailwind'
-import { MagnifyingGlassIcon, EnvelopeIcon } from '@heroicons/vue/24/outline'
+import Card from '@/components/ui-tailwind/Card.vue'
+import Navbar from '@/components/ui-tailwind/Navbar.vue'
+import Header from '@/components/ui-tailwind/Header.vue'
+import { MagnifyingGlassIcon, EnvelopeIcon, HomeIcon, MusicalNoteIcon, UserIcon } from '@heroicons/vue/24/outline'
 
 const searchValue = ref('')
 const emailValue = ref('')
 const passwordValue = ref('')
 const errorInput = ref('')
+const headerSearchValue = ref('')
 </script>
 
 <template>
@@ -23,7 +27,7 @@ const errorInput = ref('')
           Tailwind UI Components
         </h1>
         <p class="text-gray-600 dark:text-gray-400">
-          Phase 1: Atomic Components - Visual Testing
+          Phase 1 & 2: Atomic + Layout Components - Visual Testing
         </p>
       </div>
 
@@ -209,11 +213,191 @@ const errorInput = ref('')
         </div>
       </section>
 
+      <!-- Card Component -->
+      <section class="bg-white dark:bg-gray-800 rounded-xl p-8 shadow-soft">
+        <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6">Card Component</h2>
+
+        <div class="space-y-6">
+          <!-- Variants -->
+          <div>
+            <h3 class="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-3">Variants</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <Card variant="default">
+                <h3 class="font-semibold text-gray-900 dark:text-white mb-2">Default Card</h3>
+                <p class="text-gray-600 dark:text-gray-400 text-sm">With shadow-md</p>
+              </Card>
+              <Card variant="bordered">
+                <h3 class="font-semibold text-gray-900 dark:text-white mb-2">Bordered Card</h3>
+                <p class="text-gray-600 dark:text-gray-400 text-sm">With 2px border</p>
+              </Card>
+              <Card variant="elevated">
+                <h3 class="font-semibold text-gray-900 dark:text-white mb-2">Elevated Card</h3>
+                <p class="text-gray-600 dark:text-gray-400 text-sm">With shadow-lg</p>
+              </Card>
+              <Card variant="flat">
+                <h3 class="font-semibold text-gray-900 dark:text-white mb-2">Flat Card</h3>
+                <p class="text-gray-600 dark:text-gray-400 text-sm">No shadow</p>
+              </Card>
+            </div>
+          </div>
+
+          <!-- Hoverable -->
+          <div>
+            <h3 class="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-3">Hoverable (hover me!)</h3>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <Card variant="default" hoverable>
+                <h3 class="font-semibold text-gray-900 dark:text-white mb-2">Hover Effect</h3>
+                <p class="text-gray-600 dark:text-gray-400 text-sm">Lifts on hover with enhanced shadow</p>
+              </Card>
+              <Card variant="bordered" hoverable>
+                <h3 class="font-semibold text-gray-900 dark:text-white mb-2">Bordered Hover</h3>
+                <p class="text-gray-600 dark:text-gray-400 text-sm">Try hovering this card</p>
+              </Card>
+              <Card variant="flat" hoverable>
+                <h3 class="font-semibold text-gray-900 dark:text-white mb-2">Flat Hover</h3>
+                <p class="text-gray-600 dark:text-gray-400 text-sm">Smooth transition</p>
+              </Card>
+            </div>
+          </div>
+
+          <!-- With Slots -->
+          <div>
+            <h3 class="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-3">With Header and Footer</h3>
+            <Card variant="default">
+              <template #header>
+                <h3 class="font-semibold text-gray-900 dark:text-white">Album Details</h3>
+              </template>
+              <p class="text-gray-600 dark:text-gray-400">This card has a header and footer using slots. Perfect for structured content like album information.</p>
+              <template #footer>
+                <div class="flex justify-between items-center">
+                  <Badge variant="primary" text="Progressive Rock" />
+                  <span class="text-sm text-gray-500">1973</span>
+                </div>
+              </template>
+            </Card>
+          </div>
+        </div>
+      </section>
+
+      <!-- Navbar Component -->
+      <section class="bg-white dark:bg-gray-800 rounded-xl p-8 shadow-soft">
+        <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6">Navbar Component</h2>
+
+        <div class="space-y-6">
+          <!-- Default Navbar -->
+          <div>
+            <h3 class="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-3">Default Navbar</h3>
+            <div class="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+              <Navbar>
+                <template #logo>
+                  <span class="text-xl font-bold text-primary-600">Space Vinyl</span>
+                </template>
+                <template #nav>
+                  <a href="#" class="text-gray-700 dark:text-gray-300 hover:text-primary-600 transition-colors flex items-center gap-2">
+                    <HomeIcon class="w-5 h-5" />
+                    <span>Home</span>
+                  </a>
+                  <a href="#" class="text-gray-700 dark:text-gray-300 hover:text-primary-600 transition-colors flex items-center gap-2">
+                    <MusicalNoteIcon class="w-5 h-5" />
+                    <span>Collection</span>
+                  </a>
+                </template>
+                <template #actions>
+                  <Button variant="outline" size="sm">
+                    <template #iconLeft>
+                      <UserIcon class="w-4 h-4" />
+                    </template>
+                    Profile
+                  </Button>
+                </template>
+                <template #mobile-nav>
+                  <a href="#" class="block px-3 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md">Home</a>
+                  <a href="#" class="block px-3 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md">Collection</a>
+                </template>
+                <template #mobile-actions>
+                  <Button variant="outline" size="sm" full-width>Profile</Button>
+                </template>
+              </Navbar>
+            </div>
+          </div>
+
+          <!-- Transparent Navbar with Blur -->
+          <div>
+            <h3 class="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-3">Transparent with Blur</h3>
+            <div class="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden bg-gradient-to-r from-primary-100 to-secondary-100 dark:from-gray-800 dark:to-gray-900">
+              <Navbar transparent blurred>
+                <template #logo>
+                  <span class="text-xl font-bold text-white">Space Vinyl</span>
+                </template>
+                <template #nav>
+                  <a href="#" class="text-white hover:text-primary-200 transition-colors">Home</a>
+                  <a href="#" class="text-white hover:text-primary-200 transition-colors">Collection</a>
+                </template>
+                <template #actions>
+                  <Button variant="ghost" size="sm">Sign In</Button>
+                </template>
+              </Navbar>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Header Component -->
+      <section class="bg-white dark:bg-gray-800 rounded-xl p-8 shadow-soft">
+        <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6">Header Component</h2>
+
+        <div class="space-y-6">
+          <!-- Default Header with Search -->
+          <div>
+            <h3 class="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-3">Default Header with Search</h3>
+            <div class="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+              <Header v-model:search-value="headerSearchValue">
+                <template #title>My Vinyl Collection</template>
+                <template #subtitle>456 albums • Last updated today</template>
+                <template #actions>
+                  <Button variant="outline" size="sm">Filters</Button>
+                  <Button variant="primary" size="sm">Add Album</Button>
+                </template>
+              </Header>
+            </div>
+            <p class="mt-2 text-sm text-gray-500">Search value: {{ headerSearchValue || '(empty)' }}</p>
+          </div>
+
+          <!-- Gradient Header -->
+          <div>
+            <h3 class="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-3">Gradient Header</h3>
+            <div class="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+              <Header variant="gradient" search-placeholder="Search albums, artists...">
+                <template #title>Discover Music</template>
+                <template #subtitle>Explore your collection of progressive rock vinyl</template>
+                <template #actions>
+                  <Badge variant="success" text="456 albums" />
+                </template>
+              </Header>
+            </div>
+          </div>
+
+          <!-- Header without Search -->
+          <div>
+            <h3 class="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-3">Header without Search</h3>
+            <div class="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+              <Header :show-search="false">
+                <template #title>Settings</template>
+                <template #subtitle>Manage your account preferences</template>
+              </Header>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <!-- Code Example -->
       <section class="bg-white dark:bg-gray-800 rounded-xl p-8 shadow-soft">
         <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6">Usage Example</h2>
         <pre class="bg-gray-900 text-gray-100 p-6 rounded-lg overflow-x-auto text-sm"><code>&lt;script setup&gt;
 import { Button, Badge, Input } from '@/components/ui-tailwind'
+import Card from '@/components/ui-tailwind/Card.vue'
+import Navbar from '@/components/ui-tailwind/Navbar.vue'
+import Header from '@/components/ui-tailwind/Header.vue'
 import { MagnifyingGlassIcon } from '@heroicons/vue/24/outline'
 import { ref } from 'vue'
 
@@ -221,20 +405,22 @@ const search = ref('')
 &lt;/script&gt;
 
 &lt;template&gt;
-  &lt;Button variant="primary"&gt;
-    &lt;template #iconLeft&gt;
-      &lt;MagnifyingGlassIcon class="w-5 h-5" /&gt;
+  &lt;!-- Card Example --&gt;
+  &lt;Card variant="default" hoverable&gt;
+    &lt;template #header&gt;Album Title&lt;/template&gt;
+    &lt;p&gt;Album content here&lt;/p&gt;
+    &lt;template #footer&gt;
+      &lt;Badge variant="primary" text="Rock" /&gt;
     &lt;/template&gt;
-    Search
-  &lt;/Button&gt;
+  &lt;/Card&gt;
 
-  &lt;Badge variant="success" text="New" dot /&gt;
-
-  &lt;Input
-    v-model="search"
-    label="Search"
-    placeholder="Type here..."
-  /&gt;
+  &lt;!-- Header Example --&gt;
+  &lt;Header v-model:search-value="search"&gt;
+    &lt;template #title&gt;My Collection&lt;/template&gt;
+    &lt;template #actions&gt;
+      &lt;Button variant="primary"&gt;Add Album&lt;/Button&gt;
+    &lt;/template&gt;
+  &lt;/Header&gt;
 &lt;/template&gt;</code></pre>
       </section>
     </div>

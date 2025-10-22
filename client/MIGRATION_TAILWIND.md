@@ -48,47 +48,61 @@ src/components/
 
 ## 📋 Plan d'Exécution par Phase
 
-### Phase 1 : Composants Atomiques (PRIORITÉ 1)
-**Durée estimée** : 2-3h
+### Phase 1 : Composants Atomiques ✅ (TERMINÉ)
+**Durée réelle** : 2h
 **Impact** : Fondations pour tout le reste
 
-- [ ] **Button** (`BaseButton.vue` → `ui-tailwind/Button.vue`)
+- [x] **Button** (`BaseButton.vue` → `ui-tailwind/Button.vue`)
   - Variants : primary, secondary, outline, ghost
   - Sizes : sm, md, lg
   - States : default, hover, active, disabled, loading
+  - Slots pour icônes (iconLeft, iconRight)
 
-- [ ] **Badge/Tag** (`TagPill.vue` → `ui-tailwind/Badge.vue`)
-  - Genres, styles, tags
-  - Couleurs personnalisables
+- [x] **Badge/Tag** (`TagPill.vue` → `ui-tailwind/Badge.vue`)
+  - 6 variants : default, primary, secondary, success, warning, error
+  - 3 sizes : sm, md, lg
+  - Removable avec événement @remove
+  - Dot indicator optionnel
 
-- [ ] **Input** (nouveau composant)
-  - Text, number, search
-  - États : default, error, success
-  - Icônes intégrées
+- [x] **Input** (nouveau composant)
+  - Types : text, email, password, number, search, url, tel
+  - États : default, error, disabled
+  - Label, helper text, error message
+  - Icônes intégrées (slots iconLeft, iconRight)
+  - Accessibilité ARIA complète
 
-**Test** : Remplacer dans 1 page test pour valider
+**Test** : ✅ Page ComponentsTestView.vue créée avec tous les variants
 
 ---
 
-### Phase 2 : Composants de Layout (PRIORITÉ 2)
-**Durée estimée** : 2-3h
+### Phase 2 : Composants de Layout ✅ (TERMINÉ)
+**Durée réelle** : 2h
 **Impact** : Structure de l'app
 
-- [ ] **Card** (nouveau → remplace containers Vuetify)
-  - VinylCard simplifié
-  - Hover states
-  - Skeleton loader intégré
+- [x] **Card** (nouveau → base pour VinylCard)
+  - 4 variants : default, bordered, elevated, flat
+  - 4 padding options : none, sm, md, lg
+  - Hoverable avec lift effect
+  - Clickable avec scale effect
+  - Support href et router-link
+  - Slots : image, header, body (default), footer
 
-- [ ] **Navbar** (`AppNavbar.vue` refactoré)
-  - Mobile responsive
-  - Menu hamburger
-  - Transitions fluides
+- [x] **Navbar** (`AppNavbar.vue` → `ui-tailwind/Navbar.vue`)
+  - Mobile responsive avec menu hamburger
+  - Icônes Heroicons (Bars3Icon, XMarkIcon)
+  - Transitions animées (Transition component)
+  - Variants : default, transparent, blurred
+  - Sticky optionnel
+  - Slots : logo, nav, actions, mobile-nav, mobile-actions
 
-- [ ] **Header** (`Header.vue` simplifié)
-  - Search bar intégrée
-  - Filtres
+- [x] **Header** (nouveau composant)
+  - Search bar intégrée avec clear button
+  - Events : update:searchValue, search, clearSearch
+  - 3 variants : default, gradient, transparent
+  - Sticky optionnel
+  - Slots : title, subtitle, title-actions, actions, content
 
-**Test** : Page collection avec nouveaux composants
+**Test** : ✅ Tous les composants affichés sur ComponentsTestView.vue avec variants et interactions
 
 ---
 
