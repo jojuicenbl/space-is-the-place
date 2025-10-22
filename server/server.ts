@@ -14,9 +14,17 @@ const app = express()
 
 // Security: Configure CORS properly
 const corsOptions = {
-  origin: process.env.VITE_CLIENT_URL || 'http://localhost:5173',
+  origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
+    // Allow requests from localhost on any port (dev only)
+    if (!origin || origin.startsWith('http://localhost:')) {
+      callback(null, true)
+    } else {
+      callback(new Error('Not allowed by CORS'))
+    }
+  },
   methods: ['GET', 'POST'],
-  optionsSuccessStatus: 200
+  optionsSuccessStatus: 200,
+  credentials: true
 }
 app.use(cors(corsOptions))
 app.use(express.json())
