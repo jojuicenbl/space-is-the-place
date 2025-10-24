@@ -1,30 +1,31 @@
 <script setup lang="ts">
-import { sendMail } from '@/services/contactApi';
-import { ref } from 'vue';
+import { sendMail } from '@/services/contactApi'
+import { ref } from 'vue'
+import Input from '@/components/ui-tailwind/Input.vue'
+import Textarea from '@/components/ui-tailwind/Textarea.vue'
+import Button from '@/components/ui-tailwind/Button.vue'
 
-const name = ref('');
-const email = ref('');
-const message = ref('');
-const submitted = ref(false);
-const loading = ref(false);
-const error = ref<string | null>(null);
-
-console.log('debug log')
+const name = ref('')
+const email = ref('')
+const message = ref('')
+const submitted = ref(false)
+const loading = ref(false)
+const error = ref<string | null>(null)
 
 async function handleSubmit() {
-  error.value = null;
-  loading.value = true;
+  error.value = null
+  loading.value = true
   try {
-    await sendMail({ name: name.value, email: email.value, message: message.value });
-    submitted.value = true;
-    name.value = '';
-    email.value = '';
-    message.value = '';
+    await sendMail({ name: name.value, email: email.value, message: message.value })
+    submitted.value = true
+    name.value = ''
+    email.value = ''
+    message.value = ''
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (e: any) {
-    error.value = e?.response?.data?.error || "Erreur lors de l'envoi du message.";
+    error.value = e?.response?.data?.error || "Erreur lors de l'envoi du message."
   } finally {
-    loading.value = false;
+    loading.value = false
   }
 }
 </script>
@@ -41,23 +42,37 @@ async function handleSubmit() {
           </div>
         </section>
         <form v-if="!submitted" class="contact-form" @submit.prevent="handleSubmit">
-          <div class="form-group">
-            <label for="name">Nom</label>
-            <input id="name" v-model="name" name="name" type="text" required autocomplete="name" />
-          </div>
-          <div class="form-group">
-            <label for="email">Email</label>
-            <input id="email" v-model="email" name="email" type="email" required autocomplete="email" />
-          </div>
-          <div class="form-group">
-            <label for="message">Message</label>
-            <textarea id="message" v-model="message" name="message" rows="5" required></textarea>
-          </div>
-          <button class="contact-btn" type="submit" :disabled="loading">
+          <Input
+            id="name"
+            v-model="name"
+            label="Nom"
+            type="text"
+            placeholder="Votre nom"
+            required
+            autocomplete="name"
+          />
+          <Input
+            id="email"
+            v-model="email"
+            label="Email"
+            type="email"
+            placeholder="votre@email.com"
+            required
+            autocomplete="email"
+          />
+          <Textarea
+            id="message"
+            v-model="message"
+            label="Message"
+            placeholder="Votre message..."
+            :rows="5"
+            required
+          />
+          <Button variant="primary" size="lg" type="submit" :disabled="loading" class="w-full mt-2">
             <span v-if="loading">Envoi...</span>
             <span v-else>Envoyer</span>
-          </button>
-          <p v-if="error" class="contact-error">{{ error }}</p>
+          </Button>
+          <p v-if="error" class="text-red-600 text-sm mt-2 text-center">{{ error }}</p>
         </form>
         <div v-else class="contact-success">
           <p>Merci pour votre message !</p>
@@ -141,58 +156,6 @@ async function handleSubmit() {
   display: flex;
   flex-direction: column;
   gap: 1.2rem;
-}
-
-.form-group {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-}
-
-.form-group label {
-  font-weight: 600;
-  margin-bottom: 0.4rem;
-  color: var(--color-heading);
-  letter-spacing: 0.02em;
-}
-
-.form-group input,
-.form-group textarea {
-  width: 100%;
-  padding: 0.7rem 1rem;
-  border: 1.5px solid var(--color-border);
-  border-radius: 8px;
-  background: var(--color-background);
-  color: var(--color-text);
-  font-size: 1rem;
-  font-family: inherit;
-  transition: border-color 0.2s;
-}
-
-.form-group input:focus,
-.form-group textarea:focus {
-  outline: none;
-  border-color: var(--color-border-hover);
-}
-
-.contact-btn {
-  background: hsla(160, 100%, 37%, 1);
-  color: #fff;
-  font-family: 'Rubik Mono One', monospace;
-  font-size: 1.1rem;
-  border: none;
-  border-radius: 8px;
-  padding: 0.8rem 2.2rem;
-  cursor: pointer;
-  margin-top: 0.5rem;
-  letter-spacing: 0.04em;
-  box-shadow: 0 2px 8px 0 rgba(44, 62, 80, 0.07);
-  transition: background 0.2s, transform 0.1s;
-}
-
-.contact-btn:hover {
-  background: hsla(160, 100%, 37%, 0.85);
-  transform: translateY(-2px) scale(1.03);
 }
 
 .contact-success {

@@ -4,8 +4,7 @@ import { useRoute } from 'vue-router'
 import { getOneRelease } from '@/services/discogsApi'
 import ImageUtils from '@/utils/imageHelpers'
 import { useResponsive } from '@/utils/responsive'
-import MainTitle from '@/components/UI/MainTitle.vue'
-import TagPill from '@/components/UI/TagPill.vue'
+import Badge from '@/components/ui-tailwind/Badge.vue'
 import ImageCarousel from '@/components/UI/ImageCarousel.vue'
 import AppleMusicPlayer from '@/components/UI/AppleMusicPlayer.vue'
 import type { BasicInformation } from '@/types/models/Release'
@@ -48,16 +47,28 @@ const styles = computed(() => release.value?.styles || [])
 <template>
   <div>
     <div class="content-wrapper">
-      <div v-if="isLoading" class="d-flex justify-center align-center min-height-300">
+      <div v-if="isLoading" class="flex justify-center items-center min-height-300">
         <div class="vinyl-loader"></div>
       </div>
-      <div v-else-if="error" class="d-flex justify-center align-center min-height-300">
+      <div v-else-if="error" class="flex justify-center items-center min-height-300">
         {{ error }}
       </div>
       <div v-else-if="release" class="release-content">
         <div class="release-main">
           <div class="info-section">
-            <MainTitle :text="release.title" align="left" :href="release.uri" />
+            <!-- Title -->
+            <h1 class="text-3xl md:text-4xl font-bold mb-6 text-left">
+              <a
+                v-if="release.uri"
+                :href="release.uri"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="text-inherit no-underline hover:underline transition-all duration-300"
+              >
+                {{ release.title }}
+              </a>
+              <span v-else>{{ release.title }}</span>
+            </h1>
             <div class="release-details">
               <p><strong>Artist:</strong> {{ release.artists?.[0]?.name }}</p>
               <p><strong>Year:</strong> {{ release.year }}</p>
@@ -68,13 +79,17 @@ const styles = computed(() => release.value?.styles || [])
               <div class="genres-section">
                 <h3 class="section-title">Genres</h3>
                 <div class="tags-container">
-                  <TagPill v-for="genre in release.genres" :key="genre" :text="genre" />
+                  <Badge v-for="genre in release.genres" :key="genre" variant="primary" size="md">
+                    {{ genre }}
+                  </Badge>
                 </div>
               </div>
               <div v-if="styles.length > 0" class="styles-section">
                 <h3 class="section-title">Styles</h3>
                 <div class="tags-container">
-                  <TagPill v-for="style in release.styles" :key="style" :text="style" />
+                  <Badge v-for="style in release.styles" :key="style" variant="secondary" size="md">
+                    {{ style }}
+                  </Badge>
                 </div>
               </div>
             </div>

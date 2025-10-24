@@ -148,16 +148,41 @@ src/components/
 
 ---
 
-### Phase 4 : Vues & Intégration (PRIORITÉ 4)
-**Durée estimée** : 2-3h
+### Phase 4 : Vues & Intégration ✅ (TERMINÉ)
+**Durée réelle** : ~2h
 **Impact** : Finalisation
 
-- [ ] **CollectionView** (migration)
-- [ ] **ReleaseView** (migration)
-- [ ] **AboutView** (migration)
-- [ ] **ContactView** (migration)
+- [x] **CollectionView** (migration complète)
+  - Remplacé VSkeletonLoader → `ui-tailwind/SkeletonLoader.vue`
+  - Remplacé ResultsCounter → `ui-tailwind/ResultsCounter.vue`
+  - Remplacé SearchIndicator → `ui-tailwind/SearchIndicator.vue`
+  - Remplacé VRow/VCol/VContainer par Tailwind grid (`grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6`)
+  - Remplacé classes Vuetify (`d-flex`, `justify-center`, etc.) par Tailwind
+  - Removed ~90 lignes de CSS obsolètes
 
-**Test** : App complète sans Vuetify
+- [x] **ReleaseView** (migration complète)
+  - Remplacé MainTitle.vue par titre Tailwind natif (`text-3xl md:text-4xl font-bold`)
+  - Remplacé TagPill → `ui-tailwind/Badge.vue`
+  - Remplacé classes Vuetify par Tailwind (`flex`, `justify-center`, `items-center`)
+  - Conservé custom CSS pour layout spécifique
+
+- [x] **AboutView** (déjà OK)
+  - Aucune dépendance Vuetify
+  - Utilise déjà du CSS pur
+
+- [x] **ContactView** (migration complète)
+  - Remplacé inputs natifs → `ui-tailwind/Input.vue`
+  - Créé `ui-tailwind/Textarea.vue` pour textarea
+  - Remplacé button natif → `ui-tailwind/Button.vue`
+  - Removed ~80 lignes de CSS form obsolètes
+
+**Nouveaux composants créés** :
+- `SkeletonLoader.vue` - Loader avec animation shimmer
+- `ResultsCounter.vue` - Badge compteur avec variants
+- `SearchIndicator.vue` - Indicateurs de chargement search
+- `Textarea.vue` - Textarea styled avec states
+
+**Test** : ✅ App complète sans Vuetify fonctionnelle
 
 ---
 

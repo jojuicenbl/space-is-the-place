@@ -93,8 +93,9 @@ watch(
 )
 
 // Computed sort button properties (adapted for Tailwind)
+// Use neutral colors for better visual harmony
 const sortButtonVariant = computed(() =>
-  props.currentSortOrder === 'asc' ? 'primary' : 'secondary'
+  props.currentSortOrder === 'asc' ? 'outline' : 'ghost'
 )
 </script>
 
@@ -110,11 +111,11 @@ const sortButtonVariant = computed(() =>
           :variant="sortButtonVariant"
           size="md"
           :title="currentSortOrder === 'asc' ? 'Ascending (A-Z)' : 'Descending (Z-A)'"
-          class="w-12 h-12 p-0 flex items-center justify-center"
+          class="!w-12 !h-12 !p-0 !flex !items-center !justify-center"
           @click="toggleSortOrder"
         >
-          <ArrowUpIcon v-if="currentSortOrder === 'asc'" class="w-5 h-5" />
-          <ArrowDownIcon v-else class="w-5 h-5" />
+          <ArrowUpIcon v-if="currentSortOrder === 'asc'" class="w-5 h-5 flex-shrink-0" />
+          <ArrowDownIcon v-else class="w-5 h-5 flex-shrink-0" />
         </Button>
       </div>
 

@@ -4,9 +4,9 @@ import VinylCard from '../components/VinylCard.vue'
 
 import Pager from '@/components/UI/Pager.vue'
 import CollectionFilters from '@/components/CollectionFilters.vue'
-import ResultsCounter from '@/components/UI/ResultsCounter.vue'
-import SearchIndicator from '@/components/UI/SearchIndicator.vue'
-import { VSkeletonLoader, VRow, VCol, VContainer } from 'vuetify/components'
+import ResultsCounter from '@/components/ui-tailwind/ResultsCounter.vue'
+import SearchIndicator from '@/components/ui-tailwind/SearchIndicator.vue'
+import SkeletonLoader from '@/components/ui-tailwind/SkeletonLoader.vue'
 import { useCollection } from '@/composables/useCollection'
 
 // UI state
@@ -84,67 +84,94 @@ onMounted(async () => {
 <template>
   <div>
     <div class="mx-auto collection-container">
-      <div class="d-flex flex-column align-center w-100">
+      <div class="flex flex-col items-center w-full">
         <h1 class="page-title">THE COLLECTION</h1>
-        <div class="text-center text-caption mt-2 mb-4">
-          Data provided by <a href="https://www.discogs.com/" target="_blank" rel="noopener noreferrer"
-            class="text-decoration-none">Discogs</a>
+        <div class="text-center text-xs mt-2 mb-4 text-gray-600">
+          Data provided by
+          <a
+            href="https://www.discogs.com/"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="no-underline hover:underline text-primary-500"
+          >
+            Discogs
+          </a>
         </div>
         <!-- Filters -->
         <Transition name="fade">
-          <div v-show="isFiltersVisible" class="d-flex justify-center w-100">
-            <CollectionFilters :folders="folders" :current-folder="currentFolder" :current-sort="currentSort"
-              :current-sort-order="currentSortOrder" :releases="releases" :search-query="searchQuery"
-              @update:folder="handleFolderChange" @update:sort="handleSortChange"
-              @update:sort-order="handleSortOrderChange" @search="handleSearch" />
+          <div v-show="isFiltersVisible" class="flex justify-center w-full">
+            <CollectionFilters
+              :folders="folders"
+              :current-folder="currentFolder"
+              :current-sort="currentSort"
+              :current-sort-order="currentSortOrder"
+              :releases="releases"
+              :search-query="searchQuery"
+              @update:folder="handleFolderChange"
+              @update:sort="handleSortChange"
+              @update:sort-order="handleSortOrderChange"
+              @search="handleSearch"
+            />
           </div>
         </Transition>
         <!-- Results Counter -->
         <Transition name="fade">
-          <div v-show="isFiltersVisible" class="d-flex justify-center w-100 mb-4">
+          <div v-show="isFiltersVisible" class="flex justify-center w-full mb-4">
             <ResultsCounter :total="totalItems" :filtered="releases.length" :is-searching="isSearchActive" />
           </div>
         </Transition>
         <!-- Search Loading Indicator - simplified -->
         <Transition name="fade">
-          <SearchIndicator v-if="isSearchActive && isLoading" :is-loading="isLoading" :search-query="searchQuery"
-            :result-count="releases.length" />
+          <SearchIndicator
+            v-if="isSearchActive && isLoading"
+            :is-loading="isLoading"
+            :search-query="searchQuery"
+            :result-count="releases.length"
+          />
         </Transition>
         <!-- Content -->
         <!-- Results -->
         <Transition name="fade" mode="out-in">
           <!-- LOADING -->
-          <div v-if="isLoading" key="loading" class="d-flex flex-wrap justify-center ga-3 mt-4">
-            <v-skeleton-loader v-for="n in 40" :key="n" class="skeleton-vinyl-card-width" type="image"
-              :loading="true" />
+          <div v-if="isLoading" key="loading" class="flex flex-wrap justify-center gap-3 mt-4">
+            <SkeletonLoader
+              v-for="n in 40"
+              :key="n"
+              type="image"
+              class="skeleton-vinyl-card-width"
+              width="222px"
+              height="200px"
+            />
           </div>
           <!-- ERROR -->
-          <div v-else-if="error" key="error" class="d-flex justify-center align-center min-height-300">
+          <div v-else-if="error" key="error" class="flex justify-center items-center min-height-300">
             {{ error }}
           </div>
           <!-- EMPTY -->
-          <div v-else-if="releases.length === 0 && isInitialized" key="empty"
-            class="d-flex flex-column justify-center align-center min-height-300">
-            <div class="text-h6 mb-2">No releases found</div>
-            <div class="text-body-2 text-medium-emphasis">
+          <div
+            v-else-if="releases.length === 0 && isInitialized"
+            key="empty"
+            class="flex flex-col justify-center items-center min-height-300"
+          >
+            <div class="text-xl font-semibold mb-2">No releases found</div>
+            <div class="text-sm text-gray-600">
               <span v-if="isSearchActive">Try adjusting your search terms or filters.</span>
               <span v-else>No releases in this folder.</span>
             </div>
           </div>
           <!-- GRID -->
-          <div v-else key="grid" class="mt-4 w-100">
-            <v-container fluid class="pa-0">
-              <v-row no-gutters :class="{ 'justify-center': releases.length === 1 }">
-                <v-col v-for="release in releases" :key="release.id" cols="6" sm="4" md="3" lg="2" class="pa-1 d-flex">
-                  <VinylCard :release="release" class="w-100 vinyl-card" />
-                </v-col>
-              </v-row>
-            </v-container>
+          <div v-else key="grid" class="mt-4 w-full">
+            <div
+              class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2 p-0"
+              :class="{ 'justify-items-center': releases.length === 1 }"
+            >
+              <VinylCard v-for="release in releases" :key="release.id" :release="release" class="w-full vinyl-card" />
+            </div>
           </div>
         </Transition>
         <!-- Pagination -->
         <Transition name="fade">
-          <div v-show="isPagerVisible && totalPages > 1" class="d-flex justify-center w-100 mt-8">
+          <div v-show="isPagerVisible && totalPages > 1" class="flex justify-center w-full mt-8">
             <Pager :current-page="currentPage" :total-pages="totalPages" :on-page-change="handlePageChange" />
           </div>
         </Transition>
@@ -189,23 +216,11 @@ onMounted(async () => {
   opacity: 0.8;
 }
 
-.vinyl-card-col {
-  padding-left: 0 !important;
-  padding-right: 0 !important;
-  padding-top: 6px !important;
-  padding-bottom: 6px !important;
-}
-
-:deep(.v-col) {
-  padding-left: 0 !important;
-  padding-right: 0 !important;
-}
-
 .min-height-300 {
   min-height: 300px;
 }
 
-/* Add transition styles */
+/* Transition styles */
 .fade-enter-active,
 .fade-leave-active {
   transition: opacity 0.5s ease;
@@ -214,61 +229,5 @@ onMounted(async () => {
 .fade-enter-from,
 .fade-leave-to {
   opacity: 0;
-}
-
-/* Content transitions for page changes */
-.content-fade-enter-active,
-.content-fade-leave-active {
-  transition: all 0.4s ease;
-}
-
-.content-fade-enter-from {
-  opacity: 0;
-  transform: translateY(20px);
-}
-
-.content-fade-leave-to {
-  opacity: 0;
-  transform: translateY(-10px);
-}
-
-.content-container {
-  transition: all 0.4s ease;
-}
-
-/* Card list transitions */
-.card-list-enter-active,
-.card-list-leave-active {
-  transition: all 0.5s ease;
-}
-
-.card-list-enter-from {
-  opacity: 0;
-  transform: translateY(30px);
-}
-
-.card-list-leave-to {
-  opacity: 0;
-  transform: translateY(-30px);
-}
-
-/* Ensure items maintain their space during transition */
-.card-list-move {
-  transition: transform 0.5s ease;
-}
-
-/* Add some custom styling for the skeleton loaders */
-:deep(.v-skeleton-loader) {
-  border-radius: 4px;
-}
-
-:deep(.v-skeleton-loader__image) {
-  height: 200px !important;
-  border-radius: 4px;
-}
-
-:deep(.v-skeleton-loader__text) {
-  max-width: 90% !important;
-  margin: 8px auto !important;
 }
 </style>
