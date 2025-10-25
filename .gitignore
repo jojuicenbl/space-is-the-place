@@ -31,3 +31,6 @@ coverage
 
 .env
 env.d.ts
+
+# npm internal lockfile (do not track)
+node_modules/.package-lock.json

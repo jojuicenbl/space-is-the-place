@@ -1,184 +1,259 @@
-import axios from 'axios'
-import MiniSearch from 'minisearch'
+/**
+ * Collection service - Lightweight orchestrator
+ * Delegates to specialized services following DRY principle
+ */
+
 import type {
-  DiscogsCollectionResponse,
   DiscogsCollectionRelease,
-  DiscogsFoldersResponse,
   DiscogsFolder,
   SortField,
   SortOrder,
   CollectionFilters,
   DiscogsPagination
 } from '../types/discogs'
-
-const DISCOGS_API_URL = 'https://api.discogs.com'
-const DISCOGS_TOKEN = process.env.DISCOGS_TOKEN
-const USERNAME = process.env.DISCOGS_USERNAME
-
-if (!DISCOGS_TOKEN || !USERNAME) {
-  throw new Error('DISCOGS_TOKEN and DISCOGS_USERNAME environment variables are required')
-}
-
-const discogsApi = axios.create({
-  baseURL: DISCOGS_API_URL,
-  headers: {
-    Authorization: `Discogs token=${DISCOGS_TOKEN}`,
-    'User-Agent': 'SpaceIsThePlace/1.0'
-  },
-  timeout: 15000
-})
+import { discogsClient } from './discogs/discogsClient'
+import { searchService } from './search/searchService'
+import { InMemoryCacheService, createCacheEntry } from './cache/cacheService'
+import type { CachedData } from '../interfaces/cache.interface'
+import { parseDiscogsYear } from '../utils/normalization'
 
 interface CachedCollection {
   releases: DiscogsCollectionRelease[]
-  lastUpdated: number
   totalItems: number
   folders: DiscogsFolder[]
 }
 
-interface RetryConfig {
-  maxRetries: number
-  delayMs: number
-  backoffFactor: number
-}
-
-class CollectionService {
-  private cache: Map<string, CachedCollection> = new Map()
-  private readonly CACHE_DURATION = 15 * 60 * 1000 // 15 minutes
+export class CollectionService {
+  private cache: InMemoryCacheService<CachedCollection>
   private readonly DEFAULT_PER_PAGE = 50
-  private loadingPromises: Map<string, Promise<CachedCollection>> = new Map()
+  private loadingPromises: Map<string, Promise<CachedData<CachedCollection>>> = new Map()
 
-  private readonly defaultRetryConfig: RetryConfig = {
-    maxRetries: 3,
-    delayMs: 1000,
-    backoffFactor: 2
+  constructor() {
+    this.cache = new InMemoryCacheService<CachedCollection>(15) // 15min TTL
   }
 
-  private sleep(ms: number): Promise<void> {
-    return new Promise(resolve => setTimeout(resolve, ms))
-  }
-
-  private async fetchWithRetry<T>(
-    fetchFn: () => Promise<T>,
-    config: RetryConfig = this.defaultRetryConfig
-  ): Promise<T> {
-    let lastError: Error | null = null
-    let delay = config.delayMs
-
-    for (let attempt = 1; attempt <= config.maxRetries; attempt++) {
-      try {
-        return await fetchFn()
-      } catch (error: unknown) {
-        lastError = error as Error
-
-        // Don't retry on auth errors
-        const axiosError = error as { response?: { status?: number } }
-        if (axiosError.response?.status === 401 || axiosError.response?.status === 403) {
-          throw error
-        }
-
-        if (attempt === config.maxRetries) {
-          throw error
-        }
-
-        console.warn(
-          `Request failed (attempt ${attempt}/${config.maxRetries}). Retrying in ${delay}ms...`,
-          (error as Error).message
-        )
-
-        await this.sleep(delay)
-        delay *= config.backoffFactor
-      }
-    }
-
-    throw lastError || new Error('Retry failed')
-  }
-
-  private getCacheKey(folderId: number = 0): string {
-    return `collection_${USERNAME}_${folderId}`
-  }
-
-  private isCacheValid(cached: CachedCollection): boolean {
-    return Date.now() - cached.lastUpdated < this.CACHE_DURATION
-  }
-
-  private async fetchFolders(): Promise<DiscogsFolder[]> {
-    return this.fetchWithRetry(async () => {
-      const response = await discogsApi.get<DiscogsFoldersResponse>(
-        `/users/${USERNAME}/collection/folders`
-      )
-      return response.data.folders
-    })
-  }
-
-  private async fetchAllReleases(folderId: number = 0): Promise<{
+  /**
+   * Get collection with filtering, sorting, and pagination
+   */
+  async getCollection(filters: CollectionFilters = {}): Promise<{
     releases: DiscogsCollectionRelease[]
-    totalItems: number
+    pagination: DiscogsPagination
     folders: DiscogsFolder[]
   }> {
-    console.log(`Fetching all releases for folder ${folderId}...`)
+    const {
+      page = 1,
+      perPage = this.DEFAULT_PER_PAGE,
+      folderId = 0,
+      sort = 'added',
+      sortOrder = 'desc',
+      search
+    } = filters
 
-    // Fetch folders first
-    const folders = await this.fetchFolders()
+    // Get folders (lightweight call)
+    const folders = await this.getFolders()
 
-    // Get first page to know total count
-    const firstPageResponse = await this.fetchWithRetry(async () => {
-      return discogsApi.get<DiscogsCollectionResponse>(
-        `/users/${USERNAME}/collection/folders/${folderId}/releases`,
-        {
-          params: {
-            page: 1,
-            per_page: this.DEFAULT_PER_PAGE,
-            sort: 'added',
-            sort_order: 'desc'
-          }
-        }
-      )
-    })
+    // If there's a search query, we need the full collection
+    if (search && search.trim() !== '') {
+      return this.getCollectionWithSearch(filters)
+    }
 
-    const firstPageData = firstPageResponse.data
-    const totalPages = firstPageData.pagination.pages
-    const totalItems = firstPageData.pagination.items
-    const allReleases = [...firstPageData.releases]
+    // For normal pagination, fetch only the requested page from Discogs directly
+    console.log(`Fetching page ${page} directly from Discogs API...`)
 
-    console.log(`Total pages: ${totalPages}, Total items: ${totalItems}`)
+    const data = await discogsClient.getCollectionPage(folderId, page, perPage, sort, sortOrder)
 
-    // Fetch remaining pages with rate limiting
-    if (totalPages > 1) {
-      for (let page = 2; page <= totalPages; page++) {
-        try {
-          // Rate limiting: 250ms between requests
-          await this.sleep(250)
+    return {
+      releases: data.releases,
+      pagination: data.pagination,
+      folders
+    }
+  }
 
-          const response = await this.fetchWithRetry(async () => {
-            return discogsApi.get<DiscogsCollectionResponse>(
-              `/users/${USERNAME}/collection/folders/${folderId}/releases`,
-              {
-                params: {
-                  page,
-                  per_page: this.DEFAULT_PER_PAGE,
-                  sort: 'added',
-                  sort_order: 'desc'
-                }
-              }
-            )
-          })
+  /**
+   * Get collection with search (loads full collection into cache + search index)
+   */
+  private async getCollectionWithSearch(filters: CollectionFilters): Promise<{
+    releases: DiscogsCollectionRelease[]
+    pagination: DiscogsPagination
+    folders: DiscogsFolder[]
+  }> {
+    const {
+      page = 1,
+      perPage = this.DEFAULT_PER_PAGE,
+      folderId = 0,
+      sort = 'added',
+      sortOrder = 'desc',
+      search
+    } = filters
 
-          allReleases.push(...response.data.releases)
-          console.log(`Fetched page ${page}/${totalPages}`)
-        } catch (error) {
-          console.error(`Failed to fetch page ${page}:`, error)
-          // Continue with other pages
-        }
+    const cacheKey = this.getCacheKey(folderId)
+
+    // Check if we're already loading this collection
+    const existingPromise = this.loadingPromises.get(cacheKey)
+    if (existingPromise) {
+      console.log('Waiting for existing search cache fetch to complete...')
+      await existingPromise
+    }
+
+    // Check cache
+    let cachedData = this.cache.get(cacheKey)
+    if (!cachedData) {
+      console.log(`Search initiated - loading full collection for folder ${folderId}...`)
+
+      // Create loading promise to prevent multiple simultaneous fetches
+      const loadingPromise = this.fetchAndCacheCollection(folderId)
+      this.loadingPromises.set(cacheKey, loadingPromise)
+
+      try {
+        cachedData = await loadingPromise
+      } finally {
+        this.loadingPromises.delete(cacheKey)
       }
     }
 
-    console.log(`Successfully loaded ${allReleases.length} releases`)
+    const cached = cachedData.data
+
+    // Apply search filter using search service
+    let filteredReleases = this.filterReleases(cached.releases, search)
+
+    // Apply sorting
+    filteredReleases = this.sortReleases(filteredReleases, sort, sortOrder)
+
+    // Apply pagination
+    const result = this.paginateReleases(filteredReleases, page, perPage)
 
     return {
-      releases: allReleases,
-      totalItems,
+      releases: result.releases,
+      pagination: result.pagination,
+      folders: cached.folders
+    }
+  }
+
+  /**
+   * Fetch and cache full collection
+   */
+  private async fetchAndCacheCollection(folderId: number): Promise<CachedData<CachedCollection>> {
+    const data = await discogsClient.getAllCollectionReleases(folderId)
+    const folders = await discogsClient.getFolders()
+
+    const cached: CachedCollection = {
+      releases: data.releases,
+      totalItems: data.pagination.items,
       folders
     }
+
+    const cachedData = createCacheEntry(cached)
+    this.cache.set(this.getCacheKey(folderId), cachedData)
+
+    // Build search index
+    searchService.buildIndex(folderId, data.releases)
+
+    return cachedData
+  }
+
+  /**
+   * Search collection using search service
+   */
+  async searchCollection(query: string, filters: CollectionFilters = {}) {
+    const {
+      page = 1,
+      perPage = this.DEFAULT_PER_PAGE,
+      folderId = 0,
+      sort = 'added',
+      sortOrder = 'desc'
+    } = filters
+
+    const cacheKey = this.getCacheKey(folderId)
+    const cached = this.cache.get(cacheKey)
+
+    // Ensure cache and index are warmed up
+    if (!cached || !searchService.hasIndex(folderId)) {
+      const hydrated = await this.getCollectionWithSearch({ ...filters, search: query })
+      return {
+        ...hydrated,
+        totalResults: hydrated.pagination.items
+      }
+    }
+
+    // Use search service
+    const hits = searchService.search(folderId, query.trim())
+
+    // Map search results to releases
+    const byId = new Map(cached.data.releases.map(r => [r.id, r]))
+    let releases = hits.map(h => byId.get(h.id)).filter(Boolean) as DiscogsCollectionRelease[]
+
+    // Apply sorting and pagination
+    releases = this.sortReleases(releases, sort, sortOrder)
+    const result = this.paginateReleases(releases, page, perPage)
+
+    return {
+      releases: result.releases,
+      pagination: result.pagination,
+      folders: cached.data.folders,
+      totalResults: releases.length
+    }
+  }
+
+  /**
+   * Get folders
+   */
+  async getFolders(): Promise<DiscogsFolder[]> {
+    const cacheKey = this.getCacheKey(0)
+    const cached = this.cache.get(cacheKey)
+
+    if (cached) {
+      return cached.data.folders
+    }
+
+    return discogsClient.getFolders()
+  }
+
+  /**
+   * Refresh cache for a folder
+   */
+  async refreshCache(folderId: number = 0): Promise<{
+    success: boolean
+    message: string
+    cacheCleared: boolean
+    dataRefreshed: boolean
+  }> {
+    const cacheKey = this.getCacheKey(folderId)
+    const hadCache = this.cache.has(cacheKey)
+
+    // Clear cache and search index
+    this.cache.delete(cacheKey)
+    searchService.clearIndex(folderId)
+
+    try {
+      await this.getCollection({ folderId })
+
+      return {
+        success: true,
+        message: `Cache refreshed successfully for folder ${folderId}`,
+        cacheCleared: hadCache,
+        dataRefreshed: true
+      }
+    } catch (error) {
+      return {
+        success: false,
+        message: `Failed to refresh cache for folder ${folderId}: ${(error as Error).message}`,
+        cacheCleared: hadCache,
+        dataRefreshed: false
+      }
+    }
+  }
+
+  /**
+   * Cleanup expired cache entries
+   */
+  cleanup(): void {
+    this.cache.cleanup()
+  }
+
+  // ============ PRIVATE UTILITY METHODS ============
+
+  private getCacheKey(folderId: number = 0): string {
+    return `collection_${discogsClient.getUsername()}_${folderId}`
   }
 
   private sortReleases(
@@ -186,9 +261,9 @@ class CollectionService {
     sort: SortField,
     order: SortOrder
   ): DiscogsCollectionRelease[] {
-    const sortedReleases = [...releases]
+    const sorted = [...releases]
 
-    sortedReleases.sort((a, b) => {
+    sorted.sort((a, b) => {
       let comparison = 0
 
       switch (sort) {
@@ -206,12 +281,18 @@ class CollectionService {
             .toLowerCase()
             .localeCompare(b.basic_information.title.toLowerCase())
           break
+        case 'year': {
+          const yearA = parseDiscogsYear(a.basic_information.year?.toString()) || 0
+          const yearB = parseDiscogsYear(b.basic_information.year?.toString()) || 0
+          comparison = yearA - yearB
+          break
+        }
       }
 
       return order === 'asc' ? comparison : -comparison
     })
 
-    return sortedReleases
+    return sorted
   }
 
   private filterReleases(
@@ -227,19 +308,15 @@ class CollectionService {
     return releases.filter(release => {
       const basicInfo = release.basic_information
 
-      // Search in artist names
       const artistMatch = basicInfo.artists.some(artist =>
         artist.name.toLowerCase().includes(query)
       )
 
-      // Search in album title
       const titleMatch = basicInfo.title.toLowerCase().includes(query)
 
-      // Search in genres
       const genreMatch =
         basicInfo.genres?.some(genre => genre.toLowerCase().includes(query)) || false
 
-      // Search in styles
       const styleMatch =
         basicInfo.styles?.some(style => style.toLowerCase().includes(query)) || false
 
@@ -267,248 +344,6 @@ class CollectionService {
           next: page < totalPages ? `?page=${page + 1}` : undefined,
           last: page < totalPages ? `?page=${totalPages}` : undefined
         }
-      }
-    }
-  }
-
-  async getCollection(filters: CollectionFilters = {}): Promise<{
-    releases: DiscogsCollectionRelease[]
-    pagination: DiscogsPagination
-    folders: DiscogsFolder[]
-  }> {
-    const {
-      page = 1,
-      perPage = this.DEFAULT_PER_PAGE,
-      folderId = 0,
-      sort = 'added',
-      sortOrder = 'desc',
-      search
-    } = filters
-
-    // Get folders (lightweight call)
-    const folders = await this.fetchFolders()
-
-    // If there's a search query, we need the full collection
-    if (search && search.trim() !== '') {
-      return this.getCollectionWithSearch(filters)
-    }
-
-    // For normal pagination, fetch only the requested page from Discogs directly
-    console.log(`Fetching page ${page} directly from Discogs API...`)
-
-    const response = await this.fetchWithRetry(async () => {
-      return discogsApi.get<DiscogsCollectionResponse>(
-        `/users/${USERNAME}/collection/folders/${folderId}/releases`,
-        {
-          params: {
-            page,
-            per_page: perPage,
-            sort,
-            sort_order: sortOrder
-          }
-        }
-      )
-    })
-
-    const data = response.data
-
-    return {
-      releases: data.releases,
-      pagination: data.pagination,
-      folders
-    }
-  }
-
-  // Method for search that loads full collection into cache
-  private async getCollectionWithSearch(filters: CollectionFilters): Promise<{
-    releases: DiscogsCollectionRelease[]
-    pagination: DiscogsPagination
-    folders: DiscogsFolder[]
-  }> {
-    const {
-      page = 1,
-      perPage = this.DEFAULT_PER_PAGE,
-      folderId = 0,
-      sort = 'added',
-      sortOrder = 'desc',
-      search
-    } = filters
-
-    const cacheKey = this.getCacheKey(folderId)
-
-    // Check if we're already loading this collection
-    const existingPromise = this.loadingPromises.get(cacheKey)
-    if (existingPromise) {
-      console.log('Waiting for existing search cache fetch to complete...')
-      await existingPromise
-    }
-
-    // Check cache
-    let cached = this.cache.get(cacheKey)
-    if (!cached || !this.isCacheValid(cached)) {
-      console.log(`Search initiated - loading full collection for folder ${folderId}...`)
-
-      // Create loading promise to prevent multiple simultaneous fetches
-      const loadingPromise = this.fetchAllReleases(folderId)
-        .then(data => {
-          const cachedData: CachedCollection = {
-            releases: data.releases,
-            totalItems: data.totalItems,
-            folders: data.folders,
-            lastUpdated: Date.now()
-          }
-          this.cache.set(cacheKey, cachedData)
-          this.buildIndex(folderId, cachedData.releases)
-          return cachedData
-        })
-        .finally(() => {
-          this.loadingPromises.delete(cacheKey)
-        })
-
-      this.loadingPromises.set(cacheKey, loadingPromise)
-      cached = await loadingPromise
-    }
-
-    // Apply search filter
-    let filteredReleases = this.filterReleases(cached.releases, search)
-
-    // Apply sorting
-    filteredReleases = this.sortReleases(filteredReleases, sort, sortOrder)
-
-    // Apply pagination
-    const result = this.paginateReleases(filteredReleases, page, perPage)
-
-    return {
-      releases: result.releases,
-      pagination: result.pagination,
-      folders: cached.folders
-    }
-  }
-
-  private indexByFolder: Map<number, MiniSearch<unknown>> = new Map()
-
-  private buildIndex(folderId: number, releases: DiscogsCollectionRelease[]) {
-    const mini = new MiniSearch({
-      fields: ['title', 'artists', 'label', 'catno', 'genre', 'style'], // champs indexés
-      storeFields: ['id', 'basic_information', 'folder_id'] // champs renvoyés
-    })
-
-    const docs = releases.map(r => {
-      const bi = r.basic_information
-      return {
-        id: r.id,
-        folder_id: r.folder_id,
-        title: bi.title,
-        artists: bi.artists?.map(a => a.name).join(' ') || '',
-        label: bi.labels?.map(l => l.name).join(' ') || '',
-        catno: bi.labels?.map(l => l.catno).join(' ') || '',
-        genre: bi.genres?.join(' ') || '',
-        style: bi.styles?.join(' ') || '',
-        basic_information: bi
-      }
-    })
-    mini.addAll(docs)
-    this.indexByFolder.set(folderId, mini)
-  }
-
-  private searchIndex(folderId: number, q: string) {
-    const mini = this.indexByFolder.get(folderId)
-    if (!mini) return []
-    return mini.search(q, { prefix: true, fuzzy: 0.2 })
-  }
-
-  // searchCollection(...)
-  async searchCollection(query: string, filters: CollectionFilters = {}) {
-    const {
-      page = 1,
-      perPage = this.DEFAULT_PER_PAGE,
-      folderId = 0,
-      sort = 'added',
-      sortOrder = 'desc'
-    } = filters
-
-    // 1) si cache et index chauds → réponse immédiate
-    const cacheKey = this.getCacheKey(folderId)
-    const cached = this.cache.get(cacheKey)
-    if (cached && this.isCacheValid(cached) && this.indexByFolder.get(folderId)) {
-      const hits = this.searchIndex(folderId, query.trim())
-
-      // transformer les hits -> releases (reprendre basic_information depuis storeFields/cached map)
-      const byId = new Map(cached.releases.map(r => [r.id, r]))
-      let releases = hits.map(h => byId.get(h.id)).filter(Boolean) as DiscogsCollectionRelease[]
-
-      // tri + pagination existants
-      releases = this.sortReleases(releases, sort, sortOrder)
-      const result = this.paginateReleases(releases, page, perPage)
-
-      return {
-        releases: result.releases,
-        pagination: result.pagination,
-        folders: cached.folders,
-        totalResults: releases.length
-      }
-    }
-
-    // 2) sinon on hydrate le cache (une seule fois), construit l’index puis on recommence
-    const hydrated = await this.getCollectionWithSearch({ ...filters, search: query })
-    // getCollectionWithSearch applique déjà tri+pagination ; total = items
-    return {
-      ...hydrated,
-      totalResults: hydrated.pagination.items
-    }
-  }
-
-  async getFolders(): Promise<DiscogsFolder[]> {
-    // Try to get folders from cache first
-    const cacheKey = this.getCacheKey(0)
-    const cached = this.cache.get(cacheKey)
-
-    if (cached && this.isCacheValid(cached)) {
-      return cached.folders
-    }
-
-    // If not in cache, fetch them
-    return this.fetchFolders()
-  }
-
-  // Method to force refresh cache
-  async refreshCache(folderId: number = 0): Promise<{
-    success: boolean
-    message: string
-    cacheCleared: boolean
-    dataRefreshed: boolean
-  }> {
-    const cacheKey = this.getCacheKey(folderId)
-    const hadCache = this.cache.has(cacheKey)
-
-    // Clear the cache
-    this.cache.delete(cacheKey)
-
-    try {
-      // Trigger a fresh fetch
-      await this.getCollection({ folderId })
-
-      return {
-        success: true,
-        message: `Cache refreshed successfully for folder ${folderId}`,
-        cacheCleared: hadCache,
-        dataRefreshed: true
-      }
-    } catch (error) {
-      return {
-        success: false,
-        message: `Failed to refresh cache for folder ${folderId}: ${(error as Error).message}`,
-        cacheCleared: hadCache,
-        dataRefreshed: false
-      }
-    }
-  }
-
-  // Cleanup method
-  cleanup(): void {
-    for (const [key, cached] of this.cache.entries()) {
-      if (!this.isCacheValid(cached)) {
-        this.cache.delete(key)
       }
     }
   }
