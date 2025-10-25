@@ -1,6 +1,18 @@
 <script setup lang="ts">
+/**
+ * Pager component - Tailwind CSS version
+ * Migré de: components/UI/Pager.vue (Vuetify)
+ *
+ * Migration notes:
+ * - Remplace v-icon par Heroicons (ChevronLeftIcon, ChevronRightIcon)
+ * - Remplace <style scoped> par classes Tailwind utility
+ * - Améliore accessibilité (aria-label, aria-current)
+ * - Ajoute dark mode support
+ * - Préserve algorithme de pagination avec "..."
+ */
+
 import { computed } from 'vue'
-import { VIcon } from 'vuetify/components'
+import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/vue/24/outline'
 
 const props = defineProps<{
   currentPage: number
@@ -46,64 +58,45 @@ const pages = computed(() => {
 </script>
 
 <template>
-  <div class="pager">
+  <nav aria-label="Pagination" class="flex gap-2 justify-center my-8">
+    <!-- Previous Button -->
     <button
       :disabled="currentPage === 1"
-      class="pager-button"
+      :aria-label="currentPage === 1 ? 'First page, no previous' : 'Go to previous page'"
+      class="px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-lg transition-all duration-200 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
       @click="handlePageChange(currentPage - 1)"
     >
-      <v-icon icon="mdi-chevron-left" size="small" />
+      <ChevronLeftIcon class="w-5 h-5" />
     </button>
 
+    <!-- Page Numbers -->
     <button
       v-for="page in pages"
       :key="page"
-      :class="['pager-button', page === currentPage ? 'active' : '', page === '...' ? 'dots' : '']"
       :disabled="page === '...'"
+      :aria-label="page === '...' ? 'More pages' : `Go to page ${page}`"
+      :aria-current="page === currentPage ? 'page' : undefined"
+      :class="[
+        'px-4 py-2 rounded-lg transition-all duration-200',
+        page === '...'
+          ? 'border-none bg-transparent text-gray-400 dark:text-gray-500 cursor-default'
+          : page === currentPage
+            ? 'bg-primary-600 text-white border border-primary-600 font-semibold'
+            : 'border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
+      ]"
       @click="page !== '...' && handlePageChange(Number(page))"
     >
       {{ page }}
     </button>
 
+    <!-- Next Button -->
     <button
       :disabled="currentPage === totalPages"
-      class="pager-button"
+      :aria-label="currentPage === totalPages ? 'Last page, no next' : 'Go to next page'"
+      class="px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-lg transition-all duration-200 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
       @click="handlePageChange(currentPage + 1)"
     >
-      <v-icon icon="mdi-chevron-right" size="small" />
+      <ChevronRightIcon class="w-5 h-5" />
     </button>
-  </div>
+  </nav>
 </template>
-
-<style scoped>
-.pager {
-  display: flex;
-  gap: 0.5rem;
-  justify-content: center;
-  margin: 2rem 0;
-}
-
-.pager-button {
-  padding: 0.5rem 1rem;
-  border: 1px solid #ccc;
-  background: white;
-  cursor: pointer;
-  border-radius: 4px;
-}
-
-.pager-button:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.pager-button.active {
-  background: #000;
-  color: white;
-  border-color: #000;
-}
-
-.pager-button.dots {
-  border: none;
-  padding: 0.5rem;
-}
-</style>

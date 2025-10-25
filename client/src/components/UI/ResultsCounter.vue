@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { VChip } from 'vuetify/components'
+import Badge from './Badge.vue'
 
 const props = defineProps<{
   total: number
@@ -15,20 +15,14 @@ const counterText = computed(() => {
   return `${props.filtered} of ${props.total} release${props.total > 1 ? 's' : ''}`
 })
 
-const counterColor = computed(() => {
+const badgeVariant = computed<'default' | 'primary' | 'success' | 'warning'>(() => {
   if (!props.isSearching) return 'primary'
   return props.filtered === 0 ? 'warning' : 'success'
 })
 </script>
 
 <template>
-  <VChip :color="counterColor" variant="tonal" size="small" class="results-counter">
-    <span class="font-weight-medium">{{ counterText }}</span>
-  </VChip>
+  <Badge :variant="badgeVariant" size="md" class="results-counter font-medium transition-all duration-300">
+    {{ counterText }}
+  </Badge>
 </template>
-
-<style scoped>
-.results-counter {
-  transition: all 0.3s ease;
-}
-</style>
