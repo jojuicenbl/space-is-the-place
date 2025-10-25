@@ -5,10 +5,10 @@
  */
 
 import { ref } from 'vue'
-import { Button, Badge, Input } from '@/components/ui-tailwind'
-import Card from '@/components/ui-tailwind/Card.vue'
-import Navbar from '@/components/ui-tailwind/Navbar.vue'
-import Header from '@/components/ui-tailwind/Header.vue'
+import { Button, Badge, Input } from '@/components/ui'
+import Card from '@/components/ui/Card.vue'
+import Navbar from '@/components/ui/Navbar.vue'
+import Header from '@/components/ui/Header.vue'
 import { MagnifyingGlassIcon, EnvelopeIcon, HomeIcon, MusicalNoteIcon, UserIcon } from '@heroicons/vue/24/outline'
 
 const searchValue = ref('')
@@ -394,10 +394,10 @@ const headerSearchValue = ref('')
       <section class="bg-white dark:bg-gray-800 rounded-xl p-8 shadow-soft">
         <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6">Usage Example</h2>
         <pre class="bg-gray-900 text-gray-100 p-6 rounded-lg overflow-x-auto text-sm"><code>&lt;script setup&gt;
-import { Button, Badge, Input } from '@/components/ui-tailwind'
-import Card from '@/components/ui-tailwind/Card.vue'
-import Navbar from '@/components/ui-tailwind/Navbar.vue'
-import Header from '@/components/ui-tailwind/Header.vue'
+import { Button, Badge, Input } from '@/components/ui'
+import Card from '@/components/ui/Card.vue'
+import Navbar from '@/components/ui/Navbar.vue'
+import Header from '@/components/ui/Header.vue'
 import { MagnifyingGlassIcon } from '@heroicons/vue/24/outline'
 import { ref } from 'vue'
 

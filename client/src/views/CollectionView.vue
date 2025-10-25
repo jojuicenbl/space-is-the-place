@@ -2,11 +2,11 @@
 import { ref, onMounted, nextTick } from 'vue'
 import VinylCard from '../components/VinylCard.vue'
 
-import Pager from '@/components/UI/Pager.vue'
+import Pager from '@/components/ui/Pager.vue'
 import CollectionFilters from '@/components/CollectionFilters.vue'
-import ResultsCounter from '@/components/ui-tailwind/ResultsCounter.vue'
-import SearchIndicator from '@/components/ui-tailwind/SearchIndicator.vue'
-import SkeletonLoader from '@/components/ui-tailwind/SkeletonLoader.vue'
+import ResultsCounter from '@/components/ui/ResultsCounter.vue'
+import SearchIndicator from '@/components/ui/SearchIndicator.vue'
+import SkeletonLoader from '@/components/ui/SkeletonLoader.vue'
 import { useCollection } from '@/composables/useCollection'
 
 // UI state
@@ -194,9 +194,9 @@ onMounted(async () => {
 }
 
 .page-title {
-  font-family: 'Rubik Mono One', monospace;
+  font-family: 'Inter', 'ui-sans-serif', 'system-ui', sans-serif;
   font-size: clamp(2.5rem, 8vw, 4rem);
-  font-weight: 400;
+  font-weight: 900;
   color: var(--color-heading);
   margin-bottom: 1rem;
   letter-spacing: 0.05em;

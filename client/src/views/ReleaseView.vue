@@ -4,9 +4,9 @@ import { useRoute } from 'vue-router'
 import { getOneRelease } from '@/services/discogsApi'
 import ImageUtils from '@/utils/imageHelpers'
 import { useResponsive } from '@/utils/responsive'
-import Badge from '@/components/ui-tailwind/Badge.vue'
-import ImageCarousel from '@/components/UI/ImageCarousel.vue'
-import AppleMusicPlayer from '@/components/UI/AppleMusicPlayer.vue'
+import Badge from '@/components/ui/Badge.vue'
+import ImageCarousel from '@/components/ui/ImageCarousel.vue'
+import AppleMusicPlayer from '@/components/ui/AppleMusicPlayer.vue'
 import type { BasicInformation } from '@/types/models/Release'
 
 const route = useRoute()

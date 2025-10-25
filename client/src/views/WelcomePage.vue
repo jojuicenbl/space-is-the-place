@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import BaseButton from '@/components/UI/BaseButton.vue'
+import Button from '@/components/ui/Button.vue'
 import { useRouter } from 'vue-router'
 import { ref } from 'vue'
 
@@ -31,20 +31,20 @@ const navigateToCollection = async () => {
         <p class="cosmic-subtitle">Where we escape the limitations of earthly existence</p>
       </header>
       <section class="cta-section">
-        <BaseButton
+        <Button
+          variant="ghost"
+          size="lg"
           :class="['enter-btn', { navigating: isNavigating }]"
           :disabled="isNavigating"
           @click="navigateToCollection"
         >
           Enter My Universe
-        </BaseButton>
+        </Button>
       </section>
     </main>
   </div>
 </template>
 <style scoped>
-@import url('https://fonts.googleapis.com/css2?family=Rubik+Mono+One&display=swap');
-
 /* Container principal */
 .minimal-cosmic {
   min-height: 100vh;
@@ -52,7 +52,7 @@ const navigateToCollection = async () => {
   color: #ffffff;
   position: relative;
   overflow: hidden;
-  font-family: 'Rubik Mono One', monospace;
+  font-family: 'Inter', 'ui-sans-serif', 'system-ui', sans-serif;
 }
 
 /* Grid overlay subtil */
@@ -109,8 +109,8 @@ const navigateToCollection = async () => {
 
 /* Titre principal - typographie forte */
 .cosmic-title {
-  font-family: 'Rubik Mono One', monospace;
-  font-weight: 400;
+  font-family: 'Inter', 'ui-sans-serif', 'system-ui', sans-serif;
+  font-weight: 900;
   font-size: clamp(8rem, 12vw, 20rem);
   line-height: 0.85;
   letter-spacing: 0.15em;
@@ -134,8 +134,8 @@ const navigateToCollection = async () => {
 
 /* Sous-titre */
 .cosmic-subtitle {
-  font-family: 'Rubik Mono One', monospace;
-  font-weight: 300;
+  font-family: 'Inter', 'ui-sans-serif', 'system-ui', sans-serif;
+  font-weight: 400;
   font-size: clamp(1.1rem, 2.5vw, 1.8rem);
   line-height: 1.4;
   letter-spacing: 0.08em;

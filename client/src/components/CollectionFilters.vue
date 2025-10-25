@@ -16,10 +16,10 @@ import type { DiscogsFolder } from '@/services/discogsApi'
 import type { SortField, SortOrder } from '@/services/discogsApi'
 import type { CollectionRelease } from '@/types/models/Release'
 import { ref, computed, watch } from 'vue'
-import Card from '@/components/ui-tailwind/Card.vue'
-import Select, { type SelectOption } from '@/components/ui-tailwind/Select.vue'
-import Input from '@/components/ui-tailwind/Input.vue'
-import Button from '@/components/ui-tailwind/Button.vue'
+import Card from '@/components/ui/Card.vue'
+import Select, { type SelectOption } from '@/components/ui/Select.vue'
+import Input from '@/components/ui/Input.vue'
+import Button from '@/components/ui/Button.vue'
 import {
   ArrowUpIcon,
   ArrowDownIcon,

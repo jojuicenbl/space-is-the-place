@@ -67,8 +67,6 @@
   </div>
 </template>
 <style scoped>
-@import url('https://fonts.googleapis.com/css2?family=Rubik+Mono+One&display=swap');
-
 .about-page {
   min-height: 100vh;
   background: var(--color-background);
@@ -100,9 +98,9 @@
 }
 
 .page-title {
-  font-family: 'Rubik Mono One', monospace;
+  font-family: 'Inter', 'ui-sans-serif', 'system-ui', sans-serif;
   font-size: clamp(2.5rem, 8vw, 4rem);
-  font-weight: 400;
+  font-weight: 900;
   color: var(--color-heading);
   margin-bottom: 1rem;
   letter-spacing: 0.05em;
@@ -229,8 +227,9 @@
 }
 
 .question-text {
-  font-family: 'Rubik Mono One', monospace;
+  font-family: 'Inter', 'ui-sans-serif', 'system-ui', sans-serif;
   font-size: 1.4rem;
+  font-weight: 700;
   color: var(--color-heading);
   margin: 0;
   letter-spacing: 0.02em;

@@ -147,7 +147,8 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  font-family: 'Rubik Mono One', monospace;
+  font-family: 'Inter', 'ui-sans-serif', 'system-ui', sans-serif;
+  font-weight: 700;
 }
 
 .nav-link {

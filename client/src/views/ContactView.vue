@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { sendMail } from '@/services/contactApi'
 import { ref } from 'vue'
-import Input from '@/components/ui-tailwind/Input.vue'
-import Textarea from '@/components/ui-tailwind/Textarea.vue'
-import Button from '@/components/ui-tailwind/Button.vue'
+import Input from '@/components/ui/Input.vue'
+import Textarea from '@/components/ui/Textarea.vue'
+import Button from '@/components/ui/Button.vue'
 
 const name = ref('')
 const email = ref('')
@@ -123,9 +123,9 @@ async function handleSubmit() {
 }
 
 .page-title {
-  font-family: 'Rubik Mono One', monospace;
+  font-family: 'Inter', 'ui-sans-serif', 'system-ui', sans-serif;
   font-size: clamp(2.5rem, 8vw, 4rem);
-  font-weight: 400;
+  font-weight: 900;
   color: var(--color-heading);
   margin-bottom: 1rem;
   letter-spacing: 0.05em;

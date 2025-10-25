@@ -3,7 +3,7 @@
  * Barrel export for easy imports
  *
  * Usage:
- * import { Button, Badge, Input } from '@/components/ui-tailwind'
+ * import { Button, Badge, Input } from '@/components/ui'
  */
 
 export { default as Button } from './Button.vue'
