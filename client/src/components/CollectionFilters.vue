@@ -102,7 +102,7 @@ const sortButtonVariant = computed(() =>
 <template>
   <Card
     variant="default"
-    class="mx-4 mb-4 !bg-white/60 dark:!bg-gray-950/40 backdrop-blur-lg border border-gray-200/30 dark:border-gray-800/30 !shadow-sm"
+    class="mx-4 mb-4 !bg-white/60 dark:!bg-[#181818]/60 backdrop-blur-lg border border-gray-200/30 dark:border-gray-700/30 !shadow-sm"
   >
     <div class="flex items-center gap-4 flex-wrap">
       <!-- Sort Order Toggle Button -->

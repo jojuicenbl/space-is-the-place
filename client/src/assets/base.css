@@ -38,9 +38,9 @@
 
 /** dark theme - activated with .dark class */
 .dark {
-  --color-background: var(--vt-c-black);
-  --color-background-soft: var(--vt-c-black-soft);
-  --color-background-mute: var(--vt-c-black-mute);
+  --color-background: #0a0a0a;
+  --color-background-soft: #141414;
+  --color-background-mute: #1a1a1a;
 
   --color-border: var(--vt-c-divider-dark-2);
   --color-border-hover: var(--vt-c-divider-dark-1);
