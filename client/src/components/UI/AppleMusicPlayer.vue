@@ -31,7 +31,7 @@
       :style="{ width: '100%', height: playerHeight + 'px' }"
       frameborder="0"
       allow="autoplay *; encrypted-media *; fullscreen *; clipboard-write"
-      sandbox="allow-forms allow-popups allow-same-origin allow-scripts allow-storage-access-by-user-activation allow-top-navigation-by-user-activation"
+      sandbox="allow-forms allow-popups allow-same-origin allow-scripts allow-top-navigation-by-user-activation"
       loading="lazy"
     ></iframe>
   </div>
@@ -65,7 +65,11 @@ const playerHeight = computed(() => props.height)
 
 const embedUrl = computed(() => {
   if (!appleMusicData.value) return ''
-  return AppleMusicService.getAppleMusicEmbedUrl(appleMusicData.value.collectionId, props.country)
+  return AppleMusicService.getAppleMusicEmbedUrl(
+    appleMusicData.value.collectionId,
+    props.country,
+    appleMusicData.value.collectionName
+  )
 })
 
 onMounted(async () => {
