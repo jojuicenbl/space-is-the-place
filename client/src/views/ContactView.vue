@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { sendMail } from '@/services/contactApi'
 import { ref } from 'vue'
-import Input from '@/components/ui/Input.vue'
-import Textarea from '@/components/ui/Textarea.vue'
-import Button from '@/components/ui/Button.vue'
+import Input from '@/components/UI/Input.vue'
+import Textarea from '@/components/UI/Textarea.vue'
+import Button from '@/components/UI/Button.vue'
 
 const name = ref('')
 const email = ref('')

@@ -21,7 +21,7 @@
 import { useRouter } from 'vue-router'
 import type { CollectionRelease } from '@/types/models/Release'
 import ImageUtils from '@/utils/imageHelpers'
-import Card from '@/components/ui/Card.vue'
+import Card from '@/components/UI/Card.vue'
 import { computed } from 'vue'
 
 interface Props {

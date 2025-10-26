@@ -2,11 +2,11 @@
 import { ref, onMounted, nextTick } from 'vue'
 import VinylCard from '../components/VinylCard.vue'
 
-import Pager from '@/components/ui/Pager.vue'
+import Pager from '@/components/UI/Pager.vue'
 import CollectionFilters from '@/components/CollectionFilters.vue'
-import ResultsCounter from '@/components/ui/ResultsCounter.vue'
-import SearchIndicator from '@/components/ui/SearchIndicator.vue'
-import SkeletonLoader from '@/components/ui/SkeletonLoader.vue'
+import ResultsCounter from '@/components/UI/ResultsCounter.vue'
+import SearchIndicator from '@/components/UI/SearchIndicator.vue'
+import SkeletonLoader from '@/components/UI/SkeletonLoader.vue'
 import { useCollection } from '@/composables/useCollection'
 
 // UI state
