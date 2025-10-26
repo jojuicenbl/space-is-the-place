@@ -100,8 +100,29 @@ class AppleMusicService {
   /**
    * Génère l'URL d'embed Apple Music pour un album
    */
-  static getAppleMusicEmbedUrl(collectionId: number, country: string = 'us'): string {
+  static getAppleMusicEmbedUrl(
+    collectionId: number,
+    country: string = 'us',
+    albumName?: string
+  ): string {
+    if (albumName) {
+      const slug = this.generateSlug(albumName)
+      return `https://embed.music.apple.com/${country}/album/${slug}/${collectionId}`
+    }
     return `https://embed.music.apple.com/${country}/album/${collectionId}`
+  }
+
+  /**
+   * Génère un slug URL-friendly à partir d'un nom d'album
+   */
+  private static generateSlug(name: string): string {
+    return name
+      .toLowerCase()
+      .replace(/[^\w\s-]/g, '') // Supprimer les caractères spéciaux
+      .replace(/\s+/g, '-') // Remplacer les espaces par des tirets
+      .replace(/-+/g, '-') // Remplacer les tirets multiples par un seul
+      .trim()
+      .replace(/^-+|-+$/g, '') // Supprimer les tirets en début/fin
   }
 
   /**
