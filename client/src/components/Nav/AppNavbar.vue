@@ -49,8 +49,8 @@ onUnmounted(() => {
 </script>
 <template>
   <nav
-    class="fixed top-0 left-0 right-0 z-[1000] bg-gray-50/85 dark:bg-gray-900/85 backdrop-blur-lg transition-all duration-200"
-    :class="{ 'border-b-[1.5px] border-gray-200 dark:border-gray-700': hasScrolled }"
+    class="fixed top-0 left-0 right-0 z-[1000] bg-white/70 dark:bg-gray-950/70 backdrop-blur-lg transition-all duration-200"
+    :class="{ 'border-b-[1.5px] border-gray-200/50 dark:border-gray-800/50': hasScrolled }"
   >
     <div class="flex items-center justify-between max-w-[1400px] mx-auto px-3 sm:px-4 md:px-6 h-[50px] sm:h-[60px]">
       <div class="flex items-center">
@@ -66,9 +66,9 @@ onUnmounted(() => {
         </button>
       </div>
       <div class="flex items-center">
-        <div class="flex gap-1 sm:gap-2 md:gap-4 lg:gap-8 items-center">
+        <div class="flex gap-1 sm:gap-2 md:gap-4 lg:gap-8 items-center font-['Inter',system-ui,sans-serif]">
           <button
-            class="px-2 py-1.5 sm:px-3 sm:py-2 md:px-4 rounded-lg text-xs sm:text-sm md:text-base font-bold font-['Inter'] transition-all duration-200"
+            class="px-2 py-1.5 sm:px-3 sm:py-2 md:px-4 rounded-lg text-xs sm:text-sm md:text-base font-bold transition-all duration-200"
             :class="isCurrentRoute('collection')
               ? 'text-gray-900 dark:text-gray-100 bg-black/10 dark:bg-white/10'
               : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-black/5 dark:hover:bg-white/5'"
@@ -77,7 +77,7 @@ onUnmounted(() => {
             Collection
           </button>
           <button
-            class="px-2 py-1.5 sm:px-3 sm:py-2 md:px-4 rounded-lg text-xs sm:text-sm md:text-base font-bold font-['Inter'] transition-all duration-200"
+            class="px-2 py-1.5 sm:px-3 sm:py-2 md:px-4 rounded-lg text-xs sm:text-sm md:text-base font-bold transition-all duration-200"
             :class="isCurrentRoute('about')
               ? 'text-gray-900 dark:text-gray-100 bg-black/10 dark:bg-white/10'
               : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-black/5 dark:hover:bg-white/5'"
@@ -86,7 +86,7 @@ onUnmounted(() => {
             About
           </button>
           <button
-            class="px-2 py-1.5 sm:px-3 sm:py-2 md:px-4 rounded-lg text-xs sm:text-sm md:text-base font-bold font-['Inter'] transition-all duration-200"
+            class="px-2 py-1.5 sm:px-3 sm:py-2 md:px-4 rounded-lg text-xs sm:text-sm md:text-base font-bold transition-all duration-200"
             :class="isCurrentRoute('contact')
               ? 'text-gray-900 dark:text-gray-100 bg-black/10 dark:bg-white/10'
               : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-black/5 dark:hover:bg-white/5'"

@@ -36,11 +36,11 @@ const textareaClass = computed(() => {
   const baseClass =
     'w-full px-3 py-2 border rounded-md transition-colors duration-200 font-sans text-base resize-y min-h-[100px]'
   const stateClass = props.error
-    ? 'border-red-500 focus:border-red-600 focus:ring-2 focus:ring-red-200'
+    ? 'border-red-500 focus:border-red-600 focus:ring-2 focus:ring-red-200 dark:focus:ring-red-900/30'
     : props.disabled
-      ? 'bg-gray-100 border-gray-300 text-gray-500 cursor-not-allowed'
-      : 'border-gray-300 focus:border-primary-500 focus:ring-2 focus:ring-primary-200'
-  const backgroundClass = props.disabled ? '' : 'bg-white'
+      ? 'bg-gray-100 dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-400 cursor-not-allowed'
+      : 'border-gray-300 dark:border-gray-600 focus:border-primary-500 focus:ring-2 focus:ring-primary-200 dark:focus:ring-primary-900/30'
+  const backgroundClass = props.disabled ? '' : 'bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100'
 
   return `${baseClass} ${stateClass} ${backgroundClass}`
 })
@@ -54,7 +54,7 @@ const handleInput = (event: Event) => {
 <template>
   <div class="w-full">
     <!-- Label -->
-    <label v-if="label" :for="textareaId" class="block mb-1.5 font-semibold text-gray-800 tracking-wide">
+    <label v-if="label" :for="textareaId" class="block mb-1.5 text-sm font-medium text-gray-700 dark:text-gray-300">
       {{ label }}
       <span v-if="required" class="text-red-500 ml-0.5">*</span>
     </label>

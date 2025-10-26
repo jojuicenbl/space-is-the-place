@@ -235,7 +235,7 @@ const styles = computed(() => release.value?.styles || [])
 }
 
 .tracklist-container {
-  background-color: rgba(255, 255, 255, 0.02);
+  background-color: transparent;
   border-radius: 8px;
   overflow: hidden;
 }
@@ -245,16 +245,22 @@ const styles = computed(() => release.value?.styles || [])
   align-items: center;
   padding: 12px 16px;
   transition: background-color 0.2s ease;
+  color: var(--color-text);
 }
 
 .track-item:nth-child(even) {
-  background-color: #ececee;
+  background-color: rgba(0, 0, 0, 0.05);
   border-radius: 8px;
+}
+
+:root.dark .track-item:nth-child(even) {
+  background-color: rgba(255, 255, 255, 0.05);
 }
 
 .track-position {
   font-weight: 600;
-  color: #9e9e9e;
+  color: var(--color-text);
+  opacity: 0.6;
   min-width: 40px;
   font-size: 0.9rem;
 }
@@ -263,10 +269,12 @@ const styles = computed(() => release.value?.styles || [])
   flex: 1;
   margin-left: 16px;
   line-height: 1.4;
+  color: var(--color-text);
 }
 
 .track-duration {
-  color: #9e9e9e;
+  color: var(--color-text);
+  opacity: 0.6;
   font-size: 0.9rem;
   min-width: 60px;
   text-align: right;
