@@ -2,7 +2,7 @@
 import { ref, computed, onMounted } from 'vue'
 import type { Image } from '@/types/models/Release'
 import ImageUtils from '@/utils/imageHelpers'
-import SkeletonLoader from '@/components/ui/SkeletonLoader.vue'
+import SkeletonLoader from '@/components/UI/SkeletonLoader.vue'
 import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/vue/24/solid'
 
 const props = defineProps<{
