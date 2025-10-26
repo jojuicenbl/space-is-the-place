@@ -89,6 +89,7 @@ export class SearchService {
     const results = index.search(normalizedQuery, {
       prefix: options.prefix ?? true,
       fuzzy: options.fuzzy ?? 0.2,
+      combineWith: 'AND',
       boost: {
         title: 2,
         artists: 1.5
