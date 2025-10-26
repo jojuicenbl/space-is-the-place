@@ -28,7 +28,7 @@ const props = withDefaults(defineProps<Props>(), {
   clickable: false,
 })
 
-const baseClasses = 'rounded-xl transition-all duration-200'
+const baseClasses = 'rounded-md transition-all duration-200'
 
 const variantClasses = {
   default: 'bg-white dark:bg-gray-800 shadow-md',

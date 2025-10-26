@@ -86,13 +86,13 @@ onMounted(async () => {
     <div class="mx-auto collection-container">
       <div class="flex flex-col items-center w-full">
         <h1 class="page-title">THE COLLECTION</h1>
-        <div class="text-center text-xs mt-2 mb-4 text-gray-600">
+        <div class="text-center text-xs mt-2 mb-4 text-gray-600 dark:text-gray-400">
           Data provided by
           <a
             href="https://www.discogs.com/"
             target="_blank"
             rel="noopener noreferrer"
-            class="no-underline hover:underline text-primary-500"
+            class="no-underline hover:underline text-primary-500 dark:text-primary-400"
           >
             Discogs
           </a>
@@ -153,8 +153,8 @@ onMounted(async () => {
             key="empty"
             class="flex flex-col justify-center items-center min-height-300"
           >
-            <div class="text-xl font-semibold mb-2">No releases found</div>
-            <div class="text-sm text-gray-600">
+            <div class="text-xl font-semibold mb-2 text-gray-900 dark:text-gray-100">No releases found</div>
+            <div class="text-sm text-gray-600 dark:text-gray-400">
               <span v-if="isSearchActive">Try adjusting your search terms or filters.</span>
               <span v-else>No releases in this folder.</span>
             </div>
