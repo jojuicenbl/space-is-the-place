@@ -160,7 +160,7 @@ onMounted(async () => {
             </div>
           </div>
           <!-- GRID -->
-          <div v-else key="grid" class="mt-4 w-full">
+          <div v-else key="grid" class="mt-4 mb-4 w-full">
             <div
               class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2 p-0"
               :class="{ 'justify-items-center': releases.length === 1 }"
@@ -171,7 +171,7 @@ onMounted(async () => {
         </Transition>
         <!-- Pagination -->
         <Transition name="fade">
-          <div v-show="isPagerVisible && totalPages > 1" class="flex justify-center w-full mt-8">
+          <div v-show="isPagerVisible && totalPages > 1" class="flex justify-center w-full">
             <Pager :current-page="currentPage" :total-pages="totalPages" :on-page-change="handlePageChange" />
           </div>
         </Transition>
