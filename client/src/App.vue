@@ -14,21 +14,9 @@ declare global {
 
 // Initialiser le starfield après le montage
 onMounted(() => {
-  console.log('🚀 App mounted, checking for Starfield...')
-  console.log('Window.Starfield:', window.Starfield)
-
   // Attendre que le script soit chargé
   const initStarfield = () => {
     if (window.Starfield) {
-      console.log('✅ Starfield found, initializing...')
-
-      const container = document.querySelector('.starfield')
-      console.log('📦 Container:', container)
-      console.log('📐 Container dimensions:', {
-        width: container?.clientWidth,
-        height: container?.clientHeight
-      })
-
       try {
         window.Starfield.setup({
           auto: false,  // Mode manuel (pas besoin d'élément origin)
@@ -47,12 +35,11 @@ onMounted(() => {
 
         // Activer l'accélération pour un mouvement constant
         window.Starfield.setAccelerate(true)
-        console.log('🌟 Starfield initialized successfully!')
       } catch (error) {
-        console.error('❌ Error initializing starfield:', error)
+        console.error('Error initializing starfield:', error)
       }
     } else {
-      console.log('⏳ Starfield not loaded yet, retrying...')
+      // Réessayer si le script n'est pas encore chargé
       setTimeout(initStarfield, 100)
     }
   }
@@ -90,7 +77,7 @@ body {
   height: 100vh;
   overflow-y: auto;
   position: relative;
-  z-index: 1;
+  z-index: 10;
 }
 
 .main-scroll.with-navbar {
@@ -113,10 +100,13 @@ body {
   left: 0;
   width: 100vw;
   height: 100vh;
-  z-index: 0;
+  z-index: -1;
   pointer-events: none;
-  /* Debug: border rouge pour voir si le container est visible */
-  /* border: 2px solid red; */
+}
+
+/* Force le canvas du starfield à rester en arrière-plan */
+.starfield canvas {
+  z-index: -1 !important;
 }
 
 /* Transitions de page smooth */
@@ -139,7 +129,7 @@ body {
   transition: opacity 0.5s cubic-bezier(0.4, 0, 0.2, 1);
   opacity: 1;
   position: relative;
-  z-index: 10;
+  z-index: 100;
 }
 
 .app-navbar[style*="display: none"] {
