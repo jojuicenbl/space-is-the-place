@@ -38,7 +38,7 @@
 
 /** dark theme - activated with .dark class */
 .dark {
-  --color-background: #0a0a0a;
+  --color-background: #121212;
   --color-background-soft: #141414;
   --color-background-mute: #1a1a1a;
 
