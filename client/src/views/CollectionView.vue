@@ -15,7 +15,16 @@ const isContentVisible = ref(true)
 const isPagerVisible = ref(true)
 
 // Grid configuration: nombre de colonnes par breakpoint (synchronisé avec CSS)
-const gridColumns = ref(6) // Valeur par défaut
+const getInitialGridColumns = () => {
+  const width = window.innerWidth
+  // Synchronisé avec les breakpoints Tailwind et CSS
+  if (width < 640) return 2       // mobile
+  else if (width < 768) return 3  // sm
+  else if (width < 1024) return 4 // md
+  else return 6                   // xl
+}
+
+const gridColumns = ref(getInitialGridColumns())
 
 const updateGridColumns = () => {
   const width = window.innerWidth
@@ -93,8 +102,7 @@ onMounted(async () => {
   isContentVisible.value = true
   isPagerVisible.value = false
 
-  // Initialiser le nombre de colonnes
-  updateGridColumns()
+  // Écouter les changements de taille d'écran
   window.addEventListener('resize', updateGridColumns)
 
   await fetchFolders()
@@ -174,7 +182,7 @@ onUnmounted(() => {
                 v-for="n in skeletonCount"
                 :key="n"
                 type="image"
-                class="vinyl-grid-item aspect-square"
+                class="vinyl-grid-item"
               />
             </div>
           </div>
