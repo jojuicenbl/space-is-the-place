@@ -1,6 +1,7 @@
 import { ref, computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useDebounceFn } from '@vueuse/core'
+import axios from 'axios'
 import { getCollection, searchCollection, getFolders } from '@/services/collectionApi'
 import type { CollectionRelease } from '@/types/models/Release'
 import type { DiscogsFolder, SortField, SortOrder } from '@/services/collectionApi'
@@ -97,8 +98,11 @@ export function useCollection() {
 
       updateUrlParams()
     } catch (err) {
-      console.error('Error loading collection:', err)
-      error.value = 'Failed to load collection'
+      // Ignore cancellation errors - these are expected when user changes filters quickly
+      if (!axios.isCancel(err)) {
+        console.error('Error loading collection:', err)
+        error.value = 'Failed to load collection'
+      }
     } finally {
       isLoading.value = false
       isInitialized.value = true
@@ -138,11 +142,13 @@ export function useCollection() {
       isSearchActive.value = true
       lastSearchQuery.value = q.trim()
     } catch (e) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      if ((e as any).name !== 'CanceledError' && (e as any).name !== 'AbortError') {
-        console.error(e)
+      // Ignore cancellation errors (user typed before previous request finished)
+      // These are expected and should not be treated as errors
+      if (!axios.isCancel(e)) {
+        console.error('Search error:', e)
         error.value = 'Failed to load collection'
       }
+      // If canceled, silently ignore - this is normal behavior with debounced search
     } finally {
       isLoading.value = false
       isInitialized.value = true

@@ -53,7 +53,8 @@ export interface SearchApiResponse extends CollectionApiResponse {
 
 // Get paginated collection with filters
 export const getCollection = async (
-  filters: CollectionFilters = {}
+  filters: CollectionFilters = {},
+  opts?: { signal?: AbortSignal }
 ): Promise<CollectionApiResponse> => {
   try {
     const params = new URLSearchParams()
@@ -66,10 +67,15 @@ export const getCollection = async (
     if (filters.search) params.append('search', filters.search)
 
     const response = await collectionApi.get<CollectionApiResponse>(
-      `/api/collection?${params.toString()}`
+      `/api/collection?${params.toString()}`,
+      { signal: opts?.signal }
     )
     return response.data
   } catch (error) {
+    // If the request was canceled, re-throw the error as-is without logging
+    if (axios.isCancel(error)) {
+      throw error
+    }
     console.error('Error fetching collection:', error)
     throw new Error('Failed to fetch collection')
   }
@@ -97,6 +103,11 @@ export const searchCollection = async (
     )
     return response.data
   } catch (error) {
+    // If the request was canceled, re-throw the error as-is without logging
+    // This allows the caller to handle cancellations appropriately
+    if (axios.isCancel(error)) {
+      throw error
+    }
     console.error('Error searching collection:', error)
     throw new Error('Failed to search collection')
   }
