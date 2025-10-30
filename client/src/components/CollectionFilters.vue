@@ -104,8 +104,8 @@ watch(
     variant="default"
     class="mx-4 mb-4 !bg-white/60 dark:!bg-[#181818]/60 backdrop-blur-lg border border-gray-200/30 dark:border-gray-700/30 !shadow-sm"
   >
-    <!-- Mobile: grid with centered controls, Desktop: flex row -->
-    <div class="grid grid-cols-1 gap-4 sm:flex sm:items-center sm:gap-4 sm:flex-wrap">
+    <!-- Mobile: flex-col (vertical), Desktop: flex-row (horizontal) -->
+    <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:flex-wrap">
       <!-- Sort Order Toggle Button -->
       <!-- <div class="flex-shrink-0">
         <Button
@@ -121,7 +121,7 @@ watch(
       </div> -->
 
       <!-- Genre/Folder Dropdown -->
-      <div class="w-full max-w-[420px] mx-auto sm:mx-0 sm:min-w-[200px] sm:max-w-none sm:flex-shrink-0">
+      <div class="w-full max-w-[420px] mx-auto sm:mx-0 sm:w-auto sm:min-w-[200px] sm:flex-shrink-0">
         <Select
           :model-value="currentFolder"
           :options="folderOptions"
@@ -135,7 +135,7 @@ watch(
       </div>
 
       <!-- Sort Field Dropdown -->
-      <div class="w-full max-w-[420px] mx-auto sm:mx-0 sm:min-w-[180px] sm:max-w-none sm:flex-shrink-0">
+      <div class="w-full max-w-[420px] mx-auto sm:mx-0 sm:w-auto sm:min-w-[180px] sm:flex-shrink-0">
         <Select
           :model-value="currentSort"
           :options="sortOptions"
@@ -149,7 +149,7 @@ watch(
       </div>
 
       <!-- Search Bar -->
-      <div class="w-full max-w-[420px] mx-auto sm:mx-0 sm:min-w-[350px] sm:max-w-none sm:flex-grow">
+      <div class="w-full max-w-[420px] mx-auto sm:mx-0 sm:w-auto sm:min-w-[350px] sm:flex-grow">
         <Input
           v-model="searchQuery"
           type="search"
