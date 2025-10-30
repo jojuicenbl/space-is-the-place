@@ -49,7 +49,7 @@ onUnmounted(() => {
 </script>
 <template>
   <nav
-    class="fixed top-0 left-0 right-0 z-[1000] bg-white/70 dark:bg-[#181818]/80 backdrop-blur-lg transition-all duration-200"
+    class="navbar fixed top-0 left-0 right-0 z-[1000] backdrop-blur-lg transition-all duration-200"
     :class="{ 'border-b-[1.5px] border-gray-200/50 dark:border-gray-700/50': hasScrolled }"
   >
     <div class="flex items-center justify-between max-w-[1400px] mx-auto px-3 sm:px-4 md:px-6 h-[50px] sm:h-[60px]">
@@ -99,3 +99,8 @@ onUnmounted(() => {
     </div>
   </nav>
 </template>
+<style scoped>
+.navbar {
+  background-color: color-mix(in srgb, var(--color-background) 70%, transparent);
+}
+</style>
