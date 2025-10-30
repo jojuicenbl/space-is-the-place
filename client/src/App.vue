@@ -1,11 +1,45 @@
 <script setup lang="ts">
 import { RouterView, useRoute } from 'vue-router'
+import { onMounted } from 'vue'
 import AppNavbar from '@/components/Nav/AppNavbar.vue'
 
 const route = useRoute()
+
+// Déclaration du type global pour Starfield
+declare global {
+  interface Window {
+    Starfield: any
+  }
+}
+
+// Initialiser le starfield après le montage
+onMounted(() => {
+  if (window.Starfield) {
+    window.Starfield.setup({
+      auto: false,  // Mode manuel (pas besoin d'élément origin)
+      numStars: 400,
+      baseSpeed: 1,
+      trailLength: 0.8,
+      starColor: 'rgb(255, 255, 255)',
+      canvasColor: 'rgb(0, 0, 0)',
+      hueJitter: 0,
+      maxAcceleration: 10,
+      accelerationRate: 0.2,
+      decelerationRate: 0.2,
+      minSpawnRadius: 80,
+      maxSpawnRadius: 500
+    })
+
+    // Activer l'accélération pour un mouvement constant
+    window.Starfield.setAccelerate(true)
+  }
+})
 </script>
 <template>
   <div class="app">
+    <!-- Container starfield -->
+    <div class="starfield"></div>
+
     <AppNavbar v-show="route.name !== 'welcome'" class="app-navbar" />
     <div id="main-scroll" class="main-scroll" :class="{ 'with-navbar': route.name !== 'welcome' }">
       <RouterView v-slot="{ Component }">
@@ -41,6 +75,18 @@ body {
   margin: 0;
   padding: 0;
   background-color: var(--color-background);
+  position: relative;
+}
+
+/* Container starfield - arrière-plan fixe */
+.starfield {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: -1;
+  pointer-events: none;
 }
 
 /* Transitions de page smooth */

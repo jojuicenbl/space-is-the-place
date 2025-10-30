@@ -48,7 +48,7 @@ const navigateToCollection = async () => {
 /* Container principal */
 .minimal-cosmic {
   min-height: 100vh;
-  background: #000000;
+  background: transparent;
   color: #ffffff;
   position: relative;
   overflow: hidden;
