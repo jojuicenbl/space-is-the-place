@@ -61,7 +61,7 @@ onUnmounted(() => {
           <img
             src="/space-is-the-place-logo.png"
             alt="Space Is The Place Logo"
-            class="h-7 sm:h-8 md:h-[65px] w-auto object-contain"
+            class="h-8 sm:h-8 md:h-[65px] w-auto object-contain shrink-0"
           />
         </button>
       </div>
