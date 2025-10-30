@@ -229,14 +229,15 @@ onUnmounted(() => {
 <style scoped>
 .collection-container {
   max-width: 1600px;
-  padding-left: 16px;
-  padding-right: 16px;
+  /* Mobile: safe-area padding + base padding */
+  padding-left: max(16px, env(safe-area-inset-left));
+  padding-right: max(16px, env(safe-area-inset-right));
 }
 
 @media (min-width: 1360px) {
   .collection-container {
-    padding-left: 8px;
-    padding-right: 8px;
+    padding-left: max(8px, env(safe-area-inset-left));
+    padding-right: max(8px, env(safe-area-inset-right));
   }
 }
 
