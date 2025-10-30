@@ -14,25 +14,51 @@ declare global {
 
 // Initialiser le starfield après le montage
 onMounted(() => {
-  if (window.Starfield) {
-    window.Starfield.setup({
-      auto: false,  // Mode manuel (pas besoin d'élément origin)
-      numStars: 400,
-      baseSpeed: 1,
-      trailLength: 0.8,
-      starColor: 'rgb(255, 255, 255)',
-      canvasColor: 'rgb(0, 0, 0)',
-      hueJitter: 0,
-      maxAcceleration: 10,
-      accelerationRate: 0.2,
-      decelerationRate: 0.2,
-      minSpawnRadius: 80,
-      maxSpawnRadius: 500
-    })
+  console.log('🚀 App mounted, checking for Starfield...')
+  console.log('Window.Starfield:', window.Starfield)
 
-    // Activer l'accélération pour un mouvement constant
-    window.Starfield.setAccelerate(true)
+  // Attendre que le script soit chargé
+  const initStarfield = () => {
+    if (window.Starfield) {
+      console.log('✅ Starfield found, initializing...')
+
+      const container = document.querySelector('.starfield')
+      console.log('📦 Container:', container)
+      console.log('📐 Container dimensions:', {
+        width: container?.clientWidth,
+        height: container?.clientHeight
+      })
+
+      try {
+        window.Starfield.setup({
+          auto: false,  // Mode manuel (pas besoin d'élément origin)
+          numStars: 400,
+          baseSpeed: 1,
+          trailLength: 0.8,
+          starColor: 'rgb(255, 255, 255)',
+          canvasColor: 'rgb(0, 0, 0)',
+          hueJitter: 0,
+          maxAcceleration: 10,
+          accelerationRate: 0.2,
+          decelerationRate: 0.2,
+          minSpawnRadius: 80,
+          maxSpawnRadius: 500
+        })
+
+        // Activer l'accélération pour un mouvement constant
+        window.Starfield.setAccelerate(true)
+        console.log('🌟 Starfield initialized successfully!')
+      } catch (error) {
+        console.error('❌ Error initializing starfield:', error)
+      }
+    } else {
+      console.log('⏳ Starfield not loaded yet, retrying...')
+      setTimeout(initStarfield, 100)
+    }
   }
+
+  // Démarrer l'initialisation avec un petit délai
+  setTimeout(initStarfield, 100)
 })
 </script>
 <template>
@@ -63,6 +89,8 @@ body {
 .main-scroll {
   height: 100vh;
   overflow-y: auto;
+  position: relative;
+  z-index: 1;
 }
 
 .main-scroll.with-navbar {
@@ -74,7 +102,7 @@ body {
   height: 100vh;
   margin: 0;
   padding: 0;
-  background-color: var(--color-background);
+  background-color: transparent;
   position: relative;
 }
 
@@ -83,10 +111,12 @@ body {
   position: fixed;
   top: 0;
   left: 0;
-  width: 100%;
-  height: 100%;
-  z-index: -1;
+  width: 100vw;
+  height: 100vh;
+  z-index: 0;
   pointer-events: none;
+  /* Debug: border rouge pour voir si le container est visible */
+  /* border: 2px solid red; */
 }
 
 /* Transitions de page smooth */
@@ -108,6 +138,8 @@ body {
 .app-navbar {
   transition: opacity 0.5s cubic-bezier(0.4, 0, 0.2, 1);
   opacity: 1;
+  position: relative;
+  z-index: 10;
 }
 
 .app-navbar[style*="display: none"] {
