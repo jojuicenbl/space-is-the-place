@@ -50,16 +50,16 @@ const coverImage = computed(() =>
     padding="none"
     hoverable
     clickable
-    @click="navigateToRelease"
     class="overflow-hidden group"
+    @click="navigateToRelease"
   >
     <img
       :src="coverImage"
       :alt="release.basic_information.title"
       :title="`${release.basic_information.artists[0]?.name} - ${release.basic_information.title}`"
       class="w-full aspect-square object-cover block transition-opacity duration-200 group-hover:opacity-80"
-      @error="ImageUtils.handleImageError"
       loading="lazy"
+      @error="ImageUtils.handleImageError"
     />
   </Card>
 </template>

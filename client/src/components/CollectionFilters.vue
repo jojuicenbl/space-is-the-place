@@ -19,10 +19,10 @@ import { ref, computed, watch } from 'vue'
 import Card from '@/components/UI/Card.vue'
 import Select, { type SelectOption } from '@/components/UI/Select.vue'
 import Input from '@/components/UI/Input.vue'
-import Button from '@/components/UI/Button.vue'
+// import Button from '@/components/UI/Button.vue'
 import {
-  ArrowUpIcon,
-  ArrowDownIcon,
+  // ArrowUpIcon,
+  // ArrowDownIcon,
   FolderIcon,
   BarsArrowUpIcon,
   MagnifyingGlassIcon
@@ -66,10 +66,10 @@ const sortOptions: SelectOption[] = [
 ]
 
 // Handlers
-const toggleSortOrder = () => {
-  const newOrder: SortOrder = props.currentSortOrder === 'asc' ? 'desc' : 'asc'
-  emit('update:sortOrder', newOrder)
-}
+// const toggleSortOrder = () => {
+//   const newOrder: SortOrder = props.currentSortOrder === 'asc' ? 'desc' : 'asc'
+//   emit('update:sortOrder', newOrder)
+// }
 
 const handleFolderChange = (value: string | number) => {
   emit('update:folder', Number(value))
@@ -94,9 +94,9 @@ watch(
 
 // Computed sort button properties (adapted for Tailwind)
 // Use neutral colors for better visual harmony
-const sortButtonVariant = computed(() =>
-  props.currentSortOrder === 'asc' ? 'outline' : 'ghost'
-)
+// const sortButtonVariant = computed(() =>
+//   props.currentSortOrder === 'asc' ? 'outline' : 'ghost'
+// )
 </script>
 
 <template>
@@ -106,7 +106,7 @@ const sortButtonVariant = computed(() =>
   >
     <div class="flex items-center gap-4 flex-wrap">
       <!-- Sort Order Toggle Button -->
-      <div class="flex-shrink-0">
+      <!-- <div class="flex-shrink-0">
         <Button
           :variant="sortButtonVariant"
           size="md"
@@ -117,7 +117,7 @@ const sortButtonVariant = computed(() =>
           <ArrowUpIcon v-if="currentSortOrder === 'asc'" class="w-5 h-5 flex-shrink-0" />
           <ArrowDownIcon v-else class="w-5 h-5 flex-shrink-0" />
         </Button>
-      </div>
+      </div> -->
 
       <!-- Genre/Folder Dropdown -->
       <div class="min-w-[200px] flex-shrink-0">

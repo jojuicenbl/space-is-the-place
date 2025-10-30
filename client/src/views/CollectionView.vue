@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, nextTick } from 'vue'
+import { ref, onMounted, onUnmounted, nextTick, computed } from 'vue'
 import VinylCard from '../components/VinylCard.vue'
 
 import Pager from '@/components/UI/Pager.vue'
@@ -13,6 +13,33 @@ import { useCollection } from '@/composables/useCollection'
 const isFiltersVisible = ref(true)
 const isContentVisible = ref(true)
 const isPagerVisible = ref(true)
+
+// Grid configuration: nombre de colonnes par breakpoint (synchronisé avec CSS)
+const gridColumns = ref(6) // Valeur par défaut
+
+const updateGridColumns = () => {
+  const width = window.innerWidth
+  // Synchronisé avec les breakpoints Tailwind et CSS
+  if (width < 640) gridColumns.value = 2       // mobile
+  else if (width < 768) gridColumns.value = 3  // sm
+  else if (width < 1024) gridColumns.value = 4 // md
+  else gridColumns.value = 6                   // xl
+}
+
+// Calcul du nombre de cartes fantômes nécessaires pour compléter la dernière rangée
+const ghostCardsCount = computed(() => {
+  const count = releases.value.length
+  if (count === 0) return 0
+  const remainder = count % gridColumns.value
+  return remainder === 0 ? 0 : gridColumns.value - remainder
+})
+
+// Nombre de skeleton loaders à afficher (toujours un multiple du nombre de colonnes)
+const skeletonCount = computed(() => {
+  const baseCount = 40
+  const remainder = baseCount % gridColumns.value
+  return remainder === 0 ? baseCount : baseCount + (gridColumns.value - remainder)
+})
 
 // Smooth scroll to collection top
 const scrollToCollection = async () => {
@@ -66,6 +93,10 @@ onMounted(async () => {
   isContentVisible.value = true
   isPagerVisible.value = false
 
+  // Initialiser le nombre de colonnes
+  updateGridColumns()
+  window.addEventListener('resize', updateGridColumns)
+
   await fetchFolders()
 
   // Try to initialize from URL params first, fallback to regular fetch
@@ -79,6 +110,10 @@ onMounted(async () => {
     isFiltersVisible.value = true
     isPagerVisible.value = true
   }, 100)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('resize', updateGridColumns)
 })
 </script>
 <template>
@@ -133,15 +168,15 @@ onMounted(async () => {
         <!-- Results -->
         <Transition name="fade" mode="out-in">
           <!-- LOADING -->
-          <div v-if="isLoading" key="loading" class="flex flex-wrap justify-center gap-3 mt-4">
-            <SkeletonLoader
-              v-for="n in 40"
-              :key="n"
-              type="image"
-              class="skeleton-vinyl-card-width"
-              width="222px"
-              height="200px"
-            />
+          <div v-if="isLoading" key="loading" class="mt-4 mb-4 w-full">
+            <div class="vinyl-grid">
+              <SkeletonLoader
+                v-for="n in skeletonCount"
+                :key="n"
+                type="image"
+                class="vinyl-grid-item aspect-square"
+              />
+            </div>
           </div>
           <!-- ERROR -->
           <div v-else-if="error" key="error" class="flex justify-center items-center min-height-300">
@@ -162,10 +197,22 @@ onMounted(async () => {
           <!-- GRID -->
           <div v-else key="grid" class="mt-4 mb-4 w-full">
             <div
-              class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2 p-0"
-              :class="{ 'justify-items-center': releases.length === 1 }"
+              class="vinyl-grid"
+              :class="{ 'single-item': releases.length === 1 }"
             >
-              <VinylCard v-for="release in releases" :key="release.id" :release="release" class="w-full vinyl-card" />
+              <VinylCard 
+                v-for="release in releases" 
+                :key="release.id" 
+                :release="release" 
+                class="vinyl-grid-item vinyl-card" 
+              />
+              <!-- Cartes fantômes invisibles pour compléter la dernière rangée -->
+              <div
+                v-for="n in ghostCardsCount"
+                :key="`ghost-${n}`"
+                class="vinyl-grid-item ghost-card"
+                aria-hidden="true"
+              ></div>
             </div>
           </div>
         </Transition>
@@ -181,7 +228,7 @@ onMounted(async () => {
 </template>
 <style scoped>
 .collection-container {
-  max-width: 1400px;
+  max-width: 1600px;
   padding-left: 16px;
   padding-right: 16px;
 }
@@ -204,8 +251,45 @@ onMounted(async () => {
   text-align: center;
 }
 
-.skeleton-vinyl-card-width {
-  width: 222px;
+/* Grille CSS pure avec nombre de colonnes fixe par breakpoint */
+.vinyl-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr); /* Mobile: 2 colonnes */
+  gap: 0.5rem; /* gap-2 = 8px */
+  width: 100%;
+}
+
+/* Breakpoint sm (640px+) : 3 colonnes */
+@media (min-width: 640px) {
+  .vinyl-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+/* Breakpoint md (768px+) : 4 colonnes */
+@media (min-width: 768px) {
+  .vinyl-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+/* Breakpoint xl (1280px+) : 6 colonnes */
+@media (min-width: 1280px) {
+  .vinyl-grid {
+    grid-template-columns: repeat(6, 1fr);
+  }
+}
+
+/* Cas spécial : un seul élément centré */
+.vinyl-grid.single-item {
+  justify-items: center;
+}
+
+/* Chaque item de la grille */
+.vinyl-grid-item {
+  width: 100%;
+  /* Aspect ratio 1:1 pour toutes les cartes (vraies et fantômes) */
+  aspect-ratio: 1 / 1;
 }
 
 .vinyl-card {
@@ -214,6 +298,14 @@ onMounted(async () => {
 
 .vinyl-card:hover {
   opacity: 0.8;
+}
+
+/* Carte fantôme invisible qui occupe l'espace pour compléter la grille */
+.ghost-card {
+  visibility: hidden;
+  pointer-events: none;
+  /* Même aspect ratio que les vraies cartes */
+  aspect-ratio: 1 / 1;
 }
 
 .min-height-300 {
