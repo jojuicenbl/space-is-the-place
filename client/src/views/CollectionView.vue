@@ -448,8 +448,9 @@ onUnmounted(() => {
                 </div>
 
                 <!-- INFINITE SCROLL: Sentinel -->
+                <!-- Keep sentinel in DOM even during loading to maintain observer connection -->
                 <InfiniteScrollSentinel
-                  v-if="paginationStore.isInfiniteMode && paginationStore.canLoadMore && !paginationStore.domCapReached"
+                  v-if="paginationStore.isInfiniteMode && paginationStore.hasMore && !paginationStore.domCapReached"
                   ref="sentinelRef"
                   :debug="true"
                 />
