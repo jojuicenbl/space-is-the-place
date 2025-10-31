@@ -37,18 +37,38 @@ export function useIntersectionObserver(
 
   let isIntersecting = false
 
+  console.log('[useIntersectionObserver] 🔭 Creating observer with options:', {
+    rootMargin,
+    threshold,
+    hasRoot: !!root
+  })
+
   const observer = new IntersectionObserver(
     (entries) => {
+      console.log(`[useIntersectionObserver] 📊 Received ${entries.length} entries`)
       entries.forEach((entry) => {
+        console.log('[useIntersectionObserver] Entry details:', {
+          isIntersecting: entry.isIntersecting,
+          intersectionRatio: entry.intersectionRatio,
+          targetElement: entry.target,
+          alreadyIntersecting: isIntersecting
+        })
+
         // Only trigger when entering viewport (not when leaving)
         if (entry.isIntersecting && !isIntersecting) {
+          console.log('[useIntersectionObserver] ✅ Triggering callback (element entered viewport)')
           isIntersecting = true
           callback()
 
           // Reset flag after callback completes
           setTimeout(() => {
+            console.log('[useIntersectionObserver] 🔄 Resetting intersection flag')
             isIntersecting = false
           }, 300)
+        } else if (!entry.isIntersecting && isIntersecting) {
+          console.log('[useIntersectionObserver] ℹ️ Element left viewport')
+        } else if (entry.isIntersecting && isIntersecting) {
+          console.log('[useIntersectionObserver] ⏸️ Still intersecting, waiting for reset')
         }
       })
     },
@@ -60,14 +80,17 @@ export function useIntersectionObserver(
   )
 
   const observe = (element: Element) => {
+    console.log('[useIntersectionObserver] 👀 Starting to observe element:', element)
     observer.observe(element)
   }
 
   const unobserve = (element: Element) => {
+    console.log('[useIntersectionObserver] 🚫 Stopped observing element:', element)
     observer.unobserve(element)
   }
 
   const disconnect = () => {
+    console.log('[useIntersectionObserver] 🔌 Disconnecting observer')
     observer.disconnect()
   }
 

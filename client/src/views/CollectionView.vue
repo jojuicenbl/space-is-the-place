@@ -94,21 +94,14 @@ watch(
   isMobile,
   (mobile) => {
     const newMode = mobile ? 'infinite' : 'pager'
-    console.log('[CollectionView] Breakpoint changed:', {
+    console.log('[CollectionView] 📐 Breakpoint changed:', {
       isMobile: mobile,
       newMode,
       windowWidth: window.innerWidth,
       itemsCount: paginationStore.items.length
     })
     paginationStore.setMode(newMode)
-
-    // If switching to infinite mode and already have items, setup observer
-    if (mobile && paginationStore.items.length > 0) {
-      console.log('[CollectionView] Switching to infinite mode, will setup observer after nextTick')
-      nextTick(() => {
-        setupInfiniteScroll()
-      })
-    }
+    // Note: Observer setup is handled by the mode watcher and sentinelRef watcher
   },
   { immediate: true }
 )
@@ -117,30 +110,85 @@ watch(
 
 const { observe, disconnect } = useIntersectionObserver(
   () => {
+    console.log('[CollectionView] 👁️ Sentinel became visible!', {
+      canLoadMore: paginationStore.canLoadMore,
+      isLoading: paginationStore.isLoading,
+      isLoadingMore: paginationStore.isLoadingMore,
+      hasMore: paginationStore.hasMore,
+      domCapReached: paginationStore.domCapReached,
+      currentPage: paginationStore.currentPage,
+      totalPages: paginationStore.totalPages
+    })
+
     if (paginationStore.canLoadMore) {
-      console.log('[CollectionView] Sentinel visible, loading more...')
+      console.log('[CollectionView] ✅ Loading more items...')
       window.dispatchEvent(new CustomEvent('infinite_load_requested'))
       handleLoadMore()
+    } else {
+      console.log('[CollectionView] ⚠️ Cannot load more:', {
+        reason: !paginationStore.hasMore ? 'No more items' :
+                paginationStore.domCapReached ? 'DOM cap reached' :
+                paginationStore.isLoading ? 'Already loading' :
+                'Unknown'
+      })
     }
   },
   { rootMargin: '600px', threshold: 0.1 }
 )
 
+// Track if observer is already setup to prevent duplicate setups
+const observerSetup = ref(false)
+
 const setupInfiniteScroll = () => {
   // Access the exposed sentinel element from the component
   const element = sentinelRef.value?.sentinel?.value || sentinelRef.value?.sentinel
 
-  if (element && paginationStore.isInfiniteMode) {
-    console.log('[CollectionView] Setting up IntersectionObserver', element)
+  if (element && paginationStore.isInfiniteMode && !observerSetup.value) {
+    console.log('[CollectionView] ✅ Setting up IntersectionObserver', element)
     observe(element as HTMLElement)
+    observerSetup.value = true
   } else {
-    console.warn('[CollectionView] Cannot setup IntersectionObserver:', {
+    console.warn('[CollectionView] ⚠️ Cannot setup IntersectionObserver:', {
       hasSentinelRef: !!sentinelRef.value,
       hasSentinel: !!sentinelRef.value?.sentinel,
-      isInfiniteMode: paginationStore.isInfiniteMode
+      element: element,
+      isInfiniteMode: paginationStore.isInfiniteMode,
+      observerAlreadySetup: observerSetup.value
     })
   }
 }
+
+// Watch for sentinel ref changes and setup observer when it becomes available
+watch(
+  () => sentinelRef.value,
+  (newRef) => {
+    if (newRef && paginationStore.isInfiniteMode && !observerSetup.value) {
+      console.log('[CollectionView] 🎯 Sentinel ref became available, setting up observer')
+      nextTick(() => {
+        setupInfiniteScroll()
+      })
+    }
+  },
+  { immediate: true }
+)
+
+// Watch for mode changes to reset observer
+watch(
+  () => paginationStore.mode,
+  (newMode, oldMode) => {
+    if (oldMode === 'infinite' && newMode === 'pager') {
+      console.log('[CollectionView] 🔄 Switching from infinite to pager, disconnecting observer')
+      disconnect()
+      observerSetup.value = false
+    } else if (oldMode === 'pager' && newMode === 'infinite' && sentinelRef.value) {
+      console.log('[CollectionView] 🔄 Switching from pager to infinite, setting up observer')
+      observerSetup.value = false
+      nextTick(() => {
+        setupInfiniteScroll()
+      })
+    }
+  }
+)
 
 const handleLoadMore = async () => {
   const previousCount = paginationStore.items.length
@@ -248,13 +296,8 @@ onMounted(async () => {
     isPagerVisible.value = true
   }, 120)
 
-  // Setup infinite scroll if in mobile mode (after all content is revealed)
-  if (paginationStore.isInfiniteMode) {
-    setTimeout(() => {
-      console.log('[CollectionView] Setting up infinite scroll after content reveal')
-      setupInfiniteScroll()
-    }, 200)
-  }
+  // Note: Observer setup is now handled automatically by the sentinelRef watcher
+  // No need to manually call setupInfiniteScroll() here
 })
 
 onUnmounted(() => {
