@@ -21,15 +21,6 @@ const currentImageUrl = computed(() => {
   return ImageUtils.getSmallImageUrl(currentImage.value.uri)
 })
 
-const loadImage = (url: string): Promise<void> => {
-  return new Promise((resolve, reject) => {
-    const img = new Image()
-    img.onload = () => resolve()
-    img.onerror = reject
-    img.src = url
-  })
-}
-
 // Optimized: Change index immediately for instant navigation
 const nextImage = () => {
   currentIndex.value = (currentIndex.value + 1) % props.images.length
@@ -151,7 +142,7 @@ onMounted(() => {
   position: absolute;
   top: 50%;
   transform: translateY(-50%);
-  background: rgba(255, 255, 255, 0.8);
+  background: rgba(255, 255, 255, 0.5);
   border: none;
   border-radius: 50%;
   width: 40px;
