@@ -1,5 +1,21 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, nextTick, computed } from 'vue'
+/**
+ * CollectionView - Unified Pagination (Infinite Scroll + Classic Pager)
+ *
+ * Mobile (< 768px): Infinite scroll with IntersectionObserver
+ * Desktop (>= 768px): Classic pager
+ *
+ * Features:
+ * - Responsive pagination mode switching
+ * - Scroll restoration on back navigation
+ * - URL state synchronization
+ * - ARIA live regions for accessibility
+ * - DOM cap management (10 batches = 480 items)
+ * - Back to top button (mobile)
+ * - Manual load more fallback
+ */
+
+import { ref, onMounted, onUnmounted, nextTick, computed, watch } from 'vue'
 import VinylCard from '../components/VinylCard.vue'
 
 import Pager from '@/components/UI/Pager.vue'
@@ -7,50 +23,167 @@ import CollectionFilters from '@/components/CollectionFilters.vue'
 import ResultsCounter from '@/components/UI/ResultsCounter.vue'
 import SearchIndicator from '@/components/UI/SearchIndicator.vue'
 import SkeletonLoader from '@/components/UI/SkeletonLoader.vue'
-import { useCollection } from '@/composables/useCollection'
+import BackToTop from '@/components/UI/BackToTop.vue'
+import LoadMore from '@/components/UI/LoadMore.vue'
+import InfiniteScrollSentinel from '@/components/UI/InfiniteScrollSentinel.vue'
+import LiveRegion from '@/components/UI/LiveRegion.vue'
+import DomCapMessage from '@/components/UI/DomCapMessage.vue'
 
-// UI state
+import { usePaginationStore } from '@/stores/usePaginationStore'
+import { useResponsive } from '@/composables/useResponsive'
+import { useIntersectionObserver } from '@/composables/useIntersectionObserver'
+import { getFolders } from '@/services/collectionApi'
+
+// ============ STORES & COMPOSABLES ============
+
+const paginationStore = usePaginationStore()
+const { isMobile } = useResponsive()
+
+// ============ UI STATE ============
+
 const isFiltersVisible = ref(true)
 const isContentVisible = ref(true)
 const isPagerVisible = ref(true)
 
-// Grid configuration: nombre de colonnes par breakpoint (synchronisé avec CSS)
+// ARIA live region message
+const liveMessage = ref('')
+
+// Sentinel ref for IntersectionObserver
+const sentinelRef = ref<HTMLElement | null>(null)
+
+// ============ GRID CONFIGURATION ============
+
 const getInitialGridColumns = () => {
   const width = window.innerWidth
-  // Synchronisé avec les breakpoints Tailwind et CSS
-  if (width < 640) return 2       // mobile
-  else if (width < 768) return 3  // sm
+  if (width < 640) return 2 // mobile
+  else if (width < 768) return 3 // sm
   else if (width < 1024) return 4 // md
-  else return 6                   // xl
+  else return 6 // xl
 }
 
 const gridColumns = ref(getInitialGridColumns())
 
 const updateGridColumns = () => {
   const width = window.innerWidth
-  // Synchronisé avec les breakpoints Tailwind et CSS
-  if (width < 640) gridColumns.value = 2       // mobile
-  else if (width < 768) gridColumns.value = 3  // sm
-  else if (width < 1024) gridColumns.value = 4 // md
-  else gridColumns.value = 6                   // xl
+  if (width < 640) gridColumns.value = 2
+  else if (width < 768) gridColumns.value = 3
+  else if (width < 1024) gridColumns.value = 4
+  else gridColumns.value = 6
 }
 
-// Calcul du nombre de cartes fantômes nécessaires pour compléter la dernière rangée
+// Ghost cards to complete last row
 const ghostCardsCount = computed(() => {
-  const count = releases.value.length
+  const count = paginationStore.items.length
   if (count === 0) return 0
   const remainder = count % gridColumns.value
   return remainder === 0 ? 0 : gridColumns.value - remainder
 })
 
-// Nombre de skeleton loaders à afficher (toujours un multiple du nombre de colonnes)
+// Skeleton loaders count
 const skeletonCount = computed(() => {
   const baseCount = 40
   const remainder = baseCount % gridColumns.value
   return remainder === 0 ? baseCount : baseCount + (gridColumns.value - remainder)
 })
 
-// Smooth scroll to collection top
+// ============ PAGINATION MODE MANAGEMENT ============
+
+// Watch responsive breakpoint and update mode
+watch(
+  isMobile,
+  (mobile) => {
+    const newMode = mobile ? 'infinite' : 'pager'
+    console.log('[CollectionView] Breakpoint changed, setting mode to:', newMode)
+    paginationStore.setMode(newMode)
+
+    // If switching to infinite mode and already have items, setup observer
+    if (mobile && paginationStore.items.length > 0) {
+      nextTick(() => {
+        setupInfiniteScroll()
+      })
+    }
+  },
+  { immediate: true }
+)
+
+// ============ INFINITE SCROLL ============
+
+const { observe, disconnect } = useIntersectionObserver(
+  () => {
+    if (paginationStore.canLoadMore) {
+      console.log('[CollectionView] Sentinel visible, loading more...')
+      window.dispatchEvent(new CustomEvent('infinite_load_requested'))
+      handleLoadMore()
+    }
+  },
+  { rootMargin: '600px', threshold: 0.1 }
+)
+
+const setupInfiniteScroll = () => {
+  if (sentinelRef.value && paginationStore.isInfiniteMode) {
+    console.log('[CollectionView] Setting up IntersectionObserver')
+    observe(sentinelRef.value)
+  }
+}
+
+const handleLoadMore = async () => {
+  const previousCount = paginationStore.items.length
+  await paginationStore.loadMore()
+  const newCount = paginationStore.items.length
+  const loadedCount = newCount - previousCount
+
+  if (loadedCount > 0) {
+    liveMessage.value = `${loadedCount} new items loaded. Total: ${newCount}`
+  }
+}
+
+const handleManualLoadMore = async () => {
+  if (paginationStore.domCapReached) {
+    paginationStore.resetDomCap()
+  }
+  await handleLoadMore()
+}
+
+// ============ PAGER MODE ============
+
+const handlePageChange = async (page: number) => {
+  // Scroll to collection top first
+  await scrollToCollection()
+
+  // Save scroll position before changing page
+  const mainScroll = document.getElementById('main-scroll')
+  if (mainScroll) {
+    paginationStore.saveScrollPosition(0)
+  }
+
+  // Change page
+  await paginationStore.changePage(page)
+}
+
+// ============ FILTERS ============
+
+const handleFolderChange = async (folderId: number) => {
+  await scrollToCollection()
+  await paginationStore.applyFiltersAndSort({ folder: folderId })
+}
+
+const handleSortChange = async (sort: string) => {
+  await scrollToCollection()
+  await paginationStore.applyFiltersAndSort({ sort: sort as any })
+}
+
+const handleSortOrderChange = async (order: string) => {
+  await scrollToCollection()
+  await paginationStore.applyFiltersAndSort({ sortOrder: order as any })
+}
+
+const handleSearch = async (query: string) => {
+  await scrollToCollection()
+  await paginationStore.applyFiltersAndSort({ search: query })
+}
+
+// ============ SCROLL UTILITIES ============
+
 const scrollToCollection = async () => {
   await nextTick()
   const mainScroll = document.getElementById('main-scroll')
@@ -62,43 +195,10 @@ const scrollToCollection = async () => {
   }
 }
 
-// Use collection composable - much simpler now
-const {
-  releases,
-  folders,
-  isLoading,
-  isInitialized,
-  totalItems,
-  error,
-  currentFolder,
-  currentSort,
-  currentSortOrder,
-  searchQuery,
-  currentPage,
-  totalPages,
-  isSearchActive,
-  fetchFolders,
-  fetchCollection,
-  initializeFromUrl,
-  handleSearch,
-  handleFolderChange,
-  handleSortChange,
-  handleSortOrderChange,
-  handlePageChange: originalHandlePageChange
-} = useCollection()
-
-// Enhanced page change with smooth scroll and transitions
-const handlePageChange = async (page: number) => {
-  // Scroll to collection top first
-  await scrollToCollection()
-
-  // Call the original handler which will set isLoading = true
-  // This allows the skeleton loader to show during the loading
-  await originalHandlePageChange(page)
-}
+// ============ LIFECYCLE ============
 
 onMounted(async () => {
-  // Start with all sections hidden for staggered animation
+  // Start with sections hidden
   isFiltersVisible.value = false
   isContentVisible.value = false
   isPagerVisible.value = false
@@ -106,16 +206,27 @@ onMounted(async () => {
   // Listen to screen size changes
   window.addEventListener('resize', updateGridColumns)
 
-  await fetchFolders()
+  // Initialize from URL
+  paginationStore.initializeFromUrl()
 
-  // Try to initialize from URL params first, fallback to regular fetch
-  const wasInitializedFromUrl = await initializeFromUrl()
-  if (!wasInitializedFromUrl) {
-    await fetchCollection()
+  // Load folders
+  try {
+    const data = await getFolders()
+    paginationStore.folders = data.folders
+  } catch (err) {
+    console.error('Error loading folders:', err)
   }
 
-  // Staggered reveal with tight timing (≤350ms total)
-  // Show sections in order: filters (0ms) → content (60ms) → pager (120ms)
+  // Load initial data
+  await paginationStore.loadInitial()
+
+  // Setup infinite scroll if in mobile mode
+  if (paginationStore.isInfiniteMode) {
+    await nextTick()
+    setupInfiniteScroll()
+  }
+
+  // Staggered reveal
   await nextTick()
   isFiltersVisible.value = true
 
@@ -130,13 +241,15 @@ onMounted(async () => {
 
 onUnmounted(() => {
   window.removeEventListener('resize', updateGridColumns)
+  disconnect()
 })
 </script>
+
 <template>
   <div class="collection-page">
     <div class="mx-auto collection-container">
       <div class="flex flex-col items-center w-full">
-        <!-- Page Header - always visible -->
+        <!-- Page Header -->
         <div class="collection-header">
           <h1 class="page-title">THE COLLECTION</h1>
           <div class="text-center text-xs mt-2 mb-4 text-gray-600 dark:text-gray-400">
@@ -152,45 +265,51 @@ onUnmounted(() => {
           </div>
         </div>
 
-        <!-- Filters Section - stagger delay 0ms -->
+        <!-- Filters Section -->
         <Transition name="stagger-fade">
           <div v-show="isFiltersVisible" class="collection-filters-section">
             <div class="flex justify-center w-full">
               <CollectionFilters
-                :folders="folders"
-                :current-folder="currentFolder"
-                :current-sort="currentSort"
-                :current-sort-order="currentSortOrder"
-                :releases="releases"
-                :search-query="searchQuery"
+                :folders="paginationStore.folders"
+                :current-folder="paginationStore.currentFolder"
+                :current-sort="paginationStore.currentSort"
+                :current-sort-order="paginationStore.currentSortOrder"
+                :releases="paginationStore.items"
+                :search-query="paginationStore.searchQuery"
                 @update:folder="handleFolderChange"
                 @update:sort="handleSortChange"
                 @update:sort-order="handleSortOrderChange"
                 @search="handleSearch"
               />
             </div>
+
             <!-- Results Counter -->
             <div class="flex justify-center w-full mb-4">
-              <ResultsCounter :total="totalItems" :filtered="releases.length" :is-searching="isSearchActive" />
+              <ResultsCounter
+                :total="paginationStore.totalItems"
+                :filtered="paginationStore.items.length"
+                :is-searching="paginationStore.isSearchActive"
+              />
             </div>
+
             <!-- Search Loading Indicator -->
             <Transition name="fade">
               <SearchIndicator
-                v-if="isSearchActive && isLoading"
-                :is-loading="isLoading"
-                :search-query="searchQuery"
-                :result-count="releases.length"
+                v-if="paginationStore.isSearchActive && paginationStore.isLoading"
+                :is-loading="paginationStore.isLoading"
+                :search-query="paginationStore.searchQuery"
+                :result-count="paginationStore.items.length"
               />
             </Transition>
           </div>
         </Transition>
 
-        <!-- Content Section - stagger delay 60ms -->
+        <!-- Content Section -->
         <Transition name="stagger-fade-delayed" mode="out-in">
           <div v-show="isContentVisible" class="collection-content-section">
             <Transition name="fade" mode="out-in">
-              <!-- LOADING -->
-              <div v-if="isLoading" key="loading" class="mt-4 mb-4 w-full">
+              <!-- LOADING (initial) -->
+              <div v-if="paginationStore.isLoading && !paginationStore.isLoadingMore" key="loading" class="mt-4 mb-4 w-full">
                 <div class="vinyl-grid">
                   <SkeletonLoader
                     v-for="n in skeletonCount"
@@ -200,35 +319,53 @@ onUnmounted(() => {
                   />
                 </div>
               </div>
+
               <!-- ERROR -->
-              <div v-else-if="error" key="error" class="flex justify-center items-center min-height-300">
-                {{ error }}
+              <div
+                v-else-if="paginationStore.error && paginationStore.items.length === 0"
+                key="error"
+                class="flex flex-col justify-center items-center min-height-300"
+              >
+                <p class="text-xl font-semibold mb-4 text-gray-900 dark:text-gray-100">
+                  {{ paginationStore.error }}
+                </p>
+                <button
+                  type="button"
+                  class="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
+                  @click="paginationStore.retry"
+                >
+                  Retry
+                </button>
               </div>
+
               <!-- EMPTY -->
               <div
-                v-else-if="releases.length === 0 && isInitialized"
+                v-else-if="paginationStore.items.length === 0 && paginationStore.isInitialized"
                 key="empty"
                 class="flex flex-col justify-center items-center min-height-300"
               >
-                <div class="text-xl font-semibold mb-2 text-gray-900 dark:text-gray-100">No releases found</div>
+                <div class="text-xl font-semibold mb-2 text-gray-900 dark:text-gray-100">
+                  No releases found
+                </div>
                 <div class="text-sm text-gray-600 dark:text-gray-400">
-                  <span v-if="isSearchActive">Try adjusting your search terms or filters.</span>
+                  <span v-if="paginationStore.isSearchActive">
+                    Try adjusting your search terms or filters.
+                  </span>
                   <span v-else>No releases in this folder.</span>
                 </div>
               </div>
+
               <!-- GRID -->
               <div v-else key="grid" class="mt-4 mb-4 w-full">
-                <div
-                  class="vinyl-grid"
-                  :class="{ 'single-item': releases.length === 1 }"
-                >
+                <div class="vinyl-grid" :class="{ 'single-item': paginationStore.items.length === 1 }">
                   <VinylCard
-                    v-for="release in releases"
+                    v-for="release in paginationStore.items"
                     :key="release.id"
                     :release="release"
                     class="vinyl-grid-item vinyl-card"
                   />
-                  <!-- Cartes fantômes invisibles pour compléter la dernière rangée -->
+
+                  <!-- Ghost cards -->
                   <div
                     v-for="n in ghostCardsCount"
                     :key="`ghost-${n}`"
@@ -236,23 +373,71 @@ onUnmounted(() => {
                     aria-hidden="true"
                   ></div>
                 </div>
+
+                <!-- INFINITE SCROLL: Loading more skeleton -->
+                <div v-if="paginationStore.isLoadingMore" class="mt-4 w-full">
+                  <div class="vinyl-grid">
+                    <SkeletonLoader
+                      v-for="n in gridColumns * 2"
+                      :key="`more-${n}`"
+                      type="image"
+                      class="vinyl-grid-item"
+                    />
+                  </div>
+                </div>
+
+                <!-- INFINITE SCROLL: Sentinel -->
+                <InfiniteScrollSentinel
+                  v-if="paginationStore.isInfiniteMode && paginationStore.canLoadMore && !paginationStore.domCapReached"
+                  ref="sentinelRef"
+                  :debug="false"
+                />
+
+                <!-- INFINITE SCROLL: DOM Cap Message -->
+                <DomCapMessage
+                  v-if="paginationStore.isInfiniteMode && paginationStore.domCapReached"
+                  :total-loaded="paginationStore.items.length"
+                  :on-load-more="handleManualLoadMore"
+                />
+
+                <!-- INFINITE SCROLL: Manual Load More (error fallback) -->
+                <LoadMore
+                  v-if="paginationStore.isInfiniteMode && paginationStore.error && paginationStore.items.length > 0"
+                  :is-loading="paginationStore.isLoadingMore"
+                  :error="paginationStore.error"
+                  @load-more="paginationStore.retry"
+                />
               </div>
             </Transition>
           </div>
         </Transition>
 
-        <!-- Pagination Section - stagger delay 120ms -->
+        <!-- PAGER MODE: Pagination -->
         <Transition name="stagger-fade-pager">
-          <div v-show="isPagerVisible && totalPages > 1" class="collection-pager-section">
+          <div
+            v-show="isPagerVisible && paginationStore.isPagerMode && paginationStore.totalPages > 1"
+            class="collection-pager-section"
+          >
             <div class="flex justify-center w-full">
-              <Pager :current-page="currentPage" :total-pages="totalPages" :on-page-change="handlePageChange" />
+              <Pager
+                :current-page="paginationStore.currentPage"
+                :total-pages="paginationStore.totalPages"
+                :on-page-change="handlePageChange"
+              />
             </div>
           </div>
         </Transition>
+
+        <!-- INFINITE SCROLL: Back to Top Button -->
+        <BackToTop v-if="paginationStore.isInfiniteMode" :threshold="800" scroll-target="main-scroll" />
+
+        <!-- ARIA Live Region -->
+        <LiveRegion :message="liveMessage" politeness="polite" :auto-clear="true" :clear-delay="3000" />
       </div>
     </div>
   </div>
 </template>
+
 <style scoped>
 /* ====================================
    Layout & Container
@@ -308,8 +493,9 @@ onUnmounted(() => {
 
 /* Base stagger-fade (no delay) - for filters */
 .stagger-fade-enter-active {
-  transition: opacity 200ms cubic-bezier(0.4, 0, 0.2, 1),
-              transform 200ms cubic-bezier(0.4, 0, 0.2, 1);
+  transition:
+    opacity 200ms cubic-bezier(0.4, 0, 0.2, 1),
+    transform 200ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .stagger-fade-leave-active {
@@ -327,8 +513,9 @@ onUnmounted(() => {
 
 /* Delayed stagger-fade (60ms delay) - for content */
 .stagger-fade-delayed-enter-active {
-  transition: opacity 200ms cubic-bezier(0.4, 0, 0.2, 1),
-              transform 200ms cubic-bezier(0.4, 0, 0.2, 1);
+  transition:
+    opacity 200ms cubic-bezier(0.4, 0, 0.2, 1),
+    transform 200ms cubic-bezier(0.4, 0, 0.2, 1);
   transition-delay: 60ms;
 }
 
@@ -347,8 +534,9 @@ onUnmounted(() => {
 
 /* Pager stagger-fade (120ms delay) - for pagination */
 .stagger-fade-pager-enter-active {
-  transition: opacity 200ms cubic-bezier(0.4, 0, 0.2, 1),
-              transform 200ms cubic-bezier(0.4, 0, 0.2, 1);
+  transition:
+    opacity 200ms cubic-bezier(0.4, 0, 0.2, 1),
+    transform 200ms cubic-bezier(0.4, 0, 0.2, 1);
   transition-delay: 120ms;
 }
 
