@@ -38,7 +38,7 @@ const navigateToCollection = async () => {
           :disabled="isNavigating"
           @click="navigateToCollection"
         >
-          Enter My Universe
+          Start Your Voyage
         </Button>
       </section>
     </main>

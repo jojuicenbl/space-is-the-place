@@ -24,7 +24,7 @@
                 </div>
               </div>
               <div class="photo-caption">
-                Juice man digging crates in Rough Trade East, Bricklane, London, 2017
+                Crate-digging at Rough Trade East, Bricklane, London – 2017
               </div>
             </div>
             <!-- Text Content -->
