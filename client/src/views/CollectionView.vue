@@ -98,11 +98,12 @@ const handlePageChange = async (page: number) => {
 }
 
 onMounted(async () => {
+  // Start with all sections hidden for staggered animation
   isFiltersVisible.value = false
-  isContentVisible.value = true
+  isContentVisible.value = false
   isPagerVisible.value = false
 
-  // Écouter les changements de taille d'écran
+  // Listen to screen size changes
   window.addEventListener('resize', updateGridColumns)
 
   await fetchFolders()
@@ -113,11 +114,18 @@ onMounted(async () => {
     await fetchCollection()
   }
 
-  // show outer components with slight delay
+  // Staggered reveal with tight timing (≤350ms total)
+  // Show sections in order: filters (0ms) → content (60ms) → pager (120ms)
+  await nextTick()
+  isFiltersVisible.value = true
+
   setTimeout(() => {
-    isFiltersVisible.value = true
+    isContentVisible.value = true
+  }, 60)
+
+  setTimeout(() => {
     isPagerVisible.value = true
-  }, 100)
+  }, 120)
 })
 
 onUnmounted(() => {
@@ -125,109 +133,120 @@ onUnmounted(() => {
 })
 </script>
 <template>
-  <div>
+  <div class="collection-page">
     <div class="mx-auto collection-container">
       <div class="flex flex-col items-center w-full">
-        <h1 class="page-title">THE COLLECTION</h1>
-        <div class="text-center text-xs mt-2 mb-4 text-gray-600 dark:text-gray-400">
-          Data provided by
-          <a
-            href="https://www.discogs.com/"
-            target="_blank"
-            rel="noopener noreferrer"
-            class="no-underline hover:underline text-primary-500 dark:text-primary-400"
-          >
-            Discogs
-          </a>
-        </div>
-        <!-- Filters -->
-        <Transition name="fade">
-          <div v-show="isFiltersVisible" class="flex justify-center w-full">
-            <CollectionFilters
-              :folders="folders"
-              :current-folder="currentFolder"
-              :current-sort="currentSort"
-              :current-sort-order="currentSortOrder"
-              :releases="releases"
-              :search-query="searchQuery"
-              @update:folder="handleFolderChange"
-              @update:sort="handleSortChange"
-              @update:sort-order="handleSortOrderChange"
-              @search="handleSearch"
-            />
-          </div>
-        </Transition>
-        <!-- Results Counter -->
-        <Transition name="fade">
-          <div v-show="isFiltersVisible" class="flex justify-center w-full mb-4">
-            <ResultsCounter :total="totalItems" :filtered="releases.length" :is-searching="isSearchActive" />
-          </div>
-        </Transition>
-        <!-- Search Loading Indicator - simplified -->
-        <Transition name="fade">
-          <SearchIndicator
-            v-if="isSearchActive && isLoading"
-            :is-loading="isLoading"
-            :search-query="searchQuery"
-            :result-count="releases.length"
-          />
-        </Transition>
-        <!-- Content -->
-        <!-- Results -->
-        <Transition name="fade" mode="out-in">
-          <!-- LOADING -->
-          <div v-if="isLoading" key="loading" class="mt-4 mb-4 w-full">
-            <div class="vinyl-grid">
-              <SkeletonLoader
-                v-for="n in skeletonCount"
-                :key="n"
-                type="image"
-                class="vinyl-grid-item"
-              />
-            </div>
-          </div>
-          <!-- ERROR -->
-          <div v-else-if="error" key="error" class="flex justify-center items-center min-height-300">
-            {{ error }}
-          </div>
-          <!-- EMPTY -->
-          <div
-            v-else-if="releases.length === 0 && isInitialized"
-            key="empty"
-            class="flex flex-col justify-center items-center min-height-300"
-          >
-            <div class="text-xl font-semibold mb-2 text-gray-900 dark:text-gray-100">No releases found</div>
-            <div class="text-sm text-gray-600 dark:text-gray-400">
-              <span v-if="isSearchActive">Try adjusting your search terms or filters.</span>
-              <span v-else>No releases in this folder.</span>
-            </div>
-          </div>
-          <!-- GRID -->
-          <div v-else key="grid" class="mt-4 mb-4 w-full">
-            <div
-              class="vinyl-grid"
-              :class="{ 'single-item': releases.length === 1 }"
+        <!-- Page Header - always visible -->
+        <div class="collection-header">
+          <h1 class="page-title">THE COLLECTION</h1>
+          <div class="text-center text-xs mt-2 mb-4 text-gray-600 dark:text-gray-400">
+            Data provided by
+            <a
+              href="https://www.discogs.com/"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="no-underline hover:underline text-primary-500 dark:text-primary-400"
             >
-              <VinylCard 
-                v-for="release in releases" 
-                :key="release.id" 
-                :release="release" 
-                class="vinyl-grid-item vinyl-card" 
+              Discogs
+            </a>
+          </div>
+        </div>
+
+        <!-- Filters Section - stagger delay 0ms -->
+        <Transition name="stagger-fade">
+          <div v-show="isFiltersVisible" class="collection-filters-section">
+            <div class="flex justify-center w-full">
+              <CollectionFilters
+                :folders="folders"
+                :current-folder="currentFolder"
+                :current-sort="currentSort"
+                :current-sort-order="currentSortOrder"
+                :releases="releases"
+                :search-query="searchQuery"
+                @update:folder="handleFolderChange"
+                @update:sort="handleSortChange"
+                @update:sort-order="handleSortOrderChange"
+                @search="handleSearch"
               />
-              <!-- Cartes fantômes invisibles pour compléter la dernière rangée -->
-              <div
-                v-for="n in ghostCardsCount"
-                :key="`ghost-${n}`"
-                class="vinyl-grid-item ghost-card"
-                aria-hidden="true"
-              ></div>
             </div>
+            <!-- Results Counter -->
+            <div class="flex justify-center w-full mb-4">
+              <ResultsCounter :total="totalItems" :filtered="releases.length" :is-searching="isSearchActive" />
+            </div>
+            <!-- Search Loading Indicator -->
+            <Transition name="fade">
+              <SearchIndicator
+                v-if="isSearchActive && isLoading"
+                :is-loading="isLoading"
+                :search-query="searchQuery"
+                :result-count="releases.length"
+              />
+            </Transition>
           </div>
         </Transition>
-        <!-- Pagination -->
-        <Transition name="fade">
-          <div v-show="isPagerVisible && totalPages > 1" class="flex justify-center w-full">
-            <Pager :current-page="currentPage" :total-pages="totalPages" :on-page-change="handlePageChange" />
+
+        <!-- Content Section - stagger delay 60ms -->
+        <Transition name="stagger-fade-delayed" mode="out-in">
+          <div v-show="isContentVisible" class="collection-content-section">
+            <Transition name="fade" mode="out-in">
+              <!-- LOADING -->
+              <div v-if="isLoading" key="loading" class="mt-4 mb-4 w-full">
+                <div class="vinyl-grid">
+                  <SkeletonLoader
+                    v-for="n in skeletonCount"
+                    :key="n"
+                    type="image"
+                    class="vinyl-grid-item"
+                  />
+                </div>
+              </div>
+              <!-- ERROR -->
+              <div v-else-if="error" key="error" class="flex justify-center items-center min-height-300">
+                {{ error }}
+              </div>
+              <!-- EMPTY -->
+              <div
+                v-else-if="releases.length === 0 && isInitialized"
+                key="empty"
+                class="flex flex-col justify-center items-center min-height-300"
+              >
+                <div class="text-xl font-semibold mb-2 text-gray-900 dark:text-gray-100">No releases found</div>
+                <div class="text-sm text-gray-600 dark:text-gray-400">
+                  <span v-if="isSearchActive">Try adjusting your search terms or filters.</span>
+                  <span v-else>No releases in this folder.</span>
+                </div>
+              </div>
+              <!-- GRID -->
+              <div v-else key="grid" class="mt-4 mb-4 w-full">
+                <div
+                  class="vinyl-grid"
+                  :class="{ 'single-item': releases.length === 1 }"
+                >
+                  <VinylCard
+                    v-for="release in releases"
+                    :key="release.id"
+                    :release="release"
+                    class="vinyl-grid-item vinyl-card"
+                  />
+                  <!-- Cartes fantômes invisibles pour compléter la dernière rangée -->
+                  <div
+                    v-for="n in ghostCardsCount"
+                    :key="`ghost-${n}`"
+                    class="vinyl-grid-item ghost-card"
+                    aria-hidden="true"
+                  ></div>
+                </div>
+              </div>
+            </Transition>
+          </div>
+        </Transition>
+
+        <!-- Pagination Section - stagger delay 120ms -->
+        <Transition name="stagger-fade-pager">
+          <div v-show="isPagerVisible && totalPages > 1" class="collection-pager-section">
+            <div class="flex justify-center w-full">
+              <Pager :current-page="currentPage" :total-pages="totalPages" :on-page-change="handlePageChange" />
+            </div>
           </div>
         </Transition>
       </div>
@@ -235,6 +254,13 @@ onUnmounted(() => {
   </div>
 </template>
 <style scoped>
+/* ====================================
+   Layout & Container
+   ==================================== */
+.collection-page {
+  width: 100%;
+}
+
 .collection-container {
   max-width: 1600px;
   /* Mobile: safe-area padding + base padding */
@@ -249,6 +275,13 @@ onUnmounted(() => {
   }
 }
 
+/* ====================================
+   Page Header
+   ==================================== */
+.collection-header {
+  width: 100%;
+}
+
 .page-title {
   font-family: 'Inter', 'ui-sans-serif', 'system-ui', sans-serif;
   font-size: clamp(2.5rem, 8vw, 4rem);
@@ -258,6 +291,78 @@ onUnmounted(() => {
   letter-spacing: 0.05em;
   line-height: 1.1;
   text-align: center;
+}
+
+/* ====================================
+   Section Wrappers
+   ==================================== */
+.collection-filters-section,
+.collection-content-section,
+.collection-pager-section {
+  width: 100%;
+}
+
+/* ====================================
+   Staggered Fade Transitions
+   ==================================== */
+
+/* Base stagger-fade (no delay) - for filters */
+.stagger-fade-enter-active {
+  transition: opacity 200ms cubic-bezier(0.4, 0, 0.2, 1),
+              transform 200ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.stagger-fade-leave-active {
+  transition: opacity 150ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.stagger-fade-enter-from {
+  opacity: 0;
+  transform: translateY(8px);
+}
+
+.stagger-fade-leave-to {
+  opacity: 0;
+}
+
+/* Delayed stagger-fade (60ms delay) - for content */
+.stagger-fade-delayed-enter-active {
+  transition: opacity 200ms cubic-bezier(0.4, 0, 0.2, 1),
+              transform 200ms cubic-bezier(0.4, 0, 0.2, 1);
+  transition-delay: 60ms;
+}
+
+.stagger-fade-delayed-leave-active {
+  transition: opacity 150ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.stagger-fade-delayed-enter-from {
+  opacity: 0;
+  transform: translateY(8px);
+}
+
+.stagger-fade-delayed-leave-to {
+  opacity: 0;
+}
+
+/* Pager stagger-fade (120ms delay) - for pagination */
+.stagger-fade-pager-enter-active {
+  transition: opacity 200ms cubic-bezier(0.4, 0, 0.2, 1),
+              transform 200ms cubic-bezier(0.4, 0, 0.2, 1);
+  transition-delay: 120ms;
+}
+
+.stagger-fade-pager-leave-active {
+  transition: opacity 150ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.stagger-fade-pager-enter-from {
+  opacity: 0;
+  transform: translateY(8px);
+}
+
+.stagger-fade-pager-leave-to {
+  opacity: 0;
 }
 
 /* Grille CSS pure avec nombre de colonnes fixe par breakpoint */
@@ -330,5 +435,28 @@ onUnmounted(() => {
 .fade-enter-from,
 .fade-leave-to {
   opacity: 0;
+}
+
+/* ====================================
+   Reduced Motion Support
+   ==================================== */
+@media (prefers-reduced-motion: reduce) {
+  .stagger-fade-enter-active,
+  .stagger-fade-leave-active,
+  .stagger-fade-delayed-enter-active,
+  .stagger-fade-delayed-leave-active,
+  .stagger-fade-pager-enter-active,
+  .stagger-fade-pager-leave-active,
+  .fade-enter-active,
+  .fade-leave-active {
+    transition: none !important;
+    transition-delay: 0ms !important;
+  }
+
+  .stagger-fade-enter-from,
+  .stagger-fade-delayed-enter-from,
+  .stagger-fade-pager-enter-from {
+    transform: none !important;
+  }
 }
 </style>

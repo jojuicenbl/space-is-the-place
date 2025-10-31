@@ -2,16 +2,49 @@
 import Button from '@/components/UI/Button.vue'
 import { useRouter } from 'vue-router'
 import { ref } from 'vue'
+import { getCollection, getFolders } from '@/services/collectionApi'
 
 const router = useRouter()
 const isNavigating = ref(false)
+const isPrefetching = ref(false)
+
+// Prefetch collection data to warm the cache
+const prefetchCollectionData = async () => {
+  if (isPrefetching.value || isNavigating.value) return
+
+  isPrefetching.value = true
+
+  try {
+    // Fetch folders and initial collection in parallel
+    await Promise.all([
+      getFolders(),
+      getCollection({
+        page: 1,
+        perPage: 48,
+        folderId: 0,
+        sort: 'added',
+        sortOrder: 'desc'
+      })
+    ])
+  } catch (error) {
+    // Silently fail - the CollectionView will fetch again if needed
+    console.debug('Prefetch completed (or failed silently)', error)
+  } finally {
+    isPrefetching.value = false
+  }
+}
 
 const navigateToCollection = async () => {
   if (isNavigating.value) return
 
   isNavigating.value = true
 
-  // lil' delay to let the animation play
+  // Start prefetching immediately on click if not already started
+  if (!isPrefetching.value) {
+    prefetchCollectionData()
+  }
+
+  // Small delay to let the button animation play
   await new Promise(resolve => setTimeout(resolve, 200))
 
   try {
@@ -19,6 +52,11 @@ const navigateToCollection = async () => {
   } finally {
     isNavigating.value = false
   }
+}
+
+// Optional: Prefetch on hover for desktop users (warm cache even earlier)
+const handleButtonHover = () => {
+  prefetchCollectionData()
 }
 </script>
 <template>
@@ -37,6 +75,7 @@ const navigateToCollection = async () => {
           :class="['enter-btn', { navigating: isNavigating }]"
           :disabled="isNavigating"
           @click="navigateToCollection"
+          @mouseenter="handleButtonHover"
         >
           Start Your Voyage
         </Button>

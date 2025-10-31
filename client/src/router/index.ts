@@ -8,32 +8,56 @@ const router = createRouter({
     {
       path: '/',
       name: 'welcome',
-      component: WelcomePage
+      component: WelcomePage,
+      meta: {
+        showNav: false,
+        pageTransition: 'fade-slide'
+      }
     },
     {
       path: '/collection',
       name: 'collection',
-      component: CollectionView
+      component: CollectionView,
+      meta: {
+        showNav: true,
+        pageTransition: 'fade-slide'
+      }
     },
     {
       path: '/release/:id',
       name: 'release',
-      component: () => import('../views/ReleaseView.vue') // To implement
+      component: () => import('../views/ReleaseView.vue'), // To implement
+      meta: {
+        showNav: true,
+        pageTransition: 'fade'
+      }
     },
     {
       path: '/about',
       name: 'about',
-      component: () => import('../views/AboutView.vue')
+      component: () => import('../views/AboutView.vue'),
+      meta: {
+        showNav: true,
+        pageTransition: 'fade'
+      }
     },
     {
       path: '/contact',
       name: 'contact',
-      component: () => import('../views/ContactView.vue')
+      component: () => import('../views/ContactView.vue'),
+      meta: {
+        showNav: true,
+        pageTransition: 'fade'
+      }
     },
     {
       path: '/components-test',
       name: 'components-test',
-      component: () => import('../views/ComponentsTestView.vue')
+      component: () => import('../views/ComponentsTestView.vue'),
+      meta: {
+        showNav: true,
+        pageTransition: 'fade'
+      }
     }
   ]
 })

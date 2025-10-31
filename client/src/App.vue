@@ -1,22 +1,41 @@
 <script setup lang="ts">
 import { RouterView, useRoute } from 'vue-router'
+import { computed } from 'vue'
 import AppNavbar from '@/components/Nav/AppNavbar.vue'
 
 const route = useRoute()
+
+// Compute navbar visibility from route meta
+const showNav = computed(() => route.meta.showNav === true)
+
+// Get transition name from route meta or use default
+const getTransitionName = () => {
+  return (route.meta.pageTransition as string) || 'fade'
+}
 </script>
 <template>
   <div class="app">
-    <AppNavbar v-show="route.name !== 'welcome'" class="app-navbar" />
-    <div id="main-scroll" class="main-scroll" :class="{ 'with-navbar': route.name !== 'welcome' }">
-      <RouterView v-slot="{ Component }">
-        <Transition name="page" mode="out-in">
-          <component :is="Component" />
+    <!-- Navbar with smooth appearance/hiding -->
+    <Transition name="navbar" mode="out-in">
+      <AppNavbar v-if="showNav" class="app-navbar" />
+    </Transition>
+
+    <div id="main-scroll" class="main-scroll" :class="{ 'with-navbar': showNav }">
+      <RouterView v-slot="{ Component, route: currentRoute }">
+        <Transition :name="getTransitionName()" mode="out-in">
+          <component :is="Component" :key="currentRoute.path" />
         </Transition>
       </RouterView>
     </div>
   </div>
 </template>
 <style>
+/* Timing constants - centralized for DRY */
+:root {
+  --transition-duration: 250ms;
+  --transition-easing: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
 html,
 body {
   margin: 0;
@@ -43,33 +62,114 @@ body {
   background-color: var(--color-background);
 }
 
-/* Transitions de page smooth */
+/* ====================================
+   Navbar Transitions
+   ==================================== */
+.navbar-enter-active,
+.navbar-leave-active {
+  transition: all var(--transition-duration) var(--transition-easing);
+}
+
+.navbar-enter-from {
+  opacity: 0;
+  transform: translateY(-8px);
+}
+
+.navbar-leave-to {
+  opacity: 0;
+  transform: translateY(-8px);
+}
+
+.navbar-enter-to,
+.navbar-leave-from {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* ====================================
+   Page Transitions
+   ==================================== */
+
+/* Fade-slide transition for Welcome → Collection */
+.fade-slide-enter-active,
+.fade-slide-leave-active {
+  transition: all var(--transition-duration) var(--transition-easing);
+}
+
+.fade-slide-enter-from {
+  opacity: 0;
+  transform: translateY(12px);
+}
+
+.fade-slide-leave-to {
+  opacity: 0;
+  transform: translateY(-8px);
+}
+
+.fade-slide-enter-to,
+.fade-slide-leave-from {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Simple fade for other routes */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity var(--transition-duration) var(--transition-easing);
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+
+.fade-enter-to,
+.fade-leave-from {
+  opacity: 1;
+}
+
+/* Legacy page transition (fallback) */
 .page-enter-active,
 .page-leave-active {
-  transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all var(--transition-duration) var(--transition-easing);
 }
 
 .page-enter-from {
   opacity: 0;
-  transform: translateY(20px);
+  transform: translateY(12px);
 }
 
 .page-leave-to {
   opacity: 0;
-  transform: translateY(-20px);
+  transform: translateY(-8px);
 }
 
-.app-navbar {
-  transition: opacity 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-  opacity: 1;
-}
+/* ====================================
+   Reduced Motion Support
+   ==================================== */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --transition-duration: 0ms;
+  }
 
-.app-navbar[style*="display: none"] {
-  opacity: 0;
-  pointer-events: none;
-}
+  .navbar-enter-active,
+  .navbar-leave-active,
+  .fade-slide-enter-active,
+  .fade-slide-leave-active,
+  .fade-enter-active,
+  .fade-leave-active,
+  .page-enter-active,
+  .page-leave-active {
+    transition: none !important;
+  }
 
-.app-navbar:not([style*="display: none"]) {
-  opacity: 1;
+  .navbar-enter-from,
+  .navbar-leave-to,
+  .fade-slide-enter-from,
+  .fade-slide-leave-to,
+  .page-enter-from,
+  .page-leave-to {
+    transform: none !important;
+  }
 }
 </style>
