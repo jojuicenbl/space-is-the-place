@@ -11,9 +11,18 @@
  * - Optional debug mode to make it visible
  */
 
+import { ref } from 'vue'
+
 defineProps<{
   debug?: boolean // Show the sentinel for debugging purposes
 }>()
+
+const sentinel = ref<HTMLElement | null>(null)
+
+// Expose the sentinel element to parent components
+defineExpose({
+  sentinel
+})
 </script>
 
 <template>

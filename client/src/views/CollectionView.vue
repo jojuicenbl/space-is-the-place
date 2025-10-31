@@ -49,7 +49,8 @@ const isPagerVisible = ref(true)
 const liveMessage = ref('')
 
 // Sentinel ref for IntersectionObserver
-const sentinelRef = ref<HTMLElement | null>(null)
+// Note: This ref points to the component instance, which exposes { sentinel: Ref<HTMLElement | null> }
+const sentinelRef = ref<{ sentinel: any } | null>(null)
 
 // ============ GRID CONFIGURATION ============
 
@@ -93,11 +94,17 @@ watch(
   isMobile,
   (mobile) => {
     const newMode = mobile ? 'infinite' : 'pager'
-    console.log('[CollectionView] Breakpoint changed, setting mode to:', newMode)
+    console.log('[CollectionView] Breakpoint changed:', {
+      isMobile: mobile,
+      newMode,
+      windowWidth: window.innerWidth,
+      itemsCount: paginationStore.items.length
+    })
     paginationStore.setMode(newMode)
 
     // If switching to infinite mode and already have items, setup observer
     if (mobile && paginationStore.items.length > 0) {
+      console.log('[CollectionView] Switching to infinite mode, will setup observer after nextTick')
       nextTick(() => {
         setupInfiniteScroll()
       })
@@ -120,9 +127,18 @@ const { observe, disconnect } = useIntersectionObserver(
 )
 
 const setupInfiniteScroll = () => {
-  if (sentinelRef.value && paginationStore.isInfiniteMode) {
-    console.log('[CollectionView] Setting up IntersectionObserver')
-    observe(sentinelRef.value)
+  // Access the exposed sentinel element from the component
+  const element = sentinelRef.value?.sentinel?.value || sentinelRef.value?.sentinel
+
+  if (element && paginationStore.isInfiniteMode) {
+    console.log('[CollectionView] Setting up IntersectionObserver', element)
+    observe(element as HTMLElement)
+  } else {
+    console.warn('[CollectionView] Cannot setup IntersectionObserver:', {
+      hasSentinelRef: !!sentinelRef.value,
+      hasSentinel: !!sentinelRef.value?.sentinel,
+      isInfiniteMode: paginationStore.isInfiniteMode
+    })
   }
 }
 
@@ -220,12 +236,6 @@ onMounted(async () => {
   // Load initial data
   await paginationStore.loadInitial()
 
-  // Setup infinite scroll if in mobile mode
-  if (paginationStore.isInfiniteMode) {
-    await nextTick()
-    setupInfiniteScroll()
-  }
-
   // Staggered reveal
   await nextTick()
   isFiltersVisible.value = true
@@ -237,6 +247,14 @@ onMounted(async () => {
   setTimeout(() => {
     isPagerVisible.value = true
   }, 120)
+
+  // Setup infinite scroll if in mobile mode (after all content is revealed)
+  if (paginationStore.isInfiniteMode) {
+    setTimeout(() => {
+      console.log('[CollectionView] Setting up infinite scroll after content reveal')
+      setupInfiniteScroll()
+    }, 200)
+  }
 })
 
 onUnmounted(() => {
@@ -390,7 +408,7 @@ onUnmounted(() => {
                 <InfiniteScrollSentinel
                   v-if="paginationStore.isInfiniteMode && paginationStore.canLoadMore && !paginationStore.domCapReached"
                   ref="sentinelRef"
-                  :debug="false"
+                  :debug="true"
                 />
 
                 <!-- INFINITE SCROLL: DOM Cap Message -->
