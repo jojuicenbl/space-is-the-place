@@ -133,7 +133,7 @@ const styles = computed(() => release.value?.styles || [])
   width: 100%;
   max-width: 1400px;
   margin: 0 auto;
-  padding: 0 16px;
+  padding: 0 16px 16px 16px;
 }
 
 .release-content {
