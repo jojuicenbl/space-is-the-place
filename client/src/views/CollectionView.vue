@@ -3,6 +3,7 @@ import { ref, onMounted, onUnmounted, nextTick, computed } from 'vue'
 import VinylCard from '../components/VinylCard.vue'
 
 import Pager from '@/components/UI/Pager.vue'
+import LoadMoreButton from '@/components/UI/LoadMoreButton.vue'
 import CollectionFilters from '@/components/CollectionFilters.vue'
 import ResultsCounter from '@/components/UI/ResultsCounter.vue'
 import SearchIndicator from '@/components/UI/SearchIndicator.vue'
@@ -77,6 +78,9 @@ const {
   currentPage,
   totalPages,
   isSearchActive,
+  isMobileView,
+  isLoadingMore,
+  loadMoreError,
   fetchFolders,
   fetchCollection,
   initializeFromUrl,
@@ -84,17 +88,47 @@ const {
   handleFolderChange,
   handleSortChange,
   handleSortOrderChange,
-  handlePageChange: originalHandlePageChange
+  handlePageChange: originalHandlePageChange,
+  handleLoadMore,
+  retryLoadMore,
+  saveScrollRestoration
 } = useCollection()
+
+// Computed: Check if there are more pages to load
+const hasMorePages = computed(() => currentPage.value < totalPages.value)
 
 // Enhanced page change with smooth scroll and transitions
 const handlePageChange = async (page: number) => {
-  // Scroll to collection top first
-  await scrollToCollection()
+  // Scroll to collection top first (desktop only)
+  if (!isMobileView.value) {
+    await scrollToCollection()
+  }
 
   // Call the original handler which will set isLoading = true
   // This allows the skeleton loader to show during the loading
   await originalHandlePageChange(page)
+}
+
+// Wrapper for filter changes: scroll to top on mobile
+const handleFolderChangeWithScroll = async (folderId: number) => {
+  if (isMobileView.value) {
+    await scrollToCollection()
+  }
+  await handleFolderChange(folderId)
+}
+
+const handleSortChangeWithScroll = async (sort: typeof currentSort.value) => {
+  if (isMobileView.value) {
+    await scrollToCollection()
+  }
+  await handleSortChange(sort)
+}
+
+const handleSortOrderChangeWithScroll = async (order: typeof currentSortOrder.value) => {
+  if (isMobileView.value) {
+    await scrollToCollection()
+  }
+  await handleSortOrderChange(order)
 }
 
 onMounted(async () => {
@@ -163,9 +197,9 @@ onUnmounted(() => {
                 :current-sort-order="currentSortOrder"
                 :releases="releases"
                 :search-query="searchQuery"
-                @update:folder="handleFolderChange"
-                @update:sort="handleSortChange"
-                @update:sort-order="handleSortOrderChange"
+                @update:folder="handleFolderChangeWithScroll"
+                @update:sort="handleSortChangeWithScroll"
+                @update:sort-order="handleSortOrderChangeWithScroll"
                 @search="handleSearch"
               />
             </div>
@@ -244,8 +278,20 @@ onUnmounted(() => {
         <!-- Pagination Section - stagger delay 120ms -->
         <Transition name="stagger-fade-pager">
           <div v-show="isPagerVisible && totalPages > 1" class="collection-pager-section">
-            <div class="flex justify-center w-full">
+            <!-- Desktop: Show Pager (>= md breakpoint) -->
+            <div v-if="!isMobileView" class="flex justify-center w-full">
               <Pager :current-page="currentPage" :total-pages="totalPages" :on-page-change="handlePageChange" />
+            </div>
+
+            <!-- Mobile: Show Load More Button (< md breakpoint) -->
+            <div v-else class="w-full">
+              <LoadMoreButton
+                :is-loading="isLoadingMore"
+                :has-more="hasMorePages"
+                :error="loadMoreError"
+                :on-load-more="handleLoadMore"
+                :on-retry="retryLoadMore"
+              />
             </div>
           </div>
         </Transition>

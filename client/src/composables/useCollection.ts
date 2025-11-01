@@ -1,10 +1,13 @@
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useDebounceFn } from '@vueuse/core'
 import axios from 'axios'
 import { getCollection, searchCollection, getFolders } from '@/services/collectionApi'
 import type { CollectionRelease } from '@/types/models/Release'
 import type { DiscogsFolder, SortField, SortOrder } from '@/services/collectionApi'
+
+// Mobile breakpoint (< 768px = mobile)
+const MOBILE_BREAKPOINT = 768
 
 export function useCollection() {
   const route = useRoute()
@@ -36,6 +39,17 @@ export function useCollection() {
   const searchQuery = ref<string>((route.query.search as string) || '')
   const currentPage = ref<number>(Number(route.query.page) || 1)
 
+  // Mobile Load More state
+  const isMobileView = ref(window.innerWidth < MOBILE_BREAKPOINT)
+  const isLoadingMore = ref(false) // In-flight lock for load more
+  const loadMoreError = ref<string | null>(null)
+
+  // Scroll restoration state
+  const scrollRestoration = ref<{
+    position: number
+    loadedPages: number[]
+  } | null>(null)
+
   // Computed
   const isSearching = computed(() => {
     return searchQuery.value.trim().length > 0
@@ -54,15 +68,35 @@ export function useCollection() {
     router.replace({ query })
   }
 
+  // Update mobile view state on resize
+  const updateMobileView = () => {
+    isMobileView.value = window.innerWidth < MOBILE_BREAKPOINT
+  }
+
   // Main fetch function - now much simpler
-  const fetchCollection = async (resetPage = false) => {
+  const fetchCollection = async (resetPage = false, isLoadMore = false) => {
+    // In-flight lock: prevent parallel requests on mobile load more
+    if (isLoadMore && isLoadingMore.value) {
+      return
+    }
+
     if (resetPage) {
       currentPage.value = 1
+      // Clear accumulated releases on reset (filter change)
+      if (isMobileView.value) {
+        scrollRestoration.value = null
+        saveScrollRestoration()
+      }
     }
 
     try {
-      isLoading.value = true
-      error.value = null
+      if (isLoadMore) {
+        isLoadingMore.value = true
+        loadMoreError.value = null
+      } else {
+        isLoading.value = true
+        error.value = null
+      }
 
       const filters = {
         page: currentPage.value,
@@ -86,7 +120,15 @@ export function useCollection() {
         lastSearchQuery.value = ''
       }
 
-      releases.value = result.releases
+      // Mobile: accumulate releases, Desktop: replace
+      if (isMobileView.value && isLoadMore && currentPage.value > 1) {
+        // Accumulate new releases for mobile load more
+        releases.value = [...releases.value, ...result.releases]
+      } else {
+        // Replace releases (desktop pagination or first page)
+        releases.value = result.releases
+      }
+
       totalPages.value = result.pagination.pages
       totalItems.value = result.pagination.items
       currentPageItems.value = result.releases.length
@@ -97,15 +139,106 @@ export function useCollection() {
       }
 
       updateUrlParams()
+
+      // Save scroll restoration state for mobile
+      if (isMobileView.value) {
+        saveScrollRestoration()
+      }
     } catch (err) {
       // Ignore cancellation errors - these are expected when user changes filters quickly
       if (!axios.isCancel(err)) {
         console.error('Error loading collection:', err)
-        error.value = 'Failed to load collection'
+        if (isLoadMore) {
+          loadMoreError.value = 'Failed to load more items'
+        } else {
+          error.value = 'Failed to load collection'
+        }
       }
     } finally {
-      isLoading.value = false
+      if (isLoadMore) {
+        isLoadingMore.value = false
+      } else {
+        isLoading.value = false
+      }
       isInitialized.value = true
+    }
+  }
+
+  // Handle Load More (mobile only)
+  const handleLoadMore = async () => {
+    if (currentPage.value >= totalPages.value) return
+    if (isLoadingMore.value) return // In-flight lock
+
+    currentPage.value += 1
+    await fetchCollection(false, true)
+  }
+
+  // Retry Load More after error
+  const retryLoadMore = async () => {
+    loadMoreError.value = null
+    await fetchCollection(false, true)
+  }
+
+  // Scroll restoration helpers
+  const saveScrollRestoration = () => {
+    const mainScroll = document.getElementById('main-scroll')
+    if (!mainScroll || !isMobileView.value) return
+
+    const state = {
+      position: mainScroll.scrollTop,
+      loadedPages: Array.from({ length: currentPage.value }, (_, i) => i + 1),
+      filters: {
+        folder: currentFolder.value,
+        sort: currentSort.value,
+        order: currentSortOrder.value,
+        search: searchQuery.value
+      }
+    }
+
+    sessionStorage.setItem('collection-scroll-state', JSON.stringify(state))
+  }
+
+  const restoreScrollPosition = async () => {
+    const savedState = sessionStorage.getItem('collection-scroll-state')
+    if (!savedState || !isMobileView.value) return
+
+    try {
+      const state = JSON.parse(savedState)
+
+      // Check if filters match
+      const filtersMatch =
+        state.filters.folder === currentFolder.value &&
+        state.filters.sort === currentSort.value &&
+        state.filters.order === currentSortOrder.value &&
+        state.filters.search === searchQuery.value
+
+      if (!filtersMatch || !state.loadedPages || state.loadedPages.length <= 1) {
+        sessionStorage.removeItem('collection-scroll-state')
+        return
+      }
+
+      // Load all previously loaded pages
+      const maxPage = Math.max(...state.loadedPages)
+      if (maxPage > 1) {
+        for (let page = 2; page <= maxPage; page++) {
+          currentPage.value = page
+          await fetchCollection(false, true)
+        }
+
+        // Restore scroll position after a short delay
+        setTimeout(() => {
+          const mainScroll = document.getElementById('main-scroll')
+          if (mainScroll && state.position) {
+            mainScroll.scrollTo({
+              top: state.position,
+              behavior: 'auto'
+            })
+          }
+        }, 100)
+      }
+    } catch (err) {
+      console.error('Error restoring scroll state:', err)
+      sessionStorage.removeItem('collection-scroll-state')
     }
   }
 
@@ -242,15 +375,43 @@ export function useCollection() {
     // Fetch folders first
     await fetchFolders()
 
-    // Then fetch collection with the current params
-    await fetchCollection()
+    // Try to restore scroll state (mobile only)
+    if (isMobileView.value) {
+      await restoreScrollPosition()
+    }
+
+    // If restoration didn't happen, fetch normally
+    if (!isMobileView.value || currentPage.value === 1) {
+      await fetchCollection()
+    }
 
     return true
   }
 
+  // Setup responsive listener
+  onMounted(() => {
+    window.addEventListener('resize', updateMobileView)
+  })
+
+  onUnmounted(() => {
+    window.removeEventListener('resize', updateMobileView)
+    // Save scroll state on unmount (navigation)
+    if (isMobileView.value) {
+      saveScrollRestoration()
+    }
+  })
+
   // Watch for URL changes (back/forward navigation)
   watch([currentFolder, currentSort, currentSortOrder, searchQuery, currentPage], () => {
     updateUrlParams()
+  })
+
+  // Clear scroll restoration on filter changes
+  watch([currentFolder, currentSort, currentSortOrder, searchQuery], () => {
+    if (isMobileView.value) {
+      sessionStorage.removeItem('collection-scroll-state')
+      scrollRestoration.value = null
+    }
   })
 
   return {
@@ -277,6 +438,11 @@ export function useCollection() {
     searchQuery,
     currentPage,
 
+    // Mobile Load More
+    isMobileView,
+    isLoadingMore,
+    loadMoreError,
+
     // Methods
     fetchFolders,
     fetchCollection,
@@ -285,6 +451,9 @@ export function useCollection() {
     handleFolderChange,
     handleSortChange,
     handleSortOrderChange,
-    handlePageChange
+    handlePageChange,
+    handleLoadMore,
+    retryLoadMore,
+    saveScrollRestoration
   }
 }
