@@ -91,7 +91,7 @@ const {
   handlePageChange: originalHandlePageChange,
   handleLoadMore,
   retryLoadMore,
-  saveScrollRestoration
+  saveSnapshot
 } = useCollection()
 
 // Computed: Check if there are more pages to load
@@ -277,22 +277,28 @@ onUnmounted(() => {
 
         <!-- Pagination Section - stagger delay 120ms -->
         <Transition name="stagger-fade-pager">
-          <div v-show="isPagerVisible && totalPages > 1" class="collection-pager-section">
-            <!-- Desktop: Show Pager (>= md breakpoint) -->
-            <div v-if="!isMobileView" class="flex justify-center w-full">
+          <!-- Desktop: Show Pager when totalPages > 1 -->
+          <div
+            v-if="isPagerVisible && !isMobileView && totalPages > 1"
+            class="collection-pager-section"
+          >
+            <div class="flex justify-center w-full">
               <Pager :current-page="currentPage" :total-pages="totalPages" :on-page-change="handlePageChange" />
             </div>
+          </div>
 
-            <!-- Mobile: Show Load More Button (< md breakpoint) -->
-            <div v-else class="w-full">
-              <LoadMoreButton
-                :is-loading="isLoadingMore"
-                :has-more="hasMorePages"
-                :error="loadMoreError"
-                :on-load-more="handleLoadMore"
-                :on-retry="retryLoadMore"
-              />
-            </div>
+          <!-- Mobile: Show Load More when there are more pages OR loading/error -->
+          <div
+            v-else-if="isPagerVisible && isMobileView && (hasMorePages || isLoadingMore || loadMoreError)"
+            class="collection-pager-section"
+          >
+            <LoadMoreButton
+              :is-loading="isLoadingMore"
+              :has-more="hasMorePages"
+              :error="loadMoreError"
+              :on-load-more="handleLoadMore"
+              :on-retry="retryLoadMore"
+            />
           </div>
         </Transition>
       </div>

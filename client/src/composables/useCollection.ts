@@ -9,12 +9,29 @@ import type { DiscogsFolder, SortField, SortOrder } from '@/services/collectionA
 // Mobile breakpoint (< 768px = mobile)
 const MOBILE_BREAKPOINT = 768
 
+// Snapshot interface for scroll restoration
+interface CollectionSnapshot {
+  items: CollectionRelease[]
+  currentPage: number
+  totalPages: number
+  totalItems: number
+  scrollPosition: number
+  filters: {
+    folder: number
+    sort: SortField
+    order: SortOrder
+    search: string
+  }
+  timestamp: number
+}
+
 export function useCollection() {
   const route = useRoute()
   const router = useRouter()
 
   let controller: AbortController | null = null
   let lastQuery = ''
+  let weOwnNavigation = false // Flag to prevent sync loops
 
   // State - much simplified since server handles caching and processing
   const releases = ref<CollectionRelease[]>([])
@@ -32,40 +49,66 @@ export function useCollection() {
   const isSearchActive = ref(false)
   const lastSearchQuery = ref('')
 
-  // Filters state - initialized from URL params
-  const currentFolder = ref<number>(Number(route.query.folder) || 0)
-  const currentSort = ref<SortField>((route.query.sort as SortField) || 'added')
-  const currentSortOrder = ref<SortOrder>((route.query.order as SortOrder) || 'desc')
-  const searchQuery = ref<string>((route.query.search as string) || '')
-  const currentPage = ref<number>(Number(route.query.page) || 1)
+  // Filters state - initialized from URL params or defaults
+  const currentFolder = ref<number>(0)
+  const currentSort = ref<SortField>('added')
+  const currentSortOrder = ref<SortOrder>('desc')
+  const searchQuery = ref<string>('')
+  const currentPage = ref<number>(1)
 
   // Mobile Load More state
   const isMobileView = ref(window.innerWidth < MOBILE_BREAKPOINT)
   const isLoadingMore = ref(false) // In-flight lock for load more
   const loadMoreError = ref<string | null>(null)
 
-  // Scroll restoration state
-  const scrollRestoration = ref<{
-    position: number
-    loadedPages: number[]
-  } | null>(null)
-
   // Computed
   const isSearching = computed(() => {
     return searchQuery.value.trim().length > 0
   })
 
-  // Update URL params when filters change
-  const updateUrlParams = () => {
+  // Helper: Generate snapshot key from current filters
+  const getSnapshotKey = () => {
+    const parts = ['collection']
+    if (currentFolder.value !== 0) parts.push(`f${currentFolder.value}`)
+    if (currentSort.value !== 'added') parts.push(`s${currentSort.value}`)
+    if (currentSortOrder.value !== 'desc') parts.push(`o${currentSortOrder.value}`)
+    if (searchQuery.value.trim()) parts.push(`q${searchQuery.value.trim()}`)
+    return parts.join('-')
+  }
+
+  // Update URL params (only called on explicit actions)
+  const updateUrlParams = (silent = false) => {
+    if (silent) weOwnNavigation = true
+
     const query: Record<string, string> = {}
 
     if (currentFolder.value !== 0) query.folder = currentFolder.value.toString()
     if (currentSort.value !== 'added') query.sort = currentSort.value
     if (currentSortOrder.value !== 'desc') query.order = currentSortOrder.value
     if (searchQuery.value.trim()) query.search = searchQuery.value.trim()
-    if (currentPage.value !== 1) query.page = currentPage.value.toString()
+    // Only add page to URL if > 1 (on mobile) or explicitly needed (desktop)
+    if (currentPage.value > 1 && (isMobileView.value || !isMobileView.value)) {
+      query.page = currentPage.value.toString()
+    }
 
     router.replace({ query })
+
+    if (silent) {
+      setTimeout(() => {
+        weOwnNavigation = false
+      }, 50)
+    }
+  }
+
+  // Read URL params and sync to state (single direction: URL → state)
+  const syncFromUrl = () => {
+    if (weOwnNavigation) return // Skip if we just wrote to URL
+
+    currentFolder.value = Number(route.query.folder) || 0
+    currentSort.value = (route.query.sort as SortField) || 'added'
+    currentSortOrder.value = (route.query.order as SortOrder) || 'desc'
+    searchQuery.value = (route.query.search as string) || ''
+    currentPage.value = Number(route.query.page) || 1
   }
 
   // Update mobile view state on resize
@@ -84,8 +127,8 @@ export function useCollection() {
       currentPage.value = 1
       // Clear accumulated releases on reset (filter change)
       if (isMobileView.value) {
-        scrollRestoration.value = null
-        saveScrollRestoration()
+        releases.value = []
+        clearSnapshot()
       }
     }
 
@@ -122,8 +165,10 @@ export function useCollection() {
 
       // Mobile: accumulate releases, Desktop: replace
       if (isMobileView.value && isLoadMore && currentPage.value > 1) {
-        // Accumulate new releases for mobile load more
-        releases.value = [...releases.value, ...result.releases]
+        // Accumulate new releases for mobile load more (anti-duplicate by ID)
+        const existingIds = new Set(releases.value.map((r) => r.id))
+        const newReleases = result.releases.filter((r) => !existingIds.has(r.id))
+        releases.value = [...releases.value, ...newReleases]
       } else {
         // Replace releases (desktop pagination or first page)
         releases.value = result.releases
@@ -138,11 +183,14 @@ export function useCollection() {
         folders.value = result.folders
       }
 
-      updateUrlParams()
+      // Update URL only on explicit actions (Load More or filter change)
+      if (isLoadMore || resetPage) {
+        updateUrlParams(true)
+      }
 
-      // Save scroll restoration state for mobile
-      if (isMobileView.value) {
-        saveScrollRestoration()
+      // Save snapshot for mobile (complete items + scroll position)
+      if (isMobileView.value && currentPage.value > 1) {
+        saveSnapshot()
       }
     } catch (err) {
       // Ignore cancellation errors - these are expected when user changes filters quickly
@@ -179,67 +227,122 @@ export function useCollection() {
     await fetchCollection(false, true)
   }
 
-  // Scroll restoration helpers
-  const saveScrollRestoration = () => {
+  // Snapshot helpers - save complete state (items + scroll)
+  const saveSnapshot = () => {
     const mainScroll = document.getElementById('main-scroll')
     if (!mainScroll || !isMobileView.value) return
 
-    const state = {
-      position: mainScroll.scrollTop,
-      loadedPages: Array.from({ length: currentPage.value }, (_, i) => i + 1),
+    const key = getSnapshotKey()
+    const snapshot: CollectionSnapshot = {
+      items: releases.value,
+      currentPage: currentPage.value,
+      totalPages: totalPages.value,
+      totalItems: totalItems.value,
+      scrollPosition: mainScroll.scrollTop,
       filters: {
         folder: currentFolder.value,
         sort: currentSort.value,
         order: currentSortOrder.value,
         search: searchQuery.value
-      }
+      },
+      timestamp: Date.now()
     }
-
-    sessionStorage.setItem('collection-scroll-state', JSON.stringify(state))
-  }
-
-  const restoreScrollPosition = async () => {
-    const savedState = sessionStorage.getItem('collection-scroll-state')
-    if (!savedState || !isMobileView.value) return
 
     try {
-      const state = JSON.parse(savedState)
-
-      // Check if filters match
-      const filtersMatch =
-        state.filters.folder === currentFolder.value &&
-        state.filters.sort === currentSort.value &&
-        state.filters.order === currentSortOrder.value &&
-        state.filters.search === searchQuery.value
-
-      if (!filtersMatch || !state.loadedPages || state.loadedPages.length <= 1) {
-        sessionStorage.removeItem('collection-scroll-state')
-        return
-      }
-
-      // Load all previously loaded pages
-      const maxPage = Math.max(...state.loadedPages)
-      if (maxPage > 1) {
-        for (let page = 2; page <= maxPage; page++) {
-          currentPage.value = page
-          await fetchCollection(false, true)
-        }
-
-        // Restore scroll position after a short delay
-        setTimeout(() => {
-          const mainScroll = document.getElementById('main-scroll')
-          if (mainScroll && state.position) {
-            mainScroll.scrollTo({
-              top: state.position,
-              behavior: 'auto'
-            })
-          }
-        }, 100)
-      }
+      sessionStorage.setItem(`collection-snapshot-${key}`, JSON.stringify(snapshot))
+      console.log(`[Snapshot] Saved: ${key}, page ${currentPage.value}, ${releases.value.length} items`)
     } catch (err) {
-      console.error('Error restoring scroll state:', err)
-      sessionStorage.removeItem('collection-scroll-state')
+      console.error('Failed to save snapshot:', err)
+      // If sessionStorage is full, clear old snapshots
+      clearOldSnapshots()
     }
+  }
+
+  const loadSnapshot = (): boolean => {
+    if (!isMobileView.value) return false
+
+    const key = getSnapshotKey()
+    const saved = sessionStorage.getItem(`collection-snapshot-${key}`)
+    if (!saved) {
+      console.log(`[Snapshot] No snapshot found for key: ${key}`)
+      return false
+    }
+
+    try {
+      const snapshot: CollectionSnapshot = JSON.parse(saved)
+
+      // Check if snapshot is still valid (< 30 minutes old)
+      const maxAge = 30 * 60 * 1000 // 30 minutes
+      if (Date.now() - snapshot.timestamp > maxAge) {
+        console.log(`[Snapshot] Snapshot expired for key: ${key}`)
+        sessionStorage.removeItem(`collection-snapshot-${key}`)
+        return false
+      }
+
+      // Verify filters match exactly
+      const filtersMatch =
+        snapshot.filters.folder === currentFolder.value &&
+        snapshot.filters.sort === currentSort.value &&
+        snapshot.filters.order === currentSortOrder.value &&
+        snapshot.filters.search === searchQuery.value
+
+      if (!filtersMatch) {
+        console.log(`[Snapshot] Filters mismatch for key: ${key}`)
+        return false
+      }
+
+      // Restore complete state
+      releases.value = snapshot.items
+      currentPage.value = snapshot.currentPage
+      totalPages.value = snapshot.totalPages
+      totalItems.value = snapshot.totalItems
+
+      console.log(`[Snapshot] Restored: ${key}, page ${snapshot.currentPage}, ${snapshot.items.length} items`)
+
+      // Restore scroll position after next tick
+      setTimeout(() => {
+        const mainScroll = document.getElementById('main-scroll')
+        if (mainScroll) {
+          mainScroll.scrollTo({
+            top: snapshot.scrollPosition,
+            behavior: 'auto'
+          })
+          console.log(`[Snapshot] Scroll restored to: ${snapshot.scrollPosition}px`)
+        }
+      }, 100)
+
+      return true
+    } catch (err) {
+      console.error('Failed to load snapshot:', err)
+      sessionStorage.removeItem(`collection-snapshot-${key}`)
+      return false
+    }
+  }
+
+  const clearSnapshot = () => {
+    const key = getSnapshotKey()
+    sessionStorage.removeItem(`collection-snapshot-${key}`)
+    console.log(`[Snapshot] Cleared: ${key}`)
+  }
+
+  const clearOldSnapshots = () => {
+    const maxAge = 30 * 60 * 1000 // 30 minutes
+    const now = Date.now()
+
+    Object.keys(sessionStorage).forEach((key) => {
+      if (key.startsWith('collection-snapshot-')) {
+        try {
+          const data = JSON.parse(sessionStorage.getItem(key) || '{}')
+          if (data.timestamp && now - data.timestamp > maxAge) {
+            sessionStorage.removeItem(key)
+            console.log(`[Snapshot] Removed old snapshot: ${key}`)
+          }
+        } catch (err) {
+          // Invalid JSON, remove it
+          sessionStorage.removeItem(key)
+        }
+      }
+    })
   }
 
   const doSearch = async (q: string, page = 1) => {
@@ -365,25 +468,25 @@ export function useCollection() {
 
   // Initialize with URL params
   const initializeFromUrl = async () => {
-    // Set values from URL params
-    if (route.query.folder) currentFolder.value = Number(route.query.folder)
-    if (route.query.sort) currentSort.value = route.query.sort as SortField
-    if (route.query.order) currentSortOrder.value = route.query.order as SortOrder
-    if (route.query.search) searchQuery.value = route.query.search as string
-    if (route.query.page) currentPage.value = Number(route.query.page)
+    // Sync state from URL (single source of truth)
+    syncFromUrl()
 
     // Fetch folders first
     await fetchFolders()
 
-    // Try to restore scroll state (mobile only)
+    // Try to restore from snapshot (mobile only)
     if (isMobileView.value) {
-      await restoreScrollPosition()
+      const restored = loadSnapshot()
+      if (restored) {
+        console.log('[Init] Restored from snapshot')
+        isInitialized.value = true
+        return true
+      }
     }
 
-    // If restoration didn't happen, fetch normally
-    if (!isMobileView.value || currentPage.value === 1) {
-      await fetchCollection()
-    }
+    // No snapshot found or desktop: fetch normally
+    console.log('[Init] Fetching from API')
+    await fetchCollection()
 
     return true
   }
@@ -395,24 +498,43 @@ export function useCollection() {
 
   onUnmounted(() => {
     window.removeEventListener('resize', updateMobileView)
-    // Save scroll state on unmount (navigation)
-    if (isMobileView.value) {
-      saveScrollRestoration()
+    // Save snapshot on unmount (navigation to release view)
+    if (isMobileView.value && currentPage.value > 1) {
+      saveSnapshot()
     }
   })
 
-  // Watch for URL changes (back/forward navigation)
-  watch([currentFolder, currentSort, currentSortOrder, searchQuery, currentPage], () => {
-    updateUrlParams()
-  })
+  // Watch for URL changes (back/forward navigation or manual edit)
+  watch(
+    () => route.query,
+    () => {
+      if (weOwnNavigation) return // Skip if we just wrote to URL
 
-  // Clear scroll restoration on filter changes
-  watch([currentFolder, currentSort, currentSortOrder, searchQuery], () => {
-    if (isMobileView.value) {
-      sessionStorage.removeItem('collection-scroll-state')
-      scrollRestoration.value = null
-    }
-  })
+      console.log('[Route] URL changed, syncing state...')
+      const oldPage = currentPage.value
+      const oldFolder = currentFolder.value
+
+      syncFromUrl()
+
+      // If filters changed, clear snapshot and refetch
+      if (currentFolder.value !== oldFolder) {
+        clearSnapshot()
+        void fetchCollection(true)
+      }
+      // If only page changed, try to restore snapshot or refetch
+      else if (currentPage.value !== oldPage) {
+        if (isMobileView.value) {
+          const restored = loadSnapshot()
+          if (!restored) {
+            void fetchCollection()
+          }
+        } else {
+          void fetchCollection()
+        }
+      }
+    },
+    { deep: true }
+  )
 
   return {
     // State
@@ -454,6 +576,7 @@ export function useCollection() {
     handlePageChange,
     handleLoadMore,
     retryLoadMore,
-    saveScrollRestoration
+    saveSnapshot,
+    clearSnapshot
   }
 }
