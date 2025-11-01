@@ -36,6 +36,7 @@ export function useIntersectionObserver(
   } = options
 
   let isIntersecting = false
+  let debounceTimeout: number | undefined
 
   console.log('[useIntersectionObserver] 🔭 Creating observer with options:', {
     rootMargin,
@@ -58,17 +59,25 @@ export function useIntersectionObserver(
         if (entry.isIntersecting && !isIntersecting) {
           console.log('[useIntersectionObserver] ✅ Triggering callback (element entered viewport)')
           isIntersecting = true
-          callback()
 
-          // Reset flag after callback completes
-          setTimeout(() => {
-            console.log('[useIntersectionObserver] 🔄 Resetting intersection flag')
-            isIntersecting = false
-          }, 300)
+          // Debounce the callback to prevent rapid-fire triggers
+          if (debounceTimeout) {
+            clearTimeout(debounceTimeout)
+          }
+
+          debounceTimeout = window.setTimeout(() => {
+            callback()
+
+            // Reset flag after a longer delay to ensure loading completes
+            setTimeout(() => {
+              console.log('[useIntersectionObserver] 🔄 Resetting intersection flag')
+              isIntersecting = false
+            }, 1000) // Increased from 300ms to 1000ms
+          }, 100) // 100ms debounce
         } else if (!entry.isIntersecting && isIntersecting) {
           console.log('[useIntersectionObserver] ℹ️ Element left viewport')
         } else if (entry.isIntersecting && isIntersecting) {
-          console.log('[useIntersectionObserver] ⏸️ Still intersecting, waiting for reset')
+          console.log('[useIntersectionObserver] ⏸️ Still intersecting, ignoring (debounced)')
         }
       })
     },

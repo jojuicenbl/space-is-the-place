@@ -108,29 +108,25 @@ watch(
 
 // ============ INFINITE SCROLL ============
 
-const { observe, disconnect } = useIntersectionObserver(
+const { observe, unobserve, disconnect } = useIntersectionObserver(
   () => {
     console.log('[CollectionView] 👁️ Sentinel became visible!', {
       canLoadMore: paginationStore.canLoadMore,
-      isLoading: paginationStore.isLoading,
-      isLoadingMore: paginationStore.isLoadingMore,
       hasMore: paginationStore.hasMore,
       domCapReached: paginationStore.domCapReached,
       currentPage: paginationStore.currentPage,
-      totalPages: paginationStore.totalPages
+      totalPages: paginationStore.totalPages,
+      itemsLoaded: paginationStore.items.length
     })
 
     if (paginationStore.canLoadMore) {
-      console.log('[CollectionView] ✅ Loading more items...')
+      console.log('[CollectionView] ✅ Triggering load more...')
       window.dispatchEvent(new CustomEvent('infinite_load_requested'))
       handleLoadMore()
-    } else {
-      console.log('[CollectionView] ⚠️ Cannot load more:', {
-        reason: !paginationStore.hasMore ? 'No more items' :
-                paginationStore.domCapReached ? 'DOM cap reached' :
-                paginationStore.isLoading ? 'Already loading' :
-                'Unknown'
-      })
+    } else if (paginationStore.domCapReached) {
+      console.log('[CollectionView] 🛑 DOM cap reached - showing "Continue Loading" button')
+    } else if (!paginationStore.hasMore) {
+      console.log('[CollectionView] 🏁 No more items to load - reached end of collection')
     }
   },
   { rootMargin: '600px', threshold: 0.1 }
@@ -207,6 +203,13 @@ watch(
 )
 
 const handleLoadMore = async () => {
+  // Temporarily unobserve sentinel during loading to prevent race conditions
+  const element = sentinelRef.value?.sentinel?.value || sentinelRef.value?.sentinel
+  if (element) {
+    console.log('[CollectionView] 🔇 Temporarily unobserving sentinel during load')
+    unobserve(element as HTMLElement)
+  }
+
   const previousCount = paginationStore.items.length
   await paginationStore.loadMore()
   const newCount = paginationStore.items.length
@@ -215,13 +218,59 @@ const handleLoadMore = async () => {
   if (loadedCount > 0) {
     liveMessage.value = `${loadedCount} new items loaded. Total: ${newCount}`
   }
+
+  // Re-observe sentinel after loading completes
+  if (element && paginationStore.hasMore && !paginationStore.domCapReached) {
+    console.log('[CollectionView] 🔊 Re-observing sentinel after load complete')
+    observe(element as HTMLElement)
+  }
 }
 
 const handleManualLoadMore = async () => {
   if (paginationStore.domCapReached) {
+    console.log('[CollectionView] 🚀 Manual "Continue Loading" triggered')
     paginationStore.resetDomCap()
+
+    // Load one batch immediately
+    await handleLoadMore()
+
+    // Continue loading batches while sentinel is visible and we can load more
+    // This ensures the user gets enough content without needing to scroll immediately
+    const element = sentinelRef.value?.sentinel?.value || sentinelRef.value?.sentinel
+    if (element) {
+      const checkSentinelVisibility = () => {
+        const rect = (element as HTMLElement).getBoundingClientRect()
+        const mainScroll = document.getElementById('main-scroll')
+        if (!mainScroll) return false
+
+        const scrollContainer = mainScroll.getBoundingClientRect()
+        // Check if sentinel is visible within the scroll container + 600px buffer
+        return rect.top < scrollContainer.bottom + 600
+      }
+
+      // Keep loading while sentinel is visible and we can load more
+      let consecutiveLoads = 0
+      const maxConsecutiveLoads = 3 // Prevent infinite loops, load max 3 more batches
+
+      while (
+        checkSentinelVisibility() &&
+        paginationStore.canLoadMore &&
+        consecutiveLoads < maxConsecutiveLoads
+      ) {
+        console.log('[CollectionView] 🔄 Sentinel still visible, loading another batch automatically')
+        await handleLoadMore()
+        consecutiveLoads++
+        // Small delay to allow DOM to update
+        await new Promise(resolve => setTimeout(resolve, 100))
+      }
+
+      console.log('[CollectionView] ✅ Auto-loading complete', {
+        totalBatchesLoaded: consecutiveLoads + 1,
+        sentinelVisible: checkSentinelVisibility(),
+        canLoadMore: paginationStore.canLoadMore
+      })
+    }
   }
-  await handleLoadMore()
 }
 
 // ============ PAGER MODE ============
@@ -314,14 +363,47 @@ onMounted(async () => {
 
   // Restore scroll position after reveal (for back navigation in infinite scroll mode)
   if (paginationStore.isInfiniteMode) {
-    setTimeout(() => {
-      const savedScrollY = sessionStorage.getItem('collectionScrollY')
-      if (savedScrollY) {
-        const scrollY = parseInt(savedScrollY, 10)
-        console.log('[CollectionView] 📍 Restoring scroll position:', scrollY)
+    const savedScrollY = sessionStorage.getItem('collectionScrollY')
+    if (savedScrollY) {
+      const scrollY = parseInt(savedScrollY, 10)
+      console.log('[CollectionView] 📍 Preparing to restore scroll position:', scrollY)
 
+      // Wait for all images to load before restoring scroll
+      const waitForImages = async () => {
+        const images = document.querySelectorAll('.vinyl-grid img')
+        console.log('[CollectionView] 📸 Waiting for', images.length, 'images to load')
+
+        const imagePromises = Array.from(images).map((img: any) => {
+          // If already loaded, resolve immediately
+          if (img.complete && img.naturalHeight !== 0) {
+            return Promise.resolve()
+          }
+
+          // Otherwise wait for load event
+          return new Promise<void>((resolve) => {
+            img.addEventListener('load', () => resolve(), { once: true })
+            img.addEventListener('error', () => resolve(), { once: true }) // Resolve even on error
+
+            // Timeout fallback after 2s
+            setTimeout(() => resolve(), 2000)
+          })
+        })
+
+        await Promise.all(imagePromises)
+        console.log('[CollectionView] 📸 All images loaded')
+      }
+
+      const restoreScroll = async () => {
+        // First wait a bit for DOM to settle after reveal animations
+        await new Promise(resolve => setTimeout(resolve, 300))
+
+        // Wait for images to load
+        await waitForImages()
+
+        // Now restore scroll position
         const mainScroll = document.getElementById('main-scroll')
         if (mainScroll && scrollY > 0) {
+          console.log('[CollectionView] 📍 Restoring scroll position NOW:', scrollY)
           mainScroll.scrollTo({
             top: scrollY,
             behavior: 'auto' // Instant restore, no smooth scroll
@@ -331,7 +413,13 @@ onMounted(async () => {
           sessionStorage.removeItem('collectionScrollY')
         }
       }
-    }, 200) // After all reveals complete
+
+      // Execute scroll restoration
+      restoreScroll().catch(err => {
+        console.error('[CollectionView] ❌ Error during scroll restoration:', err)
+        sessionStorage.removeItem('collectionScrollY')
+      })
+    }
   }
 
   // Note: Observer setup is now handled automatically by the sentinelRef watcher
@@ -490,7 +578,7 @@ onUnmounted(() => {
                 <InfiniteScrollSentinel
                   v-if="paginationStore.isInfiniteMode && paginationStore.hasMore && !paginationStore.domCapReached"
                   ref="sentinelRef"
-                  :debug="true"
+                  :debug="false"
                 />
 
                 <!-- INFINITE SCROLL: DOM Cap Message -->
