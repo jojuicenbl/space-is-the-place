@@ -250,6 +250,8 @@ export function useCollection() {
 
     try {
       sessionStorage.setItem(`collection-snapshot-${key}`, JSON.stringify(snapshot))
+      // Set flag to indicate we expect a restoration (for back navigation detection)
+      sessionStorage.setItem('collection-navigation-intent', 'should-restore')
       console.log(`[Snapshot] Saved: ${key}, page ${currentPage.value}, ${releases.value.length} items`)
     } catch (err) {
       console.error('Failed to save snapshot:', err)
@@ -261,10 +263,18 @@ export function useCollection() {
   const loadSnapshot = (): boolean => {
     if (!isMobileView.value) return false
 
+    // Check if we should restore (only on back navigation, not manual URL edit)
+    const navigationIntent = sessionStorage.getItem('collection-navigation-intent')
+    if (navigationIntent !== 'should-restore') {
+      console.log(`[Snapshot] No restoration intent (manual URL edit or fresh load)`)
+      return false
+    }
+
     const key = getSnapshotKey()
     const saved = sessionStorage.getItem(`collection-snapshot-${key}`)
     if (!saved) {
       console.log(`[Snapshot] No snapshot found for key: ${key}`)
+      sessionStorage.removeItem('collection-navigation-intent')
       return false
     }
 
@@ -276,6 +286,7 @@ export function useCollection() {
       if (Date.now() - snapshot.timestamp > maxAge) {
         console.log(`[Snapshot] Snapshot expired for key: ${key}`)
         sessionStorage.removeItem(`collection-snapshot-${key}`)
+        sessionStorage.removeItem('collection-navigation-intent')
         return false
       }
 
@@ -288,6 +299,17 @@ export function useCollection() {
 
       if (!filtersMatch) {
         console.log(`[Snapshot] Filters mismatch for key: ${key}`)
+        sessionStorage.removeItem('collection-navigation-intent')
+        return false
+      }
+
+      // IMPORTANT: Only restore if the URL page matches the snapshot page
+      // This prevents restoration when user manually edits ?page parameter
+      if (currentPage.value !== snapshot.currentPage) {
+        console.log(
+          `[Snapshot] Page mismatch (URL: ${currentPage.value}, Snapshot: ${snapshot.currentPage}) - manual URL edit detected`
+        )
+        sessionStorage.removeItem('collection-navigation-intent')
         return false
       }
 
@@ -299,22 +321,32 @@ export function useCollection() {
 
       console.log(`[Snapshot] Restored: ${key}, page ${snapshot.currentPage}, ${snapshot.items.length} items`)
 
-      // Restore scroll position after next tick
+      // Clear restoration intent flag
+      sessionStorage.removeItem('collection-navigation-intent')
+
+      // Restore scroll position after next tick (with validation)
       setTimeout(() => {
         const mainScroll = document.getElementById('main-scroll')
         if (mainScroll) {
+          // Validate scroll position: ensure we have enough content
+          const maxScroll = mainScroll.scrollHeight - mainScroll.clientHeight
+          const targetScroll = Math.min(snapshot.scrollPosition, maxScroll)
+
           mainScroll.scrollTo({
-            top: snapshot.scrollPosition,
+            top: targetScroll,
             behavior: 'auto'
           })
-          console.log(`[Snapshot] Scroll restored to: ${snapshot.scrollPosition}px`)
+          console.log(
+            `[Snapshot] Scroll restored to: ${targetScroll}px (requested: ${snapshot.scrollPosition}px, max: ${maxScroll}px)`
+          )
         }
-      }, 100)
+      }, 150) // Increased delay to ensure DOM is fully rendered
 
       return true
     } catch (err) {
       console.error('Failed to load snapshot:', err)
       sessionStorage.removeItem(`collection-snapshot-${key}`)
+      sessionStorage.removeItem('collection-navigation-intent')
       return false
     }
   }
@@ -322,6 +354,7 @@ export function useCollection() {
   const clearSnapshot = () => {
     const key = getSnapshotKey()
     sessionStorage.removeItem(`collection-snapshot-${key}`)
+    sessionStorage.removeItem('collection-navigation-intent')
     console.log(`[Snapshot] Cleared: ${key}`)
   }
 
@@ -466,6 +499,18 @@ export function useCollection() {
     }
   }
 
+  // Helper: Scroll to top
+  const scrollToTop = () => {
+    const mainScroll = document.getElementById('main-scroll')
+    if (mainScroll) {
+      mainScroll.scrollTo({
+        top: 0,
+        behavior: 'auto' // Instant scroll for manual URL edits
+      })
+      console.log('[Scroll] Reset to top')
+    }
+  }
+
   // Initialize with URL params
   const initializeFromUrl = async () => {
     // Sync state from URL (single source of truth)
@@ -484,8 +529,9 @@ export function useCollection() {
       }
     }
 
-    // No snapshot found or desktop: fetch normally
-    console.log('[Init] Fetching from API')
+    // No snapshot found or desktop: fetch normally and scroll to top
+    console.log('[Init] Fetching from API (no snapshot)')
+    scrollToTop()
     await fetchCollection()
 
     return true
@@ -513,12 +559,21 @@ export function useCollection() {
       console.log('[Route] URL changed, syncing state...')
       const oldPage = currentPage.value
       const oldFolder = currentFolder.value
+      const oldSort = currentSort.value
+      const oldSortOrder = currentSortOrder.value
+      const oldSearch = searchQuery.value
 
       syncFromUrl()
 
-      // If filters changed, clear snapshot and refetch
-      if (currentFolder.value !== oldFolder) {
+      // If filters changed, clear snapshot, scroll to top, and refetch
+      if (
+        currentFolder.value !== oldFolder ||
+        currentSort.value !== oldSort ||
+        currentSortOrder.value !== oldSortOrder ||
+        searchQuery.value !== oldSearch
+      ) {
         clearSnapshot()
+        scrollToTop()
         void fetchCollection(true)
       }
       // If only page changed, try to restore snapshot or refetch
@@ -526,9 +581,14 @@ export function useCollection() {
         if (isMobileView.value) {
           const restored = loadSnapshot()
           if (!restored) {
+            // Manual URL edit detected (no snapshot intent), scroll to top
+            console.log('[Route] Manual page edit detected, scrolling to top')
+            scrollToTop()
             void fetchCollection()
           }
+          // else: snapshot restored with its own scroll position
         } else {
+          // Desktop: always fetch and let pager handle it
           void fetchCollection()
         }
       }
