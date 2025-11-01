@@ -312,6 +312,28 @@ onMounted(async () => {
     isPagerVisible.value = true
   }, 120)
 
+  // Restore scroll position after reveal (for back navigation in infinite scroll mode)
+  if (paginationStore.isInfiniteMode) {
+    setTimeout(() => {
+      const savedScrollY = sessionStorage.getItem('collectionScrollY')
+      if (savedScrollY) {
+        const scrollY = parseInt(savedScrollY, 10)
+        console.log('[CollectionView] 📍 Restoring scroll position:', scrollY)
+
+        const mainScroll = document.getElementById('main-scroll')
+        if (mainScroll && scrollY > 0) {
+          mainScroll.scrollTo({
+            top: scrollY,
+            behavior: 'auto' // Instant restore, no smooth scroll
+          })
+
+          // Clear the saved position after restoring
+          sessionStorage.removeItem('collectionScrollY')
+        }
+      }
+    }, 200) // After all reveals complete
+  }
+
   // Note: Observer setup is now handled automatically by the sentinelRef watcher
   // No need to manually call setupInfiniteScroll() here
 })

@@ -61,8 +61,9 @@ interface PaginationState {
 }
 
 const ITEMS_PER_PAGE = 48
-const MAX_BATCHES = 10
-const DOM_CAP_LIMIT = MAX_BATCHES * ITEMS_PER_PAGE // 480 items
+const MAX_BATCHES = 20 // Increased to support ~960 items (20 × 48)
+const DOM_CAP_LIMIT = MAX_BATCHES * ITEMS_PER_PAGE // 960 items
+const BATCH_INCREMENT = 5 // Load this many more batches when user clicks "Continue Loading"
 
 export const usePaginationStore = defineStore('pagination', () => {
   const router = useRouter()
@@ -94,6 +95,7 @@ export const usePaginationStore = defineStore('pagination', () => {
   const isSearchActive = ref<boolean>(false)
 
   const batchesLoaded = ref<number>(0)
+  const maxBatchesAllowed = ref<number>(10) // Start with 10, can be increased
   const lastScrollY = ref<number>(0)
   const domCapReached = ref<boolean>(false)
 
@@ -240,8 +242,11 @@ export const usePaginationStore = defineStore('pagination', () => {
     }
 
     // Check DOM cap
-    if (batchesLoaded.value >= MAX_BATCHES) {
-      console.log('[PaginationStore] DOM cap reached')
+    if (batchesLoaded.value >= maxBatchesAllowed.value) {
+      console.log('[PaginationStore] DOM cap reached', {
+        batchesLoaded: batchesLoaded.value,
+        maxAllowed: maxBatchesAllowed.value
+      })
       domCapReached.value = true
       return
     }
@@ -281,7 +286,7 @@ export const usePaginationStore = defineStore('pagination', () => {
       batchesLoaded.value++
 
       // Check if we reached the DOM cap
-      if (batchesLoaded.value >= MAX_BATCHES) {
+      if (batchesLoaded.value >= maxBatchesAllowed.value) {
         domCapReached.value = true
       }
 
@@ -440,9 +445,22 @@ export const usePaginationStore = defineStore('pagination', () => {
 
   /**
    * Reset DOM cap (allow loading more after cap was reached)
+   * Increases the allowed batch limit by BATCH_INCREMENT
    */
   function resetDomCap() {
-    console.log('[PaginationStore] Resetting DOM cap')
+    const oldMax = maxBatchesAllowed.value
+    maxBatchesAllowed.value = Math.min(
+      maxBatchesAllowed.value + BATCH_INCREMENT,
+      MAX_BATCHES // Never exceed absolute maximum
+    )
+
+    console.log('[PaginationStore] Resetting DOM cap', {
+      oldMax,
+      newMax: maxBatchesAllowed.value,
+      batchesLoaded: batchesLoaded.value,
+      canLoadMore: maxBatchesAllowed.value > batchesLoaded.value
+    })
+
     domCapReached.value = false
   }
 
