@@ -159,17 +159,33 @@ const setupInfiniteScroll = () => {
 }
 
 // Watch for sentinel ref changes and setup observer when it becomes available
+// BUT only if data is initialized (otherwise canLoadMore will be false)
 watch(
   () => sentinelRef.value,
   (newRef) => {
-    if (newRef && paginationStore.isInfiniteMode && !observerSetup.value) {
-      console.log('[CollectionView] 🎯 Sentinel ref became available, setting up observer')
+    if (newRef && paginationStore.isInfiniteMode && !observerSetup.value && paginationStore.isInitialized) {
+      console.log('[CollectionView] 🎯 Sentinel ref became available (and data initialized), setting up observer')
+      nextTick(() => {
+        setupInfiniteScroll()
+      })
+    } else if (newRef && !paginationStore.isInitialized) {
+      console.log('[CollectionView] 🕐 Sentinel ref available but waiting for data initialization...')
+    }
+  },
+  { immediate: true }
+)
+
+// Watch for initialization to complete and setup observer if sentinel is ready
+watch(
+  () => paginationStore.isInitialized,
+  (initialized) => {
+    if (initialized && sentinelRef.value && paginationStore.isInfiniteMode && !observerSetup.value) {
+      console.log('[CollectionView] 🎯 Data initialized and sentinel ready, setting up observer')
       nextTick(() => {
         setupInfiniteScroll()
       })
     }
-  },
-  { immediate: true }
+  }
 )
 
 // Watch for mode changes to reset observer
