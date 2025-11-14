@@ -10,6 +10,7 @@
 
 import { Router, Request, Response } from 'express'
 import { discogsOAuthClient } from '../services/discogsOAuthClient'
+import { userService } from '../services/userService'
 import crypto from 'crypto'
 
 const router = Router()
@@ -46,12 +47,15 @@ setInterval(() => {
  * POST /api/auth/discogs/request
  * Initiates OAuth flow by requesting a token and returning the authorization URL
  */
-router.post('/request', async (req: Request, res: Response) => {
+router.post('/request', async (req: Request, res: Response): Promise<void> => {
   try {
-    // TODO: Add authentication check when user system is implemented
-    // if (!req.user) {
-    //   return res.status(401).json({ error: 'Unauthorized' })
-    // }
+    // Check if user exists (using default user for now)
+    // TODO: Replace with session-based auth when full auth system is implemented
+    const currentUser = userService.getDefaultUser()
+    if (!currentUser) {
+      res.status(401).json({ error: 'Unauthorized - No user found' })
+      return
+    }
 
     // Generate callback URL
     const protocol = req.protocol
@@ -136,20 +140,37 @@ router.get('/callback', async (req: Request, res: Response): Promise<void> => {
     // Clean up state
     oauthStateStore.delete(stateId)
 
-    // TODO: Store access tokens in database for user
-    // await userService.updateDiscogsTokens(req.user.id, {
-    //   accessToken,
-    //   accessTokenSecret,
-    //   discogsUsername: discogsIdentity.username,
-    //   discogsUserId: discogsIdentity.id
-    // })
+    // Get current user (for now, using default user)
+    // TODO: Replace with session-based user lookup when full auth is implemented
+    const currentUser = userService.getDefaultUser()
 
-    // For now, just return the identity
-    res.json({
-      success: true,
-      discogsIdentity,
-      message: 'OAuth flow completed successfully'
+    if (!currentUser) {
+      res.status(500).json({
+        error: 'User not found',
+        message: 'Unable to find current user'
+      })
+      return
+    }
+
+    // Store access tokens in user
+    const updatedUser = userService.updateDiscogsAuth(currentUser.id, {
+      discogsUsername: discogsIdentity.username,
+      accessToken,
+      accessTokenSecret
     })
+
+    if (!updatedUser) {
+      res.status(500).json({
+        error: 'Failed to update user',
+        message: 'Unable to store Discogs authentication'
+      })
+      return
+    }
+
+    // Redirect to frontend with success indicator
+    // Frontend can then call /api/me to get updated user data
+    const frontendUrl = process.env.VITE_CLIENT_URL || 'http://localhost:5173'
+    res.redirect(`${frontendUrl}/collection?discogs_connected=1`)
   } catch (error) {
     console.error('OAuth callback error:', error)
     res.status(500).json({
@@ -164,7 +185,7 @@ router.get('/callback', async (req: Request, res: Response): Promise<void> => {
  * Check OAuth connection status
  * Useful for debugging and testing
  */
-router.get('/status', async (req: Request, res: Response) => {
+router.get('/status', async (_req: Request, res: Response) => {
   try {
     const isConfigured = !!(
       process.env.DISCOGS_CONSUMER_KEY && process.env.DISCOGS_CONSUMER_SECRET

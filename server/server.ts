@@ -31,6 +31,7 @@ app.use(express.json())
 
 import { sendContactMail } from './services/contactService'
 import authDiscogsRouter from './routes/authDiscogs'
+import userRouter from './routes/user'
 // ...middlewares...
 
 interface ImageRouteParams {
@@ -182,6 +183,7 @@ app.post(
 
 // Register routes
 app.use('/api/auth/discogs', authDiscogsRouter)
+app.use('/api', userRouter)
 app.get('/api/proxy/images/*', setCacheHeaders, proxyImageHandler)
 
 // Error handling middleware
