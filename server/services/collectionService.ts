@@ -1,6 +1,7 @@
 /**
  * Collection service - Lightweight orchestrator
  * Delegates to specialized services following DRY principle
+ * Supports both demo mode (app token) and user mode (OAuth)
  */
 
 import type {
@@ -11,11 +12,44 @@ import type {
   CollectionFilters,
   DiscogsPagination
 } from '../types/discogs'
-import { discogsClient } from './discogs/discogsClient'
+import {
+  DiscogsClient,
+  createDemoDiscogsClient,
+  createUserDiscogsClient
+} from './discogs/discogsClient'
+import type { User } from '../types/user'
 import { searchService } from './search/searchService'
 import { InMemoryCacheService, createCacheEntry } from './cache/cacheService'
 import type { CachedData } from '../interfaces/cache.interface'
 import { parseDiscogsYear } from '../utils/normalization'
+
+/**
+ * Collection query parameters
+ */
+export interface CollectionQuery {
+  mode: 'demo' | 'user'
+  page?: number
+  perPage?: number
+  folderId?: number
+  sort?: SortField
+  sortOrder?: SortOrder
+  search?: string
+  currentUser?: User | null
+}
+
+/**
+ * Collection result with mode information
+ */
+export interface CollectionResult {
+  mode: 'demo' | 'user' | 'unlinked' | 'empty'
+  discogsUsername: string | null
+  page: number
+  perPage: number
+  totalItems: number
+  totalPages: number
+  releases: DiscogsCollectionRelease[]
+  folders: DiscogsFolder[]
+}
 
 interface CachedCollection {
   releases: DiscogsCollectionRelease[]
@@ -27,13 +61,234 @@ export class CollectionService {
   private cache: InMemoryCacheService<CachedCollection>
   private readonly DEFAULT_PER_PAGE = 50
   private loadingPromises: Map<string, Promise<CachedData<CachedCollection>>> = new Map()
+  private demoUsername: string
 
   constructor() {
     this.cache = new InMemoryCacheService<CachedCollection>(15) // 15min TTL
+    // Get demo username from environment
+    this.demoUsername = process.env.DISCOGS_APP_DEMO_USERNAME || ''
+  }
+
+  /**
+   * Create appropriate Discogs client based on mode and user
+   */
+  private createDiscogsClient(query: CollectionQuery): {
+    client: DiscogsClient
+    username: string
+  } {
+    if (query.mode === 'demo') {
+      return {
+        client: createDemoDiscogsClient(),
+        username: this.demoUsername
+      }
+    } else {
+      // User mode
+      if (!query.currentUser?.discogsAuth) {
+        throw new Error('User not authenticated with Discogs')
+      }
+
+      const { accessToken, accessTokenSecret, discogsUsername } = query.currentUser.discogsAuth
+
+      return {
+        client: createUserDiscogsClient(accessToken, accessTokenSecret),
+        username: discogsUsername
+      }
+    }
+  }
+
+  /**
+   * Main method: Get collection by mode (demo or user)
+   */
+  async getCollectionByMode(query: CollectionQuery): Promise<CollectionResult> {
+    const {
+      mode,
+      page = 1,
+      perPage = this.DEFAULT_PER_PAGE,
+      folderId = 0,
+      sort = 'added',
+      sortOrder = 'desc',
+      search,
+      currentUser
+    } = query
+
+    // Handle user mode with no Discogs auth
+    if (mode === 'user' && !currentUser?.discogsAuth) {
+      return {
+        mode: 'unlinked',
+        discogsUsername: null,
+        page,
+        perPage,
+        totalItems: 0,
+        totalPages: 0,
+        releases: [],
+        folders: []
+      }
+    }
+
+    // Create appropriate client
+    const { client, username } = this.createDiscogsClient(query)
+
+    // Get folders
+    const folders = await client.getFolders(username)
+
+    // If there's a search query, use search mode
+    if (search && search.trim() !== '') {
+      return this.getCollectionByModeWithSearch(query, client, username, folders)
+    }
+
+    // Direct page fetch from Discogs
+    console.log(`Fetching page ${page} for ${mode} mode (${username})...`)
+
+    const data = await client.getCollectionPage(username, folderId, page, perPage, sort, sortOrder)
+
+    // Check if empty collection for user mode
+    const actualMode =
+      mode === 'user' && data.pagination.items === 0
+        ? 'empty'
+        : mode === 'user'
+          ? 'user'
+          : 'demo'
+
+    return {
+      mode: actualMode,
+      discogsUsername: username,
+      page: data.pagination.page,
+      perPage: data.pagination.per_page,
+      totalItems: data.pagination.items,
+      totalPages: data.pagination.pages,
+      releases: data.releases,
+      folders
+    }
+  }
+
+  /**
+   * Get collection by mode with search (loads full collection into cache)
+   */
+  private async getCollectionByModeWithSearch(
+    query: CollectionQuery,
+    client: DiscogsClient,
+    username: string,
+    folders: DiscogsFolder[]
+  ): Promise<CollectionResult> {
+    const {
+      mode,
+      page = 1,
+      perPage = this.DEFAULT_PER_PAGE,
+      folderId = 0,
+      sort = 'added',
+      sortOrder = 'desc',
+      search,
+      currentUser
+    } = query
+
+    const cacheKey = this.getCacheKeyForMode(mode, folderId, currentUser)
+
+    // Check if already loading
+    const existingPromise = this.loadingPromises.get(cacheKey)
+    if (existingPromise) {
+      console.log('Waiting for existing cache fetch...')
+      await existingPromise
+    }
+
+    // Check cache
+    let cachedData = this.cache.get(cacheKey)
+    if (!cachedData) {
+      console.log(`Search initiated - loading full collection for ${mode} mode...`)
+
+      const loadingPromise = this.fetchAndCacheCollectionForMode(
+        client,
+        username,
+        folderId,
+        folders,
+        cacheKey
+      )
+      this.loadingPromises.set(cacheKey, loadingPromise)
+
+      try {
+        cachedData = await loadingPromise
+      } finally {
+        this.loadingPromises.delete(cacheKey)
+      }
+    }
+
+    const cached = cachedData.data
+
+    // Apply search filter
+    let filteredReleases = this.filterReleases(cached.releases, search)
+
+    // Apply sorting
+    filteredReleases = this.sortReleases(filteredReleases, sort, sortOrder)
+
+    // Apply pagination
+    const result = this.paginateReleases(filteredReleases, page, perPage)
+
+    // Determine actual mode
+    const actualMode =
+      mode === 'user' && cached.totalItems === 0
+        ? 'empty'
+        : mode === 'user'
+          ? 'user'
+          : 'demo'
+
+    return {
+      mode: actualMode,
+      discogsUsername: username,
+      page: result.pagination.page,
+      perPage: result.pagination.per_page,
+      totalItems: result.pagination.items,
+      totalPages: result.pagination.pages,
+      releases: result.releases,
+      folders: cached.folders
+    }
+  }
+
+  /**
+   * Fetch and cache full collection for a specific mode
+   */
+  private async fetchAndCacheCollectionForMode(
+    client: DiscogsClient,
+    username: string,
+    folderId: number,
+    folders: DiscogsFolder[],
+    cacheKey: string
+  ): Promise<CachedData<CachedCollection>> {
+    const data = await client.getAllCollectionReleases(username, folderId)
+
+    const cached: CachedCollection = {
+      releases: data.releases,
+      totalItems: data.pagination.items,
+      folders
+    }
+
+    const cachedData = createCacheEntry(cached)
+    this.cache.set(cacheKey, cachedData)
+
+    // Build search index
+    searchService.buildIndex(folderId, data.releases)
+
+    return cachedData
+  }
+
+  /**
+   * Get cache key based on mode and user
+   */
+  private getCacheKeyForMode(
+    mode: 'demo' | 'user',
+    folderId: number,
+    currentUser?: User | null
+  ): string {
+    if (mode === 'demo') {
+      return `discogs:demo:collection:folder:${folderId}`
+    } else {
+      const userId = currentUser?.id || 'unknown'
+      return `discogs:user:${userId}:collection:folder:${folderId}`
+    }
   }
 
   /**
    * Get collection with filtering, sorting, and pagination
+   * DEPRECATED: Use getCollectionByMode instead
+   * This method is kept for backwards compatibility and uses demo mode
    */
   async getCollection(filters: CollectionFilters = {}): Promise<{
     releases: DiscogsCollectionRelease[]
@@ -49,167 +304,112 @@ export class CollectionService {
       search
     } = filters
 
-    // Get folders (lightweight call)
-    const folders = await this.getFolders()
+    // Use new getCollectionByMode with demo mode
+    const result = await this.getCollectionByMode({
+      mode: 'demo',
+      page,
+      perPage,
+      folderId,
+      sort,
+      sortOrder,
+      search
+    })
 
-    // If there's a search query, we need the full collection
-    if (search && search.trim() !== '') {
-      return this.getCollectionWithSearch(filters)
-    }
-
-    // For normal pagination, fetch only the requested page from Discogs directly
-    console.log(`Fetching page ${page} directly from Discogs API...`)
-
-    const data = await discogsClient.getCollectionPage(folderId, page, perPage, sort, sortOrder)
-
+    // Convert to old format for backwards compatibility
     return {
-      releases: data.releases,
-      pagination: data.pagination,
-      folders
+      releases: result.releases,
+      pagination: {
+        page: result.page,
+        pages: result.totalPages,
+        per_page: result.perPage,
+        items: result.totalItems,
+        urls: {
+          first: result.page > 1 ? `?page=1` : undefined,
+          prev: result.page > 1 ? `?page=${result.page - 1}` : undefined,
+          next: result.page < result.totalPages ? `?page=${result.page + 1}` : undefined,
+          last: result.page < result.totalPages ? `?page=${result.totalPages}` : undefined
+        }
+      },
+      folders: result.folders
     }
   }
 
   /**
    * Get collection with search (loads full collection into cache + search index)
+   * DEPRECATED: Use getCollectionByMode instead
    */
   private async getCollectionWithSearch(filters: CollectionFilters): Promise<{
     releases: DiscogsCollectionRelease[]
     pagination: DiscogsPagination
     folders: DiscogsFolder[]
   }> {
-    const {
-      page = 1,
-      perPage = this.DEFAULT_PER_PAGE,
-      folderId = 0,
-      sort = 'added',
-      sortOrder = 'desc',
-      search
-    } = filters
-
-    const cacheKey = this.getCacheKey(folderId)
-
-    // Check if we're already loading this collection
-    const existingPromise = this.loadingPromises.get(cacheKey)
-    if (existingPromise) {
-      console.log('Waiting for existing search cache fetch to complete...')
-      await existingPromise
-    }
-
-    // Check cache
-    let cachedData = this.cache.get(cacheKey)
-    if (!cachedData) {
-      console.log(`Search initiated - loading full collection for folder ${folderId}...`)
-
-      // Create loading promise to prevent multiple simultaneous fetches
-      const loadingPromise = this.fetchAndCacheCollection(folderId)
-      this.loadingPromises.set(cacheKey, loadingPromise)
-
-      try {
-        cachedData = await loadingPromise
-      } finally {
-        this.loadingPromises.delete(cacheKey)
-      }
-    }
-
-    const cached = cachedData.data
-
-    // Apply search filter using search service
-    let filteredReleases = this.filterReleases(cached.releases, search)
-
-    // Apply sorting
-    filteredReleases = this.sortReleases(filteredReleases, sort, sortOrder)
-
-    // Apply pagination
-    const result = this.paginateReleases(filteredReleases, page, perPage)
+    // This now delegates to getCollectionByMode
+    const result = await this.getCollectionByMode({
+      mode: 'demo',
+      ...filters
+    })
 
     return {
       releases: result.releases,
-      pagination: result.pagination,
-      folders: cached.folders
+      pagination: {
+        page: result.page,
+        pages: result.totalPages,
+        per_page: result.perPage,
+        items: result.totalItems,
+        urls: {
+          first: result.page > 1 ? `?page=1` : undefined,
+          prev: result.page > 1 ? `?page=${result.page - 1}` : undefined,
+          next: result.page < result.totalPages ? `?page=${result.page + 1}` : undefined,
+          last: result.page < result.totalPages ? `?page=${result.totalPages}` : undefined
+        }
+      },
+      folders: result.folders
     }
-  }
-
-  /**
-   * Fetch and cache full collection
-   */
-  private async fetchAndCacheCollection(folderId: number): Promise<CachedData<CachedCollection>> {
-    const data = await discogsClient.getAllCollectionReleases(folderId)
-    const folders = await discogsClient.getFolders()
-
-    const cached: CachedCollection = {
-      releases: data.releases,
-      totalItems: data.pagination.items,
-      folders
-    }
-
-    const cachedData = createCacheEntry(cached)
-    this.cache.set(this.getCacheKey(folderId), cachedData)
-
-    // Build search index
-    searchService.buildIndex(folderId, data.releases)
-
-    return cachedData
   }
 
   /**
    * Search collection using search service
+   * DEPRECATED: Use getCollectionByMode with search parameter
    */
   async searchCollection(query: string, filters: CollectionFilters = {}) {
-    const {
-      page = 1,
-      perPage = this.DEFAULT_PER_PAGE,
-      folderId = 0,
-      sort = 'added',
-      sortOrder = 'desc'
-    } = filters
-
-    const cacheKey = this.getCacheKey(folderId)
-    const cached = this.cache.get(cacheKey)
-
-    // Ensure cache and index are warmed up
-    if (!cached || !searchService.hasIndex(folderId)) {
-      const hydrated = await this.getCollectionWithSearch({ ...filters, search: query })
-      return {
-        ...hydrated,
-        totalResults: hydrated.pagination.items
-      }
-    }
-
-    // Use search service
-    const hits = searchService.search(folderId, query.trim())
-
-    // Map search results to releases
-    const byId = new Map(cached.data.releases.map(r => [r.id, r]))
-    let releases = hits.map(h => byId.get(h.id)).filter(Boolean) as DiscogsCollectionRelease[]
-
-    // Apply sorting and pagination
-    releases = this.sortReleases(releases, sort, sortOrder)
-    const result = this.paginateReleases(releases, page, perPage)
+    // Delegate to getCollectionByMode
+    const result = await this.getCollectionByMode({
+      mode: 'demo',
+      ...filters,
+      search: query
+    })
 
     return {
       releases: result.releases,
-      pagination: result.pagination,
-      folders: cached.data.folders,
-      totalResults: releases.length
+      pagination: {
+        page: result.page,
+        pages: result.totalPages,
+        per_page: result.perPage,
+        items: result.totalItems,
+        urls: {
+          first: result.page > 1 ? `?page=1` : undefined,
+          prev: result.page > 1 ? `?page=${result.page - 1}` : undefined,
+          next: result.page < result.totalPages ? `?page=${result.page + 1}` : undefined,
+          last: result.page < result.totalPages ? `?page=${result.totalPages}` : undefined
+        }
+      },
+      folders: result.folders,
+      totalResults: result.totalItems
     }
   }
 
   /**
    * Get folders
+   * DEPRECATED: Use getCollectionByMode instead
    */
   async getFolders(): Promise<DiscogsFolder[]> {
-    const cacheKey = this.getCacheKey(0)
-    const cached = this.cache.get(cacheKey)
-
-    if (cached) {
-      return cached.data.folders
-    }
-
-    return discogsClient.getFolders()
+    const client = createDemoDiscogsClient()
+    return client.getFolders(this.demoUsername)
   }
 
   /**
-   * Refresh cache for a folder
+   * Refresh cache for a folder (demo mode)
+   * DEPRECATED: This only works for demo mode
    */
   async refreshCache(folderId: number = 0): Promise<{
     success: boolean
@@ -217,7 +417,7 @@ export class CollectionService {
     cacheCleared: boolean
     dataRefreshed: boolean
   }> {
-    const cacheKey = this.getCacheKey(folderId)
+    const cacheKey = this.getCacheKeyForMode('demo', folderId)
     const hadCache = this.cache.has(cacheKey)
 
     // Clear cache and search index
@@ -251,10 +451,6 @@ export class CollectionService {
   }
 
   // ============ PRIVATE UTILITY METHODS ============
-
-  private getCacheKey(folderId: number = 0): string {
-    return `collection_${discogsClient.getUsername()}_${folderId}`
-  }
 
   private sortReleases(
     releases: DiscogsCollectionRelease[],
