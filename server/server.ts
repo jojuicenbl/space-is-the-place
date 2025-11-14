@@ -30,6 +30,7 @@ app.use(cors(corsOptions))
 app.use(express.json())
 
 import { sendContactMail } from './services/contactService'
+import authDiscogsRouter from './routes/authDiscogs'
 // ...middlewares...
 
 interface ImageRouteParams {
@@ -180,6 +181,7 @@ app.post(
 )
 
 // Register routes
+app.use('/api/auth/discogs', authDiscogsRouter)
 app.get('/api/proxy/images/*', setCacheHeaders, proxyImageHandler)
 
 // Error handling middleware
