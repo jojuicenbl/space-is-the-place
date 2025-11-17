@@ -15,7 +15,7 @@
     "paths": {
       "@/*": ["./src/*"]
     },
-    "types": ["vuetify", "node"],
+    "types": ["node"],
     "jsx": "preserve",
     "jsxImportSource": "vue"
   }
