@@ -74,7 +74,25 @@ router.get('/', async (req: Request, res: Response): Promise<void> => {
     // Get collection
     const result = await collectionService.getCollectionByMode(query)
 
-    res.json(result)
+    // Transform to frontend-expected format with nested pagination
+    res.json({
+      mode: result.mode,
+      discogsUsername: result.discogsUsername,
+      releases: result.releases,
+      folders: result.folders,
+      pagination: {
+        page: result.page,
+        pages: result.totalPages,
+        per_page: result.perPage,
+        items: result.totalItems,
+        urls: {
+          first: result.page > 1 ? `?page=1` : undefined,
+          prev: result.page > 1 ? `?page=${result.page - 1}` : undefined,
+          next: result.page < result.totalPages ? `?page=${result.page + 1}` : undefined,
+          last: result.page < result.totalPages ? `?page=${result.totalPages}` : undefined
+        }
+      }
+    })
   } catch (error) {
     console.error('Error fetching collection:', error)
     res.status(500).json({
@@ -86,8 +104,7 @@ router.get('/', async (req: Request, res: Response): Promise<void> => {
 
 /**
  * GET /api/collection/search
- * Search collection (backwards compatibility endpoint)
- * This endpoint always uses demo mode for now
+ * Search collection with mode support
  */
 router.get('/search', async (req: Request, res: Response): Promise<void> => {
   try {
@@ -97,22 +114,48 @@ router.get('/search', async (req: Request, res: Response): Promise<void> => {
       return
     }
 
+    const mode = (req.query.mode as 'demo' | 'user') || 'demo'
     const page = req.query.page ? parseInt(req.query.page as string) : 1
     const perPage = req.query.perPage ? parseInt(req.query.perPage as string) : 50
     const folderId = req.query.folder ? parseInt(req.query.folder as string) : 0
     const sort = (req.query.sort as SortField) || 'added'
     const sortOrder = (req.query.order as SortOrder) || 'desc'
 
-    // Use old method for backwards compatibility
-    const result = await collectionService.searchCollection(query, {
+    // Get current user (for user mode)
+    const currentUser = userService.getDefaultUser()
+
+    // Use new getCollectionByMode method with search
+    const result = await collectionService.getCollectionByMode({
+      mode,
       page,
       perPage,
       folderId,
       sort,
-      sortOrder
+      sortOrder,
+      search: query,
+      currentUser
     })
 
-    res.json(result)
+    // Transform to frontend-expected format with nested pagination
+    res.json({
+      mode: result.mode,
+      discogsUsername: result.discogsUsername,
+      releases: result.releases,
+      folders: result.folders,
+      pagination: {
+        page: result.page,
+        pages: result.totalPages,
+        per_page: result.perPage,
+        items: result.totalItems,
+        urls: {
+          first: result.page > 1 ? `?page=1` : undefined,
+          prev: result.page > 1 ? `?page=${result.page - 1}` : undefined,
+          next: result.page < result.totalPages ? `?page=${result.page + 1}` : undefined,
+          last: result.page < result.totalPages ? `?page=${result.totalPages}` : undefined
+        }
+      },
+      totalResults: result.totalItems
+    })
   } catch (error) {
     console.error('Error searching collection:', error)
     res.status(500).json({

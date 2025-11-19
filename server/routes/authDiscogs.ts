@@ -181,6 +181,44 @@ router.get('/callback', async (req: Request, res: Response): Promise<void> => {
 })
 
 /**
+ * POST /api/auth/discogs/disconnect
+ * Disconnect user's Discogs account
+ */
+router.post('/disconnect', async (_req: Request, res: Response): Promise<void> => {
+  try {
+    // Get current user
+    const currentUser = userService.getDefaultUser()
+
+    if (!currentUser) {
+      res.status(401).json({ error: 'Unauthorized - No user found' })
+      return
+    }
+
+    // Remove Discogs authentication from user
+    const updatedUser = userService.removeDiscogsAuth(currentUser.id)
+
+    if (!updatedUser) {
+      res.status(500).json({
+        error: 'Failed to disconnect',
+        message: 'Unable to remove Discogs authentication'
+      })
+      return
+    }
+
+    res.json({
+      success: true,
+      message: 'Discogs account disconnected successfully'
+    })
+  } catch (error) {
+    console.error('Disconnect error:', error)
+    res.status(500).json({
+      error: 'Failed to disconnect',
+      message: (error as Error).message
+    })
+  }
+})
+
+/**
  * GET /api/auth/discogs/status
  * Check OAuth connection status
  * Useful for debugging and testing
