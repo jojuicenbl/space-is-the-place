@@ -80,8 +80,9 @@ export const getCollection = async (
     if (axios.isCancel(error)) {
       throw error
     }
+    // Re-throw the original error to preserve axios error properties (response, status, etc.)
     console.error('Error fetching collection:', error)
-    throw new Error('Failed to fetch collection')
+    throw error
   }
 }
 
@@ -113,8 +114,9 @@ export const searchCollection = async (
     if (axios.isCancel(error)) {
       throw error
     }
+    // Re-throw the original error to preserve axios error properties (response, status, etc.)
     console.error('Error searching collection:', error)
-    throw new Error('Failed to search collection')
+    throw error
   }
 }
 
@@ -124,8 +126,9 @@ export const getFolders = async (): Promise<FoldersResponse> => {
     const response = await collectionApi.get<FoldersResponse>('/api/folders')
     return response.data
   } catch (error) {
+    // Re-throw the original error to preserve axios error properties (response, status, etc.)
     console.error('Error fetching folders:', error)
-    throw new Error('Failed to fetch folders')
+    throw error
   }
 }
 

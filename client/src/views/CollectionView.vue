@@ -77,6 +77,7 @@ const {
   isInitialized,
   totalItems,
   error,
+  isRateLimited,
   currentFolder,
   currentSort,
   currentSortOrder,
@@ -288,8 +289,33 @@ onUnmounted(() => {
                 </div>
               </div>
               <!-- ERROR -->
-              <div v-else-if="error" key="error" class="flex justify-center items-center min-height-300">
-                {{ error }}
+              <div v-else-if="error" key="error" class="flex flex-col justify-center items-center min-height-300">
+                <!-- RATE LIMIT ERROR -->
+                <div v-if="isRateLimited" class="error-state">
+                  <div class="text-2xl font-bold mb-3 text-gray-900 dark:text-gray-100">
+                    ⏱️ Rate Limit Reached
+                  </div>
+                  <div class="text-base mb-4 text-gray-600 dark:text-gray-400 max-w-md text-center">
+                    Discogs is currently throttling requests. Please try again in a few seconds.
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="lg"
+                    @click="fetchCollection(false)"
+                    class="retry-btn"
+                  >
+                    Retry
+                  </Button>
+                </div>
+                <!-- OTHER ERRORS -->
+                <div v-else class="error-state">
+                  <div class="text-xl font-semibold mb-2 text-gray-900 dark:text-gray-100">
+                    Something went wrong
+                  </div>
+                  <div class="text-sm text-gray-600 dark:text-gray-400">
+                    {{ error }}
+                  </div>
+                </div>
               </div>
               <!-- EMPTY STATES -->
               <div
@@ -608,9 +634,10 @@ onUnmounted(() => {
 }
 
 /* ====================================
-   Empty States
+   Empty States & Error States
    ==================================== */
-.empty-state {
+.empty-state,
+.error-state {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -619,6 +646,7 @@ onUnmounted(() => {
 }
 
 .connect-discogs-btn,
+.retry-btn,
 .external-link {
   margin-top: 0.5rem;
 }
