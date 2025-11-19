@@ -1,9 +1,16 @@
 <script setup lang="ts">
 import { RouterView, useRoute } from 'vue-router'
-import { computed } from 'vue'
+import { computed, onMounted } from 'vue'
 import AppNavbar from '@/components/Nav/AppNavbar.vue'
+import { useUserStore } from '@/stores/userStore'
 
 const route = useRoute()
+const userStore = useUserStore()
+
+// Load user state on app startup
+onMounted(async () => {
+  await userStore.loadUser()
+})
 
 // Compute navbar visibility from route meta
 const showNav = computed(() => route.meta.showNav === true)

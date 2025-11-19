@@ -5,7 +5,7 @@ import { useRouter, useRoute } from 'vue-router'
 const router = useRouter()
 const route = useRoute()
 const goToHome = () => {
-  router.push('/collection')
+  router.push('/')
 }
 
 const goToCollection = () => {

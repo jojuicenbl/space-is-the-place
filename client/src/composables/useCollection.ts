@@ -1,4 +1,4 @@
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, type Ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useDebounceFn } from '@vueuse/core'
 import axios from 'axios'
@@ -6,7 +6,7 @@ import { getCollection, searchCollection, getFolders } from '@/services/collecti
 import type { CollectionRelease } from '@/types/models/Release'
 import type { DiscogsFolder, SortField, SortOrder } from '@/services/collectionApi'
 
-export function useCollection() {
+export function useCollection(mode?: Ref<'demo' | 'user'>) {
   const route = useRoute()
   const router = useRouter()
 
@@ -29,6 +29,10 @@ export function useCollection() {
   const isSearchActive = ref(false)
   const lastSearchQuery = ref('')
 
+  // Collection mode state from server response
+  const collectionMode = ref<'demo' | 'user' | 'unlinked' | 'empty'>('demo')
+  const discogsUsername = ref<string | null>(null)
+
   // Filters state - initialized from URL params
   const currentFolder = ref<number>(Number(route.query.folder) || 0)
   const currentSort = ref<SortField>((route.query.sort as SortField) || 'added')
@@ -40,6 +44,11 @@ export function useCollection() {
   const isSearching = computed(() => {
     return searchQuery.value.trim().length > 0
   })
+
+  const isDemo = computed(() => collectionMode.value === 'demo')
+  const isUser = computed(() => collectionMode.value === 'user')
+  const isUnlinked = computed(() => collectionMode.value === 'unlinked')
+  const isEmpty = computed(() => collectionMode.value === 'empty')
 
   // Update URL params when filters change
   const updateUrlParams = () => {
@@ -70,7 +79,8 @@ export function useCollection() {
         folderId: currentFolder.value,
         sort: currentSort.value,
         sortOrder: currentSortOrder.value,
-        search: searchQuery.value.trim() || undefined
+        search: searchQuery.value.trim() || undefined,
+        mode: mode?.value
       }
 
       let result
@@ -86,10 +96,29 @@ export function useCollection() {
         lastSearchQuery.value = ''
       }
 
-      releases.value = result.releases
-      totalPages.value = result.pagination.pages
-      totalItems.value = result.pagination.items
-      currentPageItems.value = result.releases.length
+      releases.value = result.releases || []
+
+      // Safely access pagination data with fallbacks
+      if (result.pagination) {
+        totalPages.value = result.pagination.pages || 0
+        totalItems.value = result.pagination.items || 0
+        currentPageItems.value = result.releases?.length || 0
+      } else {
+        // Fallback if pagination is missing
+        totalPages.value = 0
+        totalItems.value = 0
+        currentPageItems.value = 0
+      }
+
+      // Update collection mode from server response
+      if (result.mode) {
+        collectionMode.value = result.mode
+      }
+
+      // Update Discogs username if present
+      if (result.discogsUsername) {
+        discogsUsername.value = result.discogsUsername
+      }
 
       // Update folders if they come with the response
       if (result.folders && result.folders.length > 0) {
@@ -133,14 +162,33 @@ export function useCollection() {
         perPage: 48,
         folderId: currentFolder.value,
         sort: currentSort.value,
-        sortOrder: currentSortOrder.value
+        sortOrder: currentSortOrder.value,
+        mode: mode?.value
       }
       const res = await searchCollection(q.trim(), filters, { signal: controller.signal })
-      releases.value = res.releases
-      totalPages.value = res.pagination.pages
-      totalItems.value = res.pagination.items
+      releases.value = res.releases || []
+
+      // Safely access pagination data with fallbacks
+      if (res.pagination) {
+        totalPages.value = res.pagination.pages || 0
+        totalItems.value = res.pagination.items || 0
+      } else {
+        totalPages.value = 0
+        totalItems.value = 0
+      }
+
       isSearchActive.value = true
       lastSearchQuery.value = q.trim()
+
+      // Update collection mode from server response
+      if (res.mode) {
+        collectionMode.value = res.mode
+      }
+
+      // Update Discogs username if present
+      if (res.discogsUsername) {
+        discogsUsername.value = res.discogsUsername
+      }
     } catch (e) {
       // Ignore cancellation errors (user typed before previous request finished)
       // These are expected and should not be treated as errors
@@ -269,6 +317,14 @@ export function useCollection() {
     // Search state
     isSearchActive: isSearching,
     lastSearchQuery,
+
+    // Collection mode state
+    collectionMode,
+    discogsUsername,
+    isDemo,
+    isUser,
+    isUnlinked,
+    isEmpty,
 
     // Filters
     currentFolder,
