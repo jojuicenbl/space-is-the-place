@@ -7,6 +7,7 @@ import { Router, Request, Response } from 'express'
 import { collectionService, CollectionQuery } from '../services/collectionService'
 import { userService } from '../services/userService'
 import type { SortField, SortOrder } from '../types/discogs'
+import { DiscogsRateLimitError } from '../services/discogs/discogsClient'
 
 const router = Router()
 
@@ -95,6 +96,17 @@ router.get('/', async (req: Request, res: Response): Promise<void> => {
     })
   } catch (error) {
     console.error('Error fetching collection:', error)
+
+    // Handle rate limit errors
+    if (error instanceof DiscogsRateLimitError) {
+      res.status(429).json({
+        error: 'discogs_rate_limited',
+        message: 'Discogs is currently throttling requests. Please try again in a few seconds.'
+      })
+      return
+    }
+
+    // Handle other errors
     res.status(500).json({
       error: 'Internal server error',
       message: error instanceof Error ? error.message : 'Failed to fetch collection'
@@ -158,6 +170,17 @@ router.get('/search', async (req: Request, res: Response): Promise<void> => {
     })
   } catch (error) {
     console.error('Error searching collection:', error)
+
+    // Handle rate limit errors
+    if (error instanceof DiscogsRateLimitError) {
+      res.status(429).json({
+        error: 'discogs_rate_limited',
+        message: 'Discogs is currently throttling requests. Please try again in a few seconds.'
+      })
+      return
+    }
+
+    // Handle other errors
     res.status(500).json({
       error: 'Internal server error',
       message: 'Failed to search collection'
@@ -175,6 +198,17 @@ router.get('/folders', async (req: Request, res: Response): Promise<void> => {
     res.json({ folders })
   } catch (error) {
     console.error('Error fetching folders:', error)
+
+    // Handle rate limit errors
+    if (error instanceof DiscogsRateLimitError) {
+      res.status(429).json({
+        error: 'discogs_rate_limited',
+        message: 'Discogs is currently throttling requests. Please try again in a few seconds.'
+      })
+      return
+    }
+
+    // Handle other errors
     res.status(500).json({
       error: 'Internal server error',
       message: 'Failed to fetch folders'
@@ -193,6 +227,17 @@ router.post('/refresh', async (req: Request, res: Response): Promise<void> => {
     res.json(result)
   } catch (error) {
     console.error('Error refreshing cache:', error)
+
+    // Handle rate limit errors
+    if (error instanceof DiscogsRateLimitError) {
+      res.status(429).json({
+        error: 'discogs_rate_limited',
+        message: 'Discogs is currently throttling requests. Please try again in a few seconds.'
+      })
+      return
+    }
+
+    // Handle other errors
     res.status(500).json({
       error: 'Internal server error',
       message: 'Failed to refresh cache'

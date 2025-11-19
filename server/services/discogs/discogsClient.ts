@@ -3,7 +3,7 @@
  * Supports both app token (demo mode) and user OAuth authentication
  */
 
-import axios, { type AxiosInstance } from 'axios'
+import axios, { type AxiosInstance, type AxiosResponse } from 'axios'
 import crypto from 'crypto'
 import type { RetryConfig } from '../../interfaces/http.interface'
 import type {
@@ -11,6 +11,19 @@ import type {
   DiscogsFoldersResponse,
   DiscogsFolder
 } from '../../types/discogs'
+
+/**
+ * Custom error for Discogs rate limiting
+ */
+export class DiscogsRateLimitError extends Error {
+  constructor(
+    message: string,
+    public readonly retryAfter?: number
+  ) {
+    super(message)
+    this.name = 'DiscogsRateLimitError'
+  }
+}
 
 const DISCOGS_API_URL = 'https://api.discogs.com'
 const DISCOGS_TOKEN = process.env.DISCOGS_TOKEN
@@ -33,6 +46,13 @@ export type DiscogsAuthMode =
   | { type: 'appToken' } // Demo mode - uses app token
   | { type: 'userOAuth'; accessToken: string; accessTokenSecret: string } // User mode - OAuth
 
+/**
+ * Rate limit configuration
+ */
+const RATE_LIMIT_BACKOFF_SECONDS = 30 // Backoff duration when rate limited
+const RATE_LIMIT_PREVENTIVE_THRESHOLD = 2 // Trigger preventive backoff if remaining <= this
+const RATE_LIMIT_PREVENTIVE_BACKOFF_SECONDS = 10 // Preventive backoff duration
+
 export class DiscogsClient {
   private axiosInstance: AxiosInstance
   private readonly defaultRetryConfig: RetryConfig = {
@@ -41,6 +61,7 @@ export class DiscogsClient {
     backoffFactor: 2
   }
   private authMode: DiscogsAuthMode
+  private backoffUntil: Map<string, number> = new Map() // Map of backoff keys to expiry timestamps
 
   constructor(authMode: DiscogsAuthMode = { type: 'appToken' }) {
     this.authMode = authMode
@@ -185,23 +206,108 @@ export class DiscogsClient {
   }
 
   /**
+   * Check if currently in backoff mode
+   */
+  private isInBackoff(): boolean {
+    const backoffKey = `discogs:backoff:${this.authMode.type}`
+    const expiresAt = this.backoffUntil.get(backoffKey)
+
+    if (!expiresAt) {
+      return false
+    }
+
+    // Check if backoff has expired
+    if (Date.now() >= expiresAt) {
+      this.backoffUntil.delete(backoffKey)
+      return false
+    }
+
+    return true
+  }
+
+  /**
+   * Activate backoff mode for specified duration
+   */
+  private activateBackoff(seconds: number): void {
+    const backoffKey = `discogs:backoff:${this.authMode.type}`
+    const expiresAt = Date.now() + seconds * 1000
+    this.backoffUntil.set(backoffKey, expiresAt)
+    console.warn(`🚨 Discogs rate limit: Backoff activated for ${seconds} seconds`)
+  }
+
+  /**
+   * Check rate limit headers and apply preventive backoff if needed
+   */
+  private checkRateLimitHeaders(response: AxiosResponse): void {
+    const remaining = Number(response.headers['x-discogs-ratelimit-remaining'])
+    const limit = Number(response.headers['x-discogs-ratelimit'])
+    const used = Number(response.headers['x-discogs-ratelimit-used'])
+
+    // Log rate limit status
+    if (!isNaN(remaining) && !isNaN(limit)) {
+      console.log(`📊 Discogs rate limit: ${used}/${limit} used, ${remaining} remaining`)
+
+      // Preventive backoff if running low
+      if (remaining <= RATE_LIMIT_PREVENTIVE_THRESHOLD && remaining > 0) {
+        console.warn(
+          `⚠️  Discogs rate limit running low (${remaining} remaining). Activating preventive backoff.`
+        )
+        this.activateBackoff(RATE_LIMIT_PREVENTIVE_BACKOFF_SECONDS)
+      }
+    }
+  }
+
+  /**
+   * Check if we can make a request (not in backoff)
+   * Throws DiscogsRateLimitError if in backoff
+   */
+  private checkBackoffBeforeRequest(): void {
+    if (this.isInBackoff()) {
+      throw new DiscogsRateLimitError(
+        'Discogs is currently throttling requests. Please try again in a few seconds.',
+        RATE_LIMIT_BACKOFF_SECONDS
+      )
+    }
+  }
+
+  /**
    * Fetch with exponential backoff retry
    */
   private async fetchWithRetry<T>(
     fetchFn: () => Promise<T>,
     config: RetryConfig = this.defaultRetryConfig
   ): Promise<T> {
+    // Check backoff before attempting any request
+    this.checkBackoffBeforeRequest()
+
     let lastError: Error | null = null
     let delay = config.delayMs
 
     for (let attempt = 1; attempt <= config.maxRetries; attempt++) {
       try {
-        return await fetchFn()
+        const result = await fetchFn()
+
+        // Check rate limit headers on successful response
+        if (result && typeof result === 'object' && 'headers' in result) {
+          this.checkRateLimitHeaders(result as any)
+        }
+
+        return result
       } catch (error: unknown) {
         lastError = error as Error
+        const axiosError = error as { response?: { status?: number; headers?: any } }
+
+        // Handle 429 rate limit errors
+        if (axiosError.response?.status === 429) {
+          console.error('🚨 Discogs API returned 429 (Rate Limit Exceeded)')
+          this.activateBackoff(RATE_LIMIT_BACKOFF_SECONDS)
+          throw new DiscogsRateLimitError(
+            'Discogs is currently throttling requests. Please try again in a few seconds.',
+            RATE_LIMIT_BACKOFF_SECONDS
+          )
+        }
 
         // Don't retry on auth errors
-        const axiosError = error as { response?: { status?: number } }
         if (axiosError.response?.status === 401 || axiosError.response?.status === 403) {
           throw error
         }
@@ -235,6 +341,10 @@ export class DiscogsClient {
         `/users/${username}/collection/folders`,
         { headers }
       )
+
+      // Check rate limit headers
+      this.checkRateLimitHeaders(response)
+
       return response.data.folders
     })
   }
@@ -264,6 +374,10 @@ export class DiscogsClient {
           sort_order: sortOrder
         }
       })
+
+      // Check rate limit headers
+      this.checkRateLimitHeaders(response)
+
       return response.data
     })
   }

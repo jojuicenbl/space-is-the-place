@@ -19,6 +19,7 @@ export function useCollection(mode?: Ref<'demo' | 'user'>) {
   const isLoading = ref(false)
   const isInitialized = ref(false)
   const error = ref<string | null>(null)
+  const isRateLimited = ref(false)
 
   // Pagination info from server
   const totalPages = ref(0)
@@ -130,6 +131,18 @@ export function useCollection(mode?: Ref<'demo' | 'user'>) {
       // Ignore cancellation errors - these are expected when user changes filters quickly
       if (!axios.isCancel(err)) {
         console.error('Error loading collection:', err)
+
+        // Check for rate limit error
+        if (axios.isAxiosError(err)) {
+          const errorCode = err.response?.data?.error
+          if (err.response?.status === 429 || errorCode === 'discogs_rate_limited') {
+            isRateLimited.value = true
+            error.value = 'discogs_rate_limited'
+            return
+          }
+        }
+
+        isRateLimited.value = false
         error.value = 'Failed to load collection'
       }
     } finally {
@@ -194,6 +207,18 @@ export function useCollection(mode?: Ref<'demo' | 'user'>) {
       // These are expected and should not be treated as errors
       if (!axios.isCancel(e)) {
         console.error('Search error:', e)
+
+        // Check for rate limit error
+        if (axios.isAxiosError(e)) {
+          const errorCode = e.response?.data?.error
+          if (e.response?.status === 429 || errorCode === 'discogs_rate_limited') {
+            isRateLimited.value = true
+            error.value = 'discogs_rate_limited'
+            return
+          }
+        }
+
+        isRateLimited.value = false
         error.value = 'Failed to load collection'
       }
       // If canceled, silently ignore - this is normal behavior with debounced search
@@ -233,6 +258,18 @@ export function useCollection(mode?: Ref<'demo' | 'user'>) {
       folders.value = data.folders
     } catch (err) {
       console.error('Error loading folders:', err)
+
+      // Check for rate limit error
+      if (axios.isAxiosError(err)) {
+        const errorCode = err.response?.data?.error
+        if (err.response?.status === 429 || errorCode === 'discogs_rate_limited') {
+          isRateLimited.value = true
+          error.value = 'discogs_rate_limited'
+          return
+        }
+      }
+
+      isRateLimited.value = false
       error.value = 'Failed to load folders'
     }
   }
@@ -308,6 +345,7 @@ export function useCollection(mode?: Ref<'demo' | 'user'>) {
     isLoading,
     isInitialized,
     error,
+    isRateLimited,
 
     // Pagination
     totalPages,
