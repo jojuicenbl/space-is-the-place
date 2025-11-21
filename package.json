@@ -12,7 +12,10 @@
     "dev": "concurrently \"npm run dev:client\" \"npm run dev:server\"",
     "build:client": "cd client && npm run build",
     "build:server": "cd server && npm run build",
-    "build": "npm run build:client && npm run build:server"
+    "build": "npm run build:client && npm run build:server",
+    "lint:client": "cd client && npx eslint .",
+    "lint:server": "cd server && npx eslint .",
+    "lint": "npm run lint:client && npm run lint:server"
   },
   "devDependencies": {
     "@types/nodemailer": "^7.0.1",
