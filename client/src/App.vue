@@ -19,6 +19,14 @@ const showNav = computed(() => route.meta.showNav === true)
 const getTransitionName = () => {
   return (route.meta.pageTransition as string) || 'fade'
 }
+
+// Scroll to top après la transition out, avant la transition in
+const onAfterLeave = () => {
+  const mainScroll = document.getElementById('main-scroll')
+  if (mainScroll) {
+    mainScroll.scrollTop = 0
+  }
+}
 </script>
 <template>
   <div class="app">
@@ -29,7 +37,7 @@ const getTransitionName = () => {
 
     <div id="main-scroll" class="main-scroll" :class="{ 'with-navbar': showNav }">
       <RouterView v-slot="{ Component, route: currentRoute }">
-        <Transition :name="getTransitionName()" mode="out-in">
+        <Transition :name="getTransitionName()" mode="out-in" @after-leave="onAfterLeave">
           <component :is="Component" :key="currentRoute.path" />
         </Transition>
       </RouterView>

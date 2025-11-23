@@ -4,6 +4,23 @@ import CollectionView from '../views/CollectionView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
+  scrollBehavior(_to, _from, savedPosition) {
+    // Le scroll to top est géré par le hook @after-leave de la transition dans App.vue
+    // Ici on gère uniquement la restauration de position pour le bouton retour
+    if (savedPosition) {
+      return new Promise((resolve) => {
+        setTimeout(() => {
+          const mainScroll = document.getElementById('main-scroll')
+          if (mainScroll) {
+            mainScroll.scrollTop = savedPosition.top
+          }
+          resolve({ top: savedPosition.top, left: 0 })
+        }, 300)
+      })
+    }
+    // Ne rien faire pour les nouvelles navigations (géré par la transition)
+    return undefined
+  },
   routes: [
     {
       path: '/',
