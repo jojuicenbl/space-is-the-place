@@ -11,7 +11,7 @@
  * - Préserve algorithme de pagination avec "..."
  */
 
-import { computed } from 'vue'
+import { computed, ref, onMounted, onUnmounted } from 'vue'
 import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/vue/24/outline'
 
 const props = defineProps<{
@@ -25,8 +25,23 @@ const handlePageChange = (page: number) => {
   props.onPageChange(page)
 }
 
+// Responsive delta: 1 on mobile, 2 on desktop
+const isMobile = ref(window.innerWidth < 640)
+
+const updateIsMobile = () => {
+  isMobile.value = window.innerWidth < 640
+}
+
+onMounted(() => {
+  window.addEventListener('resize', updateIsMobile)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('resize', updateIsMobile)
+})
+
 const pages = computed(() => {
-  const delta = 2
+  const delta = isMobile.value ? 1 : 2
   const range = []
   const rangeWithDots = []
   let l
@@ -58,12 +73,41 @@ const pages = computed(() => {
 </script>
 
 <template>
-  <nav aria-label="Pagination" class="flex gap-2 justify-center my-8">
+  <!-- Mobile Pagination (sm:hidden) -->
+  <nav aria-label="Pagination" class="flex sm:hidden gap-3 justify-center items-center my-8 max-w-full px-4">
     <!-- Previous Button -->
     <button
       :disabled="currentPage === 1"
       :aria-label="currentPage === 1 ? 'First page, no previous' : 'Go to previous page'"
-      class="px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-lg transition-all duration-200 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+      class="min-w-[52px] min-h-[52px] px-4 py-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-lg transition-all duration-200 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center flex-shrink-0"
+      @click="handlePageChange(currentPage - 1)"
+    >
+      <ChevronLeftIcon class="w-6 h-6" />
+    </button>
+
+    <!-- Page Info -->
+    <span class="text-gray-700 dark:text-gray-300 text-base font-medium px-3 whitespace-nowrap">
+      Page {{ currentPage }} / {{ totalPages }}
+    </span>
+
+    <!-- Next Button -->
+    <button
+      :disabled="currentPage === totalPages"
+      :aria-label="currentPage === totalPages ? 'Last page, no next' : 'Go to next page'"
+      class="min-w-[52px] min-h-[52px] px-4 py-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-lg transition-all duration-200 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center flex-shrink-0"
+      @click="handlePageChange(currentPage + 1)"
+    >
+      <ChevronRightIcon class="w-6 h-6" />
+    </button>
+  </nav>
+
+  <!-- Desktop Pagination (hidden sm:flex) -->
+  <nav aria-label="Pagination" class="hidden sm:flex gap-2 justify-center my-8 max-w-full px-4">
+    <!-- Previous Button -->
+    <button
+      :disabled="currentPage === 1"
+      :aria-label="currentPage === 1 ? 'First page, no previous' : 'Go to previous page'"
+      class="min-w-[44px] min-h-[44px] px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-lg transition-all duration-200 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center flex-shrink-0"
       @click="handlePageChange(currentPage - 1)"
     >
       <ChevronLeftIcon class="w-5 h-5" />
@@ -77,7 +121,7 @@ const pages = computed(() => {
       :aria-label="page === '...' ? 'More pages' : `Go to page ${page}`"
       :aria-current="page === currentPage ? 'page' : undefined"
       :class="[
-        'px-4 py-2 rounded-lg transition-all duration-200',
+        'min-w-[44px] min-h-[44px] px-3 py-2 rounded-lg transition-all duration-200 flex-shrink-0',
         page === '...'
           ? 'border-none bg-transparent text-gray-400 dark:text-gray-500 cursor-default'
           : page === currentPage
@@ -93,7 +137,7 @@ const pages = computed(() => {
     <button
       :disabled="currentPage === totalPages"
       :aria-label="currentPage === totalPages ? 'Last page, no next' : 'Go to next page'"
-      class="px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-lg transition-all duration-200 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+      class="min-w-[44px] min-h-[44px] px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-lg transition-all duration-200 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center flex-shrink-0"
       @click="handlePageChange(currentPage + 1)"
     >
       <ChevronRightIcon class="w-5 h-5" />
