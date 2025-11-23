@@ -1,413 +1,165 @@
 <script setup lang="ts">
+import Card from '@/components/UI/Card.vue'
 </script>
+
 <template>
-  <div class="about-page">
-    <div class="page-content">
-      <div class="about-container">
-        <!-- Hero Section -->
-        <section class="hero-section">
-          <div class="hero-content">
-            <h1 class="page-title">ABOUT THE DIGGER</h1>
-            <div class="hero-subtitle">A journey through sound, wax, and endless exploration</div>
+  <div class="min-h-screen">
+    <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+
+      <!-- Hero Section -->
+      <section class="text-center mb-16 md:mb-24">
+        <h1 class="text-4xl sm:text-5xl md:text-6xl font-bold text-gray-900 dark:text-white mb-4 md:mb-6 tracking-tight">
+          A PLACE FOR MUSIC EXPLORERS 
+        </h1>
+        <p class="text-lg sm:text-xl md:text-2xl text-gray-600 dark:text-gray-400 font-light max-w-3xl mx-auto">
+          Space Is The Place is a visual and sonic home for record collectors.
+        </p>
+      </section>
+
+      <!-- Manifesto Section -->
+      <section class="mb-16 md:mb-24">
+        <div class="grid md:grid-cols-2 gap-8 md:gap-12">
+          <div class="space-y-8">
+            <p class="text-base sm:text-lg md:text-xl leading-relaxed text-gray-700 dark:text-gray-300">
+              Music is memory. Music is motion. Music is orbit. Every record carries a fragment of someone's universe — a moment collected, preserved, replayed.
+            </p>
+            <p class="text-base sm:text-lg md:text-xl leading-relaxed text-gray-700 dark:text-gray-300">
+              I started this project as a personal archive, a way to map my own sonic journey through spiritual jazz, dub echoes, psychedelic currents, west-indies gems, deep house pulses, and far-off cosmic vibrations.
+            </p>
           </div>
-        </section>
-        <!-- Main Content -->
-        <section class="main-content">
-          <div class="content-grid">
-            <!-- Photo Section -->
-            <div class="photo-section">
-              <div class="photo-container">
-                <div class="photo-placeholder">
-                  <div class="placeholder-content">
-                    <img src="/the-digger.jpeg" alt="the juice in digging process" class="digger-photo" />
-                  </div>
-                </div>
-              </div>
-              <div class="photo-caption">
-                Crate-digging at Rough Trade East, Bricklane, London – 2017
-              </div>
-            </div>
-            <!-- Text Content -->
-            <div class="text-content">
-              <div class="story-section">
-                <p class="story-paragraph">
-                  Behind every record lies a story. A moment in time, a vibration, a quest. Mine
-                  began years ago, fingers deep in record bins, chasing that elusive feeling. Today,
-                  my collection is a reflection of my sonic explorations. A journey through
-                  spiritual jazz, psychedelic rock, hypnotic dub, frenetic jungle, abstract beats,
-                  and far beyond.
-                </p>
-                <p class="story-paragraph">
-                  I'm a digger. A music lover. A wax collector drawn to the warm imperfection of
-                  vinyl, the analog hiss, the visual poetry of record sleeves. My collection is a
-                  mosaic of influences : Black Jazz and roots reggae, punk rebellion and Detroit
-                  house, meditative world grooves and raw hip-hop. Each record is a meeting, a
-                  memory, a pulse frozen in time.
-                </p>
-                <p class="story-paragraph">
-                  <strong>Space Is The Place</strong> isn't just a project. It's my space, my tempo,
-                  my tribute to the music that inspires me. Through this app, I'm opening a window
-                  into my universe, a visual and sonic archive of the sounds that move me.
-                </p>
-                <p class="story-paragraph">
-                  <i>Can you dig it ?</i>
-                </p>
-              </div>
-            </div>
+          <div class="space-y-8">
+            <p class="text-base sm:text-lg md:text-xl leading-relaxed text-gray-700 dark:text-gray-300">
+              But collections aren't meant to stay hidden. They are meant to breathe, to be shared, to echo through others.
+            </p>
+            <p class="text-base sm:text-lg md:text-xl leading-relaxed text-gray-700 dark:text-gray-300">
+              Space Is The Place is now a home for all diggers. A place where anyone can connect their Discogs collection, explore it through a modern visual interface, and rediscover the music that shaped them. This is a space built for curiosity, for the joy of crate digging, for the stories pressed into wax. A space to wander, to listen, to remember.
+            </p>
           </div>
-        </section>
-        <!-- Decorative Elements -->
-        <!-- <div class="decorative-vinyl">
-          <div class="vinyl-record vinyl-1"></div>
-          <div class="vinyl-record vinyl-2"></div>
-          <div class="vinyl-record vinyl-3"></div>
-        </div> -->
-      </div>
+        </div>
+      </section>
+
+      <!-- Why This Project Exists Section -->
+      <section class="mb-16 md:mb-24">
+        <h2 class="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-8 md:mb-12 text-center">
+          Why this project exists
+        </h2>
+        <div class="grid sm:grid-cols-2 md:grid-cols-3 gap-6 md:gap-8">
+          <Card variant="bordered" padding="lg" class="hover:shadow-lg transition-shadow duration-300">
+            <h3 class="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white mb-3">
+              A visual way to explore your Discogs collection
+            </h3>
+            <p class="text-sm sm:text-base text-gray-600 dark:text-gray-400 leading-relaxed">
+              Not just data — an experience. Your records become a navigable universe instead of a static list.
+            </p>
+          </Card>
+
+          <Card variant="bordered" padding="lg" class="hover:shadow-lg transition-shadow duration-300">
+            <h3 class="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white mb-3">
+              A tribute to the culture of digging
+            </h3>
+            <p class="text-sm sm:text-base text-gray-600 dark:text-gray-400 leading-relaxed">
+              Vinyl, imperfections, sleeves, history, movement. This is for the ones who still flip through crates.
+            </p>
+          </Card>
+
+          <Card variant="bordered" padding="lg" class="hover:shadow-lg transition-shadow duration-300 sm:col-span-2 md:col-span-1">
+            <h3 class="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white mb-3">
+              Built by a music lover, for music lovers
+            </h3>
+            <p class="text-sm sm:text-base text-gray-600 dark:text-gray-400 leading-relaxed">
+              Designed around how collectors actually think about their shelves, their discoveries, and their rituals.
+            </p>
+          </Card>
+        </div>
+      </section>
+
+      <!-- How It Works Section -->
+      <section class="mb-16 md:mb-24">
+        <h2 class="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-8 md:mb-12 text-center">
+          How it works
+        </h2>
+        <div class="grid sm:grid-cols-2 md:grid-cols-3 gap-6 md:gap-10">
+          <div class="flex flex-col items-center text-center space-y-4">
+            <div class="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-gray-200 dark:bg-gray-800 flex items-center justify-center text-xl sm:text-2xl font-bold text-gray-900 dark:text-white border-2 border-gray-300 dark:border-gray-700">
+              1
+            </div>
+            <h3 class="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white">
+              Connect your Discogs account
+            </h3>
+            <p class="text-sm sm:text-base text-gray-600 dark:text-gray-400 leading-relaxed">
+              Use a simple OAuth flow to link your collection securely.
+            </p>
+          </div>
+
+          <div class="flex flex-col items-center text-center space-y-4">
+            <div class="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-gray-200 dark:bg-gray-800 flex items-center justify-center text-xl sm:text-2xl font-bold text-gray-900 dark:text-white border-2 border-gray-300 dark:border-gray-700">
+              2
+            </div>
+            <h3 class="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white">
+              Explore your collection visually
+            </h3>
+            <p class="text-sm sm:text-base text-gray-600 dark:text-gray-400 leading-relaxed">
+              Filter, search, and browse through albums with a clean, responsive grid.
+            </p>
+          </div>
+
+          <div class="flex flex-col items-center text-center space-y-4 sm:col-span-2 md:col-span-1">
+            <div class="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-gray-200 dark:bg-gray-800 flex items-center justify-center text-xl sm:text-2xl font-bold text-gray-900 dark:text-white border-2 border-gray-300 dark:border-gray-700">
+              3
+            </div>
+            <h3 class="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white">
+              Stream on Apple Music
+            </h3>
+            <p class="text-sm sm:text-base text-gray-600 dark:text-gray-400 leading-relaxed">
+              Smart matching pulls in streaming links so you can listen as you explore.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <!-- The Creator Section -->
+      <section class="mb-16 md:mb-24">
+        <h2 class="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-8 md:mb-12 text-center">
+          The creator
+        </h2>
+        <div class="flex flex-col md:flex-row items-center gap-8 md:gap-12 max-w-3xl mx-auto">
+          <div class="flex-shrink-0">
+            <img
+              src="/the-digger.jpeg"
+              alt="The creator crate-digging"
+              class="w-32 h-32 sm:w-40 sm:h-40 md:w-48 md:h-48 rounded-full object-cover border-4 border-gray-200 dark:border-gray-700 shadow-lg"
+            />
+          </div>
+          <div class="text-center md:text-left space-y-4">
+            <p class="text-base sm:text-lg md:text-xl leading-relaxed text-gray-700 dark:text-gray-300">
+              I'm a digger, a music lover, and a believer in the ritual of collecting. I built this space to map the sounds that shaped me — and now, to give others a place to explore theirs.
+            </p>
+            <p class="text-sm sm:text-base text-gray-500 dark:text-gray-500 italic">
+              — Joris Neblai
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <!-- The Philosophy Section -->
+      <section class="mb-12 md:mb-16">
+        <h2 class="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-8 md:mb-12 text-center">
+          The philosophy
+        </h2>
+        <div class="max-w-3xl mx-auto">
+          <blockquote class="relative">
+            <div class="border-l-4 border-gray-300 dark:border-gray-700 pl-6 md:pl-8 py-4">
+              <p class="text-xl sm:text-2xl md:text-3xl font-light italic text-gray-800 dark:text-gray-200 leading-relaxed mb-4">
+                "Where we escape the limitations of earthly existence."
+              </p>
+              <cite class="text-sm sm:text-base text-gray-600 dark:text-gray-400 not-italic">
+                — Sun Ra
+              </cite>
+            </div>
+          </blockquote>
+        </div>
+      </section>
+
     </div>
   </div>
 </template>
-<style scoped>
-.about-page {
-  min-height: 100vh;
-  background: var(--color-background);
-}
-
-.page-content {
-  min-height: calc(100vh - 80px);
-}
-
-.about-container {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 0 2rem;
-  position: relative;
-  overflow: hidden;
-}
-
-/* Hero Section */
-.hero-section {
-  text-align: center;
-  padding: 0 0 3rem 0;
-  border-bottom: 1px solid var(--color-border);
-  margin-bottom: 4rem;
-}
-
-.hero-content {
-  max-width: 800px;
-  margin: 0 auto;
-}
-
-.page-title {
-  font-family: 'Inter', 'ui-sans-serif', 'system-ui', sans-serif;
-  font-size: clamp(2.5rem, 8vw, 4rem);
-  font-weight: 900;
-  color: var(--color-heading);
-  margin-bottom: 1rem;
-  letter-spacing: 0.05em;
-  line-height: 1.1;
-}
-
-.hero-subtitle {
-  font-size: clamp(1.1rem, 3vw, 1.4rem);
-  color: var(--color-text);
-  font-weight: 300;
-  letter-spacing: 0.02em;
-  opacity: 0.8;
-}
-
-/* Main Content Grid */
-.main-content {
-  margin-bottom: 4rem;
-}
-
-.content-grid {
-  display: grid;
-  grid-template-columns: 1fr 2fr;
-  gap: 4rem;
-  align-items: start;
-}
-
-/* Photo Section */
-.photo-section {
-  position: sticky;
-  top: 120px;
-}
-
-.photo-container {
-  width: 100%;
-  aspect-ratio: 1;
-  border-radius: 12px;
-  overflow: hidden;
-  background: linear-gradient(135deg, #f8f8f8 0%, #e8e8e8 100%);
-  border: 2px solid var(--color-border);
-  transition: all 0.3s ease;
-}
-
-.photo-container:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
-  border-color: var(--color-border-hover);
-}
-
-.photo-placeholder {
-  width: 100%;
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-direction: column;
-  text-align: center;
-  padding: 2rem;
-}
-
-.photo-placeholder:has(.digger-photo) {
-  padding: 0;
-}
-
-.placeholder-icon {
-  font-size: 4rem;
-  margin-bottom: 1rem;
-  opacity: 0.6;
-}
-
-.placeholder-text {
-  color: var(--color-text);
-  font-weight: 500;
-  font-size: 1.1rem;
-  line-height: 1.4;
-  opacity: 0.7;
-}
-
-.placeholder-subtext {
-  font-size: 0.9rem;
-  font-weight: 300;
-  opacity: 0.6;
-  font-style: italic;
-}
-
-.digger-photo {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  object-position: center;
-  border-radius: inherit;
-}
-
-.photo-caption {
-  font-style: italic;
-  color: #888;
-  font-size: 0.9rem;
-  text-align: center;
-  margin-top: 1rem;
-  line-height: 1.4;
-  font-weight: 300;
-}
-
-/* Text Content */
-.text-content {
-  padding: 1rem 0;
-}
-
-.story-section {
-  max-width: 100%;
-}
-
-.story-paragraph {
-  font-size: 1.2rem;
-  line-height: 1.8;
-  margin-bottom: 2rem;
-  color: var(--color-text);
-  text-align: justify;
-  text-justify: inter-word;
-}
-
-.story-paragraph:first-child {
-  font-size: 1.3rem;
-  font-weight: 500;
-}
-
-.question-text {
-  font-family: 'Inter', 'ui-sans-serif', 'system-ui', sans-serif;
-  font-size: 1.4rem;
-  font-weight: 700;
-  color: var(--color-heading);
-  margin: 0;
-  letter-spacing: 0.02em;
-}
-
-/* Decorative Vinyl Records */
-/* .decorative-vinyl {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  pointer-events: none;
-  z-index: -1;
-  overflow: hidden;
-} */
-
-.vinyl-record {
-  position: absolute;
-  width: 120px;
-  height: 120px;
-  border-radius: 50%;
-  background: radial-gradient(circle at center,
-      #1a1a1a 25%,
-      #333 26%,
-      #333 45%,
-      #1a1a1a 46%,
-      #1a1a1a 100%);
-  opacity: 0.03;
-  animation: rotate 30s linear infinite;
-}
-
-.vinyl-record::before {
-  content: '';
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  background: #1a1a1a;
-}
-
-.vinyl-1 {
-  top: 10%;
-  right: -60px;
-  animation-duration: 40s;
-}
-
-.vinyl-2 {
-  bottom: 20%;
-  left: -60px;
-  animation-duration: 50s;
-  animation-direction: reverse;
-}
-
-.vinyl-3 {
-  top: 60%;
-  right: -80px;
-  animation-duration: 35s;
-  width: 80px;
-  height: 80px;
-}
-
-@keyframes rotate {
-  from {
-    transform: rotate(0deg);
-  }
-
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-/* Responsive Design */
-@media (max-width: 1024px) {
-  .content-grid {
-    grid-template-columns: 1fr;
-    gap: 3rem;
-  }
-
-  .photo-section {
-    position: static;
-    order: 2;
-  }
-
-  .text-content {
-    order: 1;
-  }
-
-  .photo-container {
-    max-width: 400px;
-    margin: 0 auto;
-  }
-}
-
-@media (max-width: 768px) {
-  .about-container {
-    padding: 0 1.5rem;
-  }
-
-  .hero-section {
-    padding: 3rem 0 2rem 0;
-    margin-bottom: 3rem;
-  }
-
-  .content-grid {
-    gap: 2rem;
-  }
-
-  .story-paragraph {
-    font-size: 1.1rem;
-    text-align: left;
-  }
-
-  .story-paragraph:first-child {
-    font-size: 1.2rem;
-  }
-
-  .closing-question {
-    padding: 1.5rem;
-    margin-top: 2rem;
-  }
-
-  .question-text {
-    font-size: 1.2rem;
-  }
-
-  .decorative-vinyl {
-    display: none;
-  }
-}
-
-@media (max-width: 480px) {
-  .about-container {
-    padding: 0 1rem;
-  }
-
-  .hero-section {
-    padding: 2rem 0 1.5rem 0;
-    margin-bottom: 2rem;
-  }
-
-  .story-paragraph {
-    font-size: 1rem;
-    margin-bottom: 1.5rem;
-  }
-
-  .story-paragraph:first-child {
-    font-size: 1.1rem;
-  }
-
-  .question-text {
-    font-size: 1.1rem;
-  }
-
-  .photo-container {
-    max-width: 300px;
-  }
-
-  .placeholder-icon {
-    font-size: 3rem;
-  }
-
-  .placeholder-text {
-    font-size: 1rem;
-  }
-}
-
-/* Performance optimization for animations */
-@media (prefers-reduced-motion: reduce) {
-  .vinyl-record {
-    animation: none;
-  }
-
-  .photo-container:hover {
-    transform: none;
-  }
-}
-</style>
