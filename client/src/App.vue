@@ -187,4 +187,32 @@ body {
     transform: none !important;
   }
 }
+
+.app-navbar {
+  transition: opacity 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  opacity: 1;
+}
+
+.app-navbar[style*="display: none"] {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.app-navbar:not([style*="display: none"]) {
+  opacity: 1;
+}
+
+/* .navbar-fade-enter-active,
+.navbar-fade-leave-active {
+  transition: opacity 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.navbar-fade-enter-from,
+.navbar-fade-leave-to {
+  opacity: 0;
+}
+
+.navbar-fade-enter-active {
+  transition-delay: 0.2s;
+} */
 </style>
