@@ -32,6 +32,10 @@ interface Props {
 }
 
 const props = withDefaults(defineProps<Props>(), {
+  modelValue: undefined,
+  label: undefined,
+  placeholder: undefined,
+  error: undefined,
   fullWidth: true,
   disabled: false,
   required: false,

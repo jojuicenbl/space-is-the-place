@@ -289,12 +289,14 @@ export class DiscogsClient {
 
         // Check rate limit headers on successful response
         if (result && typeof result === 'object' && 'headers' in result) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           this.checkRateLimitHeaders(result as any)
         }
 
         return result
       } catch (error: unknown) {
         lastError = error as Error
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const axiosError = error as { response?: { status?: number; headers?: any } }
 
         // Handle 429 rate limit errors

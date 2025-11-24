@@ -18,10 +18,6 @@ const props = defineProps<{
 const progressBarWidth = computed(() => {
   return props.loadingPercentage ? `${props.loadingPercentage}%` : '0%'
 })
-
-const backgroundProgressWidth = computed(() => {
-  return props.backgroundLoadingPercentage ? `${props.backgroundLoadingPercentage}%` : '0%'
-})
 </script>
 
 <template>

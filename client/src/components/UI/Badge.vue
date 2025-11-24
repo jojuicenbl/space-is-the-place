@@ -18,7 +18,9 @@ interface Props {
   dot?: boolean
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const props = withDefaults(defineProps<Props>(), {
+  text: undefined,
   variant: 'default',
   size: 'md',
   removable: false,
@@ -87,9 +89,9 @@ const dotColorClasses = {
     <button
       v-if="removable"
       type="button"
-      @click="emit('remove')"
       class="ml-0.5 hover:opacity-70 focus:outline-none"
       :class="size === 'sm' ? 'h-3 w-3' : size === 'md' ? 'h-4 w-4' : 'h-5 w-5'"
+      @click="emit('remove')"
     >
       <svg
         xmlns="http://www.w3.org/2000/svg"

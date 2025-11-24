@@ -28,7 +28,12 @@ interface Props {
 }
 
 const props = withDefaults(defineProps<Props>(), {
+  modelValue: undefined,
   type: 'text',
+  label: undefined,
+  placeholder: undefined,
+  helperText: undefined,
+  error: undefined,
   fullWidth: true,
   disabled: false,
   readonly: false,
@@ -103,8 +108,8 @@ const handleInput = (event: Event) => {
           $slots.iconLeft ? 'pl-10' : '',
           $slots.iconRight ? 'pr-10' : ''
         ]"
-        @input="handleInput"
         v-bind="$attrs"
+        @input="handleInput"
       />
 
       <!-- Icon right slot -->

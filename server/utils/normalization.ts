@@ -52,7 +52,7 @@ export function normalizeText(text: string): string {
  * Normalize album title by removing common noise tokens
  */
 export function normalizeAlbumTitle(title: string): string {
-  let normalized = normalizeText(title)
+  const normalized = normalizeText(title)
 
   // Remove noise tokens
   const words = normalized.split(' ')

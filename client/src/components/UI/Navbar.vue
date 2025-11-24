@@ -66,9 +66,9 @@ const blurClasses = props.blurred ? 'backdrop-blur-lg bg-opacity-80' : ''
         <div class="md:hidden">
           <button
             type="button"
-            @click="toggleMobileMenu"
             class="inline-flex items-center justify-center p-2 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-primary-500"
             aria-expanded="false"
+            @click="toggleMobileMenu"
           >
             <span class="sr-only">Open main menu</span>
             <Bars3Icon v-if="!mobileMenuOpen" class="block h-6 w-6" />

@@ -26,6 +26,8 @@ const props = withDefaults(defineProps<Props>(), {
   padding: 'md',
   hoverable: false,
   clickable: false,
+  href: undefined,
+  to: undefined,
 })
 
 const baseClasses = 'rounded-md transition-all duration-200'

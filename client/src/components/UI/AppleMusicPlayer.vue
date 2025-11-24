@@ -50,7 +50,8 @@ interface Props {
 
 const props = withDefaults(defineProps<Props>(), {
   height: 450,
-  country: 'us'
+  country: 'us',
+  year: undefined
 })
 
 const emit = defineEmits<{

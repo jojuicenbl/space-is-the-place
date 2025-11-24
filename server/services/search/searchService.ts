@@ -15,6 +15,7 @@ export interface SearchDocument {
   catno: string
   genre: string
   style: string
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   basic_information: any
 }
 
@@ -72,6 +73,7 @@ export class SearchService {
       prefix?: boolean
       fuzzy?: number | boolean
     } = {}
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
   ): Array<{ id: number; score: number; basic_information: any }> {
     const index = this.indexes.get(folderId)
 

@@ -177,7 +177,8 @@ export class ItunesMatchingService {
   /**
    * Record user correction (for future ML/heuristic improvements)
    */
-  recordCorrection(input: MatchInput, correctedAlbum: ItunesAlbum): void {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  recordCorrection(input: MatchInput, _correctedAlbum: ItunesAlbum): void {
     const entry = this.correctionLog.find(
       log =>
         log.input.artist === input.artist &&

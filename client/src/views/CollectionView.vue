@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, nextTick, computed, watch } from 'vue'
+import { ref, onMounted, onUnmounted, nextTick, computed } from 'vue'
 import { useRoute } from 'vue-router'
 import VinylCard from '../components/VinylCard.vue'
 
@@ -85,10 +85,7 @@ const {
   currentPage,
   totalPages,
   isSearchActive,
-  collectionMode,
-  discogsUsername,
   isDemo,
-  isUser,
   isUnlinked,
   isEmpty,
   fetchFolders,
@@ -210,8 +207,8 @@ onUnmounted(() => {
                 size="sm"
                 :class="['mode-btn', { active: userStore.collectionMode === 'user' }]"
                 :disabled="!userStore.discogsIsLinked"
-                @click="handleModeToggle('user')"
                 :title="!userStore.discogsIsLinked ? 'Connect your Discogs account to enable this' : 'View your personal collection'"
+                @click="handleModeToggle('user')"
               >
                 My Collection
               </Button>
@@ -219,8 +216,8 @@ onUnmounted(() => {
                 variant="ghost"
                 size="sm"
                 :class="['mode-btn', { active: userStore.collectionMode === 'demo' }]"
-                @click="handleModeToggle('demo')"
                 title="Explore the demo collection"
+                @click="handleModeToggle('demo')"
               >
                 Demo Collection
               </Button>
@@ -301,8 +298,8 @@ onUnmounted(() => {
                   <Button
                     variant="ghost"
                     size="lg"
-                    @click="fetchCollection(false)"
                     class="retry-btn"
+                    @click="fetchCollection(false)"
                   >
                     Retry
                   </Button>
@@ -334,8 +331,8 @@ onUnmounted(() => {
                   <Button
                     variant="ghost"
                     size="lg"
-                    @click="handleConnectDiscogs"
                     class="connect-discogs-btn"
+                    @click="handleConnectDiscogs"
                   >
                     Connect to Discogs
                   </Button>
@@ -377,7 +374,7 @@ onUnmounted(() => {
                   <div v-if="isDemo" class="demo-banner">
                     <span class="demo-banner-icon">ℹ️</span>
                     <span>You are exploring a demo collection.</span>
-                    <a v-if="!userStore.discogsIsLinked" @click="handleConnectDiscogs" class="demo-banner-link">
+                    <a v-if="!userStore.discogsIsLinked" class="demo-banner-link" @click="handleConnectDiscogs">
                       Connect your Discogs account
                     </a>
                   </div>

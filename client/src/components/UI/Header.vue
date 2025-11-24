@@ -73,7 +73,7 @@ const variantClasses = {
   <header :class="[baseClasses, stickyClasses, borderedClasses, variantClasses[variant]]">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
       <!-- Title section -->
-      <div class="mb-6" v-if="$slots.title || $slots.subtitle">
+      <div v-if="$slots.title || $slots.subtitle" class="mb-6">
         <div class="flex items-center justify-between">
           <div>
             <div v-if="$slots.title" class="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">
@@ -102,15 +102,15 @@ const variantClasses = {
             <input
               type="search"
               :value="localSearchValue"
-              @input="handleInput"
               :placeholder="searchPlaceholder"
               class="block w-full pl-10 pr-10 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors"
+              @input="handleInput"
             />
             <button
               v-if="localSearchValue"
-              @click="clearSearch"
               class="absolute inset-y-0 right-0 pr-3 flex items-center hover:text-gray-700 dark:hover:text-gray-200 text-gray-400 transition-colors"
               aria-label="Effacer la recherche"
+              @click="clearSearch"
             >
               <XMarkIcon class="h-5 w-5" />
             </button>

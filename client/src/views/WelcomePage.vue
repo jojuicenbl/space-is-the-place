@@ -152,7 +152,7 @@ const handleButtonHover = () => {
             <span class="status-icon">✓</span>
             <span class="status-text">Connected as <strong>{{ userStore.discogsUsername }}</strong></span>
           </div>
-          <button class="disconnect-btn" @click="handleDisconnectDiscogs" title="Disconnect Discogs account">
+          <button class="disconnect-btn" title="Disconnect Discogs account" @click="handleDisconnectDiscogs">
             Disconnect
           </button>
         </div>
