@@ -1,34 +1,56 @@
 <script setup lang="ts">
 import { RouterView, useRoute } from 'vue-router'
-import { VApp } from 'vuetify/components'
+import { computed, onMounted } from 'vue'
 import AppNavbar from '@/components/Nav/AppNavbar.vue'
-// import { ref, watch } from 'vue'
+import { useUserStore } from '@/stores/userStore'
 
 const route = useRoute()
-// const showNavbar = ref(false)
+const userStore = useUserStore()
 
-// watch(
-//   () => route.name,
-//   () => {
-//     // Cache la navbar lors du changement de page
-//     showNavbar.value = false
-//   }
-// )
+// Load user state on app startup
+onMounted(async () => {
+  await userStore.loadUser()
+})
 
+// Compute navbar visibility from route meta
+const showNav = computed(() => route.meta.showNav === true)
+
+// Get transition name from route meta or use default
+const getTransitionName = () => {
+  return (route.meta.pageTransition as string) || 'fade'
+}
+
+// Scroll to top après la transition out, avant la transition in
+const onAfterLeave = () => {
+  const mainScroll = document.getElementById('main-scroll')
+  if (mainScroll) {
+    mainScroll.scrollTop = 0
+  }
+}
 </script>
 <template>
-  <v-app class="app">
-    <AppNavbar v-show="route.name !== 'welcome'" class="app-navbar" />
-    <div id="main-scroll" class="main-scroll" :class="{ 'with-navbar': route.name !== 'welcome' }">
-      <RouterView v-slot="{ Component }">
-        <Transition name="page" mode="out-in">
-          <component :is="Component" />
+  <div class="app">
+    <!-- Navbar with smooth appearance/hiding -->
+    <Transition name="navbar" mode="out-in">
+      <AppNavbar v-if="showNav" class="app-navbar" />
+    </Transition>
+
+    <div id="main-scroll" class="main-scroll" :class="{ 'with-navbar': showNav }">
+      <RouterView v-slot="{ Component, route: currentRoute }">
+        <Transition :name="getTransitionName()" mode="out-in" @after-leave="onAfterLeave">
+          <component :is="Component" :key="currentRoute.path" />
         </Transition>
       </RouterView>
     </div>
-  </v-app>
+  </div>
 </template>
 <style>
+/* Timing constants - centralized for DRY */
+:root {
+  --transition-duration: 250ms;
+  --transition-easing: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
 html,
 body {
   margin: 0;
@@ -52,30 +74,118 @@ body {
   height: 100vh;
   margin: 0;
   padding: 0;
-  background-color: var(--color-background) !important;
-  /* Force the grey background */
+  background-color: var(--color-background);
 }
 
-/* Reset any default Vuetify margins/padding */
-.v-application {
-  margin: 0 !important;
-  padding: 0 !important;
+/* ====================================
+   Navbar Transitions
+   ==================================== */
+.navbar-enter-active,
+.navbar-leave-active {
+  transition: all var(--transition-duration) var(--transition-easing);
 }
 
-/* Transitions de page smooth */
+.navbar-enter-from {
+  opacity: 0;
+  transform: translateY(-8px);
+}
+
+.navbar-leave-to {
+  opacity: 0;
+  transform: translateY(-8px);
+}
+
+.navbar-enter-to,
+.navbar-leave-from {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* ====================================
+   Page Transitions
+   ==================================== */
+
+/* Fade-slide transition for Welcome → Collection */
+.fade-slide-enter-active,
+.fade-slide-leave-active {
+  transition: all var(--transition-duration) var(--transition-easing);
+}
+
+.fade-slide-enter-from {
+  opacity: 0;
+  transform: translateY(12px);
+}
+
+.fade-slide-leave-to {
+  opacity: 0;
+  transform: translateY(-8px);
+}
+
+.fade-slide-enter-to,
+.fade-slide-leave-from {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Simple fade for other routes */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity var(--transition-duration) var(--transition-easing);
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+
+.fade-enter-to,
+.fade-leave-from {
+  opacity: 1;
+}
+
+/* Legacy page transition (fallback) */
 .page-enter-active,
 .page-leave-active {
-  transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all var(--transition-duration) var(--transition-easing);
 }
 
 .page-enter-from {
   opacity: 0;
-  transform: translateY(20px);
+  transform: translateY(12px);
 }
 
 .page-leave-to {
   opacity: 0;
-  transform: translateY(-20px);
+  transform: translateY(-8px);
+}
+
+/* ====================================
+   Reduced Motion Support
+   ==================================== */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --transition-duration: 0ms;
+  }
+
+  .navbar-enter-active,
+  .navbar-leave-active,
+  .fade-slide-enter-active,
+  .fade-slide-leave-active,
+  .fade-enter-active,
+  .fade-leave-active,
+  .page-enter-active,
+  .page-leave-active {
+    transition: none !important;
+  }
+
+  .navbar-enter-from,
+  .navbar-leave-to,
+  .fade-slide-enter-from,
+  .fade-slide-leave-to,
+  .page-enter-from,
+  .page-leave-to {
+    transform: none !important;
+  }
 }
 
 .app-navbar {

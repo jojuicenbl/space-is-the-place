@@ -2,7 +2,8 @@
 import { ref, computed, onMounted } from 'vue'
 import type { Image } from '@/types/models/Release'
 import ImageUtils from '@/utils/imageHelpers'
-import { VSkeletonLoader } from 'vuetify/components'
+import SkeletonLoader from '@/components/UI/SkeletonLoader.vue'
+import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/vue/24/solid'
 
 const props = defineProps<{
   images: Image[]
@@ -20,55 +21,18 @@ const currentImageUrl = computed(() => {
   return ImageUtils.getSmallImageUrl(currentImage.value.uri)
 })
 
-const loadImage = (url: string): Promise<void> => {
-  return new Promise((resolve, reject) => {
-    const img = new Image()
-    img.onload = () => resolve()
-    img.onerror = reject
-    img.src = url
-  })
+// Optimized: Change index immediately for instant navigation
+const nextImage = () => {
+  currentIndex.value = (currentIndex.value + 1) % props.images.length
 }
 
-const nextImage = async () => {
-  const nextIndex = (currentIndex.value + 1) % props.images.length
-  const nextUrl = ImageUtils.getSmallImageUrl(props.images[nextIndex].uri)
-
-  isImageLoading.value = true
-  try {
-    await loadImage(nextUrl)
-    currentIndex.value = nextIndex
-  } catch (error) {
-    console.error('Failed to load next image:', error)
-  }
-  isImageLoading.value = false
+const previousImage = () => {
+  currentIndex.value = currentIndex.value === 0 ? props.images.length - 1 : currentIndex.value - 1
 }
 
-const previousImage = async () => {
-  const prevIndex = currentIndex.value === 0 ? props.images.length - 1 : currentIndex.value - 1
-  const prevUrl = ImageUtils.getSmallImageUrl(props.images[prevIndex].uri)
-
-  isImageLoading.value = true
-  try {
-    await loadImage(prevUrl)
-    currentIndex.value = prevIndex
-  } catch (error) {
-    console.error('Failed to load previous image:', error)
-  }
-  isImageLoading.value = false
-}
-
-const goToImage = async (index: number) => {
+const goToImage = (index: number) => {
   if (index === currentIndex.value) return
-
-  const targetUrl = ImageUtils.getSmallImageUrl(props.images[index].uri)
-  isImageLoading.value = true
-  try {
-    await loadImage(targetUrl)
-    currentIndex.value = index
-  } catch (error) {
-    console.error('Failed to load image:', error)
-  }
-  isImageLoading.value = false
+  currentIndex.value = index
 }
 
 const handleImageLoad = () => {
@@ -90,12 +54,12 @@ onMounted(() => {
     <div class="carousel-wrapper">
       <div class="image-container">
         <div class="image-wrapper">
-          <Transition mode="out-in">
-            <v-skeleton-loader
+          <Transition name="fade" mode="out-in">
+            <SkeletonLoader
               v-if="isImageLoading"
               type="image"
               class="carousel-image"
-              :loading="true"
+
             />
             <img
               v-else
@@ -110,10 +74,10 @@ onMounted(() => {
         </div>
         <!-- Navigation buttons -->
         <button class="carousel-button prev" aria-label="Previous image" @click="previousImage">
-          <span class="material-icons">chevron_left</span>
+          <ChevronLeftIcon class="w-6 h-6" />
         </button>
         <button class="carousel-button next" aria-label="Next image" @click="nextImage">
-          <span class="material-icons">chevron_right</span>
+          <ChevronRightIcon class="w-6 h-6" />
         </button>
       </div>
       <!-- Dots indicator -->
@@ -173,17 +137,12 @@ onMounted(() => {
   object-fit: cover;
 }
 
-:deep(.v-skeleton-loader__image) {
-  width: 100% !important;
-  height: 100% !important;
-  border-radius: 8px;
-}
 
 .carousel-button {
   position: absolute;
   top: 50%;
   transform: translateY(-50%);
-  background: rgba(255, 255, 255, 0.8);
+  background: rgba(255, 255, 255, 0.5);
   border: none;
   border-radius: 50%;
   width: 40px;
@@ -235,23 +194,17 @@ onMounted(() => {
   transform: scale(1.2);
 }
 
-/* Transition animations */
-.fade-enter-active,
+/* Transition animations - Optimized for instant feel */
+.fade-enter-active {
+  transition: opacity 0.15s ease-in;
+}
+
 .fade-leave-active {
-  transition: opacity 0.3s ease;
+  transition: opacity 0.1s ease-out;
 }
 
 .fade-enter-from,
 .fade-leave-to {
   opacity: 0;
-}
-
-.fade-in {
-  opacity: 0;
-  transition: opacity 0.5s ease-in-out;
-}
-
-.fade-in-loaded {
-  opacity: 1;
 }
 </style>

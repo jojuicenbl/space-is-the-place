@@ -7,21 +7,30 @@ import express, { Request, Response, RequestHandler, NextFunction } from 'expres
 import cors from 'cors'
 import axios, { AxiosError } from 'axios'
 import { URL } from 'url'
-import { collectionService } from './services/collectionService'
-import type { CollectionFilters } from './types/discogs'
 
 const app = express()
 
 // Security: Configure CORS properly
 const corsOptions = {
-  origin: process.env.VITE_CLIENT_URL || 'http://localhost:5173',
+  origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
+    // Allow requests from localhost on any port (dev only)
+    if (!origin || origin.startsWith('http://localhost:')) {
+      callback(null, true)
+    } else {
+      callback(new Error('Not allowed by CORS'))
+    }
+  },
   methods: ['GET', 'POST'],
-  optionsSuccessStatus: 200
+  optionsSuccessStatus: 200,
+  credentials: true
 }
 app.use(cors(corsOptions))
 app.use(express.json())
 
 import { sendContactMail } from './services/contactService'
+import authDiscogsRouter from './routes/authDiscogs'
+import userRouter from './routes/user'
+import collectionRouter from './routes/collection'
 // ...middlewares...
 
 interface ImageRouteParams {
@@ -105,73 +114,20 @@ const proxyImageHandler: ImageRequestHandler = async (req, res) => {
 
 type AsyncHandler = (req: Request, res: Response) => Promise<void>
 
-// Collection endpoints
+// Helper for async route handlers
 const asyncHandler = (fn: AsyncHandler) => (req: Request, res: Response, next: NextFunction) => {
   Promise.resolve(fn(req, res)).catch(next)
 }
 
-// Route pour le formulaire de contact (après déclaration de app et middlewares)
+// Route pour le formulaire de contact
 app.post('/api/contact', asyncHandler(sendContactMail))
 
-app.get(
-  '/api/collection',
-  asyncHandler(async (req: Request, res: Response) => {
-    const filters: CollectionFilters = {
-      page: req.query.page ? parseInt(req.query.page as string) : undefined,
-      perPage: req.query.perPage ? parseInt(req.query.perPage as string) : undefined,
-      folderId: req.query.folder ? parseInt(req.query.folder as string) : undefined,
-      sort: req.query.sort as 'added' | 'artist' | 'title',
-      sortOrder: req.query.order as 'asc' | 'desc',
-      search: req.query.search as string
-    }
-
-    const result = await collectionService.getCollection(filters)
-    res.json(result)
-  })
-)
-
-app.get(
-  '/api/collection/search',
-  asyncHandler(async (req, res): Promise<void> => {
-    const query = (req.query.q as string) || ''
-    if (!query.trim()) {
-      res.status(400).json({ error: 'Search query is required' })
-      return
-    }
-
-    const filters: CollectionFilters = {
-      page: req.query.page ? parseInt(req.query.page as string) : undefined,
-      perPage: req.query.perPage ? parseInt(req.query.perPage as string) : undefined,
-      folderId: req.query.folder ? parseInt(req.query.folder as string) : undefined,
-      sort: req.query.sort as 'added' | 'artist' | 'title',
-      // IMPORTANT : le type s’appelle "sortOrder"
-      sortOrder: req.query.order as 'asc' | 'desc'
-    }
-
-    // <-- ici: 2 arguments, la query string PUIS l'objet filters
-    const result = await collectionService.searchCollection(query, filters)
-    res.json(result)
-  })
-)
-
-app.get(
-  '/api/folders',
-  asyncHandler(async (req: Request, res: Response) => {
-    const folders = await collectionService.getFolders()
-    res.json({ folders })
-  })
-)
-
-app.post(
-  '/api/collection/refresh',
-  asyncHandler(async (req: Request, res: Response) => {
-    const folderId = req.query.folder ? parseInt(req.query.folder as string) : 0
-    const result = await collectionService.refreshCache(folderId)
-    res.json(result)
-  })
-)
-
 // Register routes
+app.use('/api/auth/discogs', authDiscogsRouter)
+app.use('/api', userRouter)
+app.use('/api/collection', collectionRouter)
+// Backwards compatibility for /api/folders (redirects to /api/collection/folders)
+app.get('/api/folders', (req, res) => res.redirect('/api/collection/folders'))
 app.get('/api/proxy/images/*', setCacheHeaders, proxyImageHandler)
 
 // Error handling middleware
@@ -190,18 +146,13 @@ app.use((err: Error, _req: Request, res: Response, next: NextFunction) => {
 
 const PORT = process.env.PORT || 3000
 app.listen(PORT, () => {
-  console.log(`Image proxy server running on port ${PORT}`)
-
-  // Warm-up non bloquant
-  void collectionService
-    .getCollection({
-      folderId: 0,
-      page: 1,
-      perPage: 50,
-      sort: 'added',
-      sortOrder: 'desc',
-      search: 'a'
-    })
-    .then(() => console.log('[warmup] cache prêt'))
-    .catch(err => console.warn('[warmup] échec', err))
+  console.log(`Server running on port ${PORT}`)
+  console.log('Endpoints:')
+  console.log('  - GET  /api/collection?mode=demo|user')
+  console.log('  - GET  /api/collection/search')
+  console.log('  - GET  /api/collection/folders')
+  console.log('  - POST /api/collection/refresh')
+  console.log('  - GET  /api/me')
+  console.log('  - GET  /api/auth/discogs/request')
+  console.log('  - GET  /api/auth/discogs/callback')
 })

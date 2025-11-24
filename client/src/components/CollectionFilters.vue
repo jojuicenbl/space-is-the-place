@@ -1,9 +1,32 @@
 <script setup lang="ts">
+/**
+ * CollectionFilters component - Tailwind CSS version
+ * Migré de: components/CollectionFilters.vue (Vuetify)
+ *
+ * Migration notes:
+ * - Remplace v-select par Select.vue (nouveau composant Tailwind)
+ * - Remplace v-text-field par Input.vue
+ * - Remplace v-btn par Button.vue
+ * - Remplace v-card par Card.vue
+ * - Remplace mdi icons par Heroicons
+ * - Préserve toutes les fonctionnalités (folder, sort, search)
+ */
+
 import type { DiscogsFolder } from '@/services/discogsApi'
 import type { SortField, SortOrder } from '@/services/discogsApi'
 import type { CollectionRelease } from '@/types/models/Release'
 import { ref, computed, watch } from 'vue'
-import { VBtn, VIcon, VSelect, VTextField, VCard, VCardText, VListItem } from 'vuetify/components'
+import Card from '@/components/UI/Card.vue'
+import Select, { type SelectOption } from '@/components/UI/Select.vue'
+import Input from '@/components/UI/Input.vue'
+// import Button from '@/components/UI/Button.vue'
+import {
+  // ArrowUpIcon,
+  // ArrowDownIcon,
+  FolderIcon,
+  BarsArrowUpIcon,
+  MagnifyingGlassIcon
+} from '@heroicons/vue/24/outline'
 
 const props = defineProps<{
   folders: DiscogsFolder[]
@@ -25,36 +48,35 @@ const emit = defineEmits<{
 const searchQuery = ref(props.searchQuery || '')
 const isSearchFocused = ref(false)
 
-// Computed options for dropdowns
+// Computed options for dropdowns (adapted for Select component)
 const folderOptions = computed(() =>
   props.folders
     .filter(folder => folder.id !== 1) // Exclude "Uncategorized" folder
     .map(folder => ({
-      title: `${folder.name}`,
-      value: folder.id,
-      isAll: folder.id === 0 // Flag to identify "All" folder for styling
+      label: folder.name,
+      value: folder.id
     }))
 )
 
-// Sort options with Date Added as default
-const filterOptions = [
-  { title: 'Date Added', value: 'added' },
-  { title: 'Artist', value: 'artist' },
-  { title: 'Album', value: 'title' }
-] as const
+// Sort options with Date Added as default (adapted for Select component)
+const sortOptions: SelectOption[] = [
+  { label: 'Date Added', value: 'added' },
+  { label: 'Artist', value: 'artist' },
+  { label: 'Album', value: 'title' }
+]
 
 // Handlers
-const toggleSortOrder = () => {
-  const newOrder: SortOrder = props.currentSortOrder === 'asc' ? 'desc' : 'asc'
-  emit('update:sortOrder', newOrder)
+// const toggleSortOrder = () => {
+//   const newOrder: SortOrder = props.currentSortOrder === 'asc' ? 'desc' : 'asc'
+//   emit('update:sortOrder', newOrder)
+// }
+
+const handleFolderChange = (value: string | number) => {
+  emit('update:folder', Number(value))
 }
 
-const handleFolderChange = (folderId: number) => {
-  emit('update:folder', folderId)
-}
-
-const handleSortChange = (sort: SortField) => {
-  emit('update:sort', sort)
+const handleSortChange = (value: string | number) => {
+  emit('update:sort', value as SortField)
 }
 
 // Watch for search query changes and emit search event
@@ -70,206 +92,80 @@ watch(
   }
 )
 
-// Computed sort button properties
-const sortButtonProps = computed(() => ({
-  icon: props.currentSortOrder === 'asc' ? 'mdi-arrow-up' : 'mdi-arrow-down',
-  tooltip: props.currentSortOrder === 'asc' ? 'Ascending (A-Z)' : 'Descending (Z-A)',
-  color: props.currentSortOrder === 'asc' ? 'primary' : 'secondary'
-}))
+// Computed sort button properties (adapted for Tailwind)
+// Use neutral colors for better visual harmony
+// const sortButtonVariant = computed(() =>
+//   props.currentSortOrder === 'asc' ? 'outline' : 'ghost'
+// )
 </script>
 
 <template>
-  <VCard class="filters-container mx-4 mb-4" elevation="2" rounded="lg">
-    <VCardText class="pa-6">
-      <div class="d-flex align-center ga-4 flex-wrap">
-        <!-- Sort Order Toggle Button -->
-        <div class="filter-item-toggle">
-          <VBtn
-            :icon="sortButtonProps.icon"
-            :color="sortButtonProps.color"
-            variant="outlined"
-            size="large"
-            class="sort-toggle-btn-new"
-            @click="toggleSortOrder"
-          >
-            <VIcon :icon="sortButtonProps.icon" size="large" />
-          </VBtn>
-        </div>
+  <Card
+    variant="default"
+    class="mx-4 mb-4 !bg-white/60 dark:!bg-[#181818]/60 backdrop-blur-lg border border-gray-200/30 dark:border-gray-700/30 !shadow-sm"
+  >
+    <!-- Mobile: flex-col (vertical), Desktop: flex-row (horizontal) -->
+    <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:flex-wrap">
+      <!-- Sort Order Toggle Button -->
+      <!-- <div class="flex-shrink-0">
+        <Button
+          :variant="sortButtonVariant"
+          size="md"
+          :title="currentSortOrder === 'asc' ? 'Ascending (A-Z)' : 'Descending (Z-A)'"
+          class="!w-12 !h-12 !p-0 !flex !items-center !justify-center"
+          @click="toggleSortOrder"
+        >
+          <ArrowUpIcon v-if="currentSortOrder === 'asc'" class="w-5 h-5 flex-shrink-0" />
+          <ArrowDownIcon v-else class="w-5 h-5 flex-shrink-0" />
+        </Button>
+      </div> -->
 
-        <!-- Genre/Folder Dropdown -->
-        <div class="filter-item">
-          <VSelect
-            :model-value="currentFolder"
-            :items="folderOptions"
-            label="Genre"
-            variant="outlined"
-            density="comfortable"
-            hide-details
-            class="min-width-200"
-            @update:model-value="handleFolderChange"
-          >
-            <template #prepend-inner>
-              <VIcon icon="mdi-folder-music" size="small" />
-            </template>
-            <template #item="{ props: itemProps, item }">
-              <v-list-item v-bind="itemProps">
-                <template #title>
-                  <span :class="{ 'font-weight-bold': item.raw.isAll }">
-                    {{ item.title }}
-                  </span>
-                </template>
-              </v-list-item>
-            </template>
-            <template #selection="{ item }">
-              <span :class="{ 'font-weight-bold': item.raw.isAll }">
-                {{ item.title }}
-              </span>
-            </template>
-          </VSelect>
-        </div>
-
-        <!-- Sort Field Dropdown -->
-        <div class="filter-item">
-          <VSelect
-            :model-value="currentSort"
-            :items="filterOptions"
-            label="Sort by"
-            variant="outlined"
-            density="comfortable"
-            hide-details
-            class="min-width-180"
-            @update:model-value="handleSortChange"
-          >
-            <template #prepend-inner>
-              <VIcon icon="mdi-sort" size="small" />
-            </template>
-          </VSelect>
-        </div>
-
-        <!-- Search Bar -->
-        <div class="filter-item-search flex-grow-1">
-          <VTextField
-            v-model="searchQuery"
-            label="Search artists, albums, genres, styles..."
-            variant="outlined"
-            density="comfortable"
-            hide-details
-            clearable
-            class="search-field"
-            @focus="isSearchFocused = true"
-            @blur="isSearchFocused = false"
-          >
-            <template #prepend-inner>
-              <VIcon
-                icon="mdi-magnify"
-                size="small"
-                :color="isSearchFocused ? 'primary' : 'grey'"
-              />
-            </template>
-          </VTextField>
-        </div>
+      <!-- Genre/Folder Dropdown -->
+      <div class="w-full max-w-[420px] mx-auto sm:mx-0 sm:w-auto sm:min-w-[200px] sm:flex-shrink-0">
+        <Select
+          :model-value="currentFolder"
+          :options="folderOptions"
+          label="Genre"
+          @update:model-value="handleFolderChange"
+        >
+          <template #iconLeft>
+            <FolderIcon class="w-5 h-5 text-gray-400" />
+          </template>
+        </Select>
       </div>
-    </VCardText>
-  </VCard>
+
+      <!-- Sort Field Dropdown -->
+      <div class="w-full max-w-[420px] mx-auto sm:mx-0 sm:w-auto sm:min-w-[180px] sm:flex-shrink-0">
+        <Select
+          :model-value="currentSort"
+          :options="sortOptions"
+          label="Sort by"
+          @update:model-value="handleSortChange"
+        >
+          <template #iconLeft>
+            <BarsArrowUpIcon class="w-5 h-5 text-gray-400" />
+          </template>
+        </Select>
+      </div>
+
+      <!-- Search Bar -->
+      <div class="w-full max-w-[420px] mx-auto sm:mx-0 sm:w-auto sm:min-w-[350px] sm:flex-grow">
+        <Input
+          v-model="searchQuery"
+          type="search"
+          label="Search"
+          placeholder="Search artists, albums, genres, styles..."
+          @focus="isSearchFocused = true"
+          @blur="isSearchFocused = false"
+        >
+          <template #iconLeft>
+            <MagnifyingGlassIcon
+              class="w-5 h-5 transition-colors"
+              :class="isSearchFocused ? 'text-primary-500' : 'text-gray-400'"
+            />
+          </template>
+        </Input>
+      </div>
+    </div>
+  </Card>
 </template>
-
-<style scoped>
-.filters-container {
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-}
-
-.filter-item {
-  min-width: 200px;
-}
-
-.filter-item-toggle {
-  min-width: 56px; /* Match the button size */
-}
-
-.filter-item-search {
-  min-width: 350px; /* Increased width for search bar */
-}
-
-.min-width-200 {
-  min-width: 200px;
-}
-
-.min-width-180 {
-  min-width: 180px;
-}
-
-.search-field {
-  min-width: 350px; /* Increased width for search bar */
-}
-
-.sort-toggle-btn-new {
-  height: 56px !important; /* Match dropdown height */
-  width: 56px !important;
-  border: 2px solid rgba(var(--v-border-color), var(--v-border-opacity));
-  transition: all 0.3s ease;
-}
-
-.sort-toggle-btn-new:hover {
-  transform: scale(1.05);
-}
-
-/* Responsive design */
-@media (max-width: 768px) {
-  .filter-item {
-    min-width: unset;
-    width: 100%;
-  }
-
-  .filter-item-search {
-    min-width: unset;
-    width: 100%;
-  }
-
-  .filter-item-toggle {
-    min-width: unset;
-    width: auto;
-  }
-
-  .search-field {
-    min-width: unset;
-  }
-
-  .d-flex.align-center.ga-4.flex-wrap {
-    flex-direction: column;
-    gap: 16px !important;
-  }
-}
-
-/* Dark theme support */
-/* @media (prefers-color-scheme: dark) {
-  .filters-container {
-    background: rgba(33, 33, 33, 0.95);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-  }
-} */
-
-/* Custom vuetify overrides */
-:deep(.v-field--variant-outlined) {
-  --v-field-border-width: 2px;
-  --v-theme-on-surface: rgba(0, 0, 0, 0.87);
-}
-
-:deep(.v-field--focused) {
-  --v-field-border-width: 3px;
-}
-
-:deep(.v-btn--variant-tonal) {
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-}
-
-:deep(.v-text-field .v-field__input) {
-  font-weight: 500;
-}
-
-:deep(.v-select .v-field__input) {
-  font-weight: 500;
-}
-</style>

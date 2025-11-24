@@ -28,6 +28,7 @@ export interface CollectionFilters {
   sort?: SortField
   sortOrder?: SortOrder
   search?: string
+  mode?: 'demo' | 'user'
 }
 
 export interface CollectionApiResponse {
@@ -45,6 +46,8 @@ export interface CollectionApiResponse {
     }
   }
   folders: DiscogsFolder[]
+  mode?: 'demo' | 'user' | 'unlinked' | 'empty'
+  discogsUsername?: string
 }
 
 export interface SearchApiResponse extends CollectionApiResponse {
@@ -53,7 +56,8 @@ export interface SearchApiResponse extends CollectionApiResponse {
 
 // Get paginated collection with filters
 export const getCollection = async (
-  filters: CollectionFilters = {}
+  filters: CollectionFilters = {},
+  opts?: { signal?: AbortSignal }
 ): Promise<CollectionApiResponse> => {
   try {
     const params = new URLSearchParams()
@@ -64,14 +68,21 @@ export const getCollection = async (
     if (filters.sort) params.append('sort', filters.sort)
     if (filters.sortOrder) params.append('order', filters.sortOrder)
     if (filters.search) params.append('search', filters.search)
+    if (filters.mode) params.append('mode', filters.mode)
 
     const response = await collectionApi.get<CollectionApiResponse>(
-      `/api/collection?${params.toString()}`
+      `/api/collection?${params.toString()}`,
+      { signal: opts?.signal }
     )
     return response.data
   } catch (error) {
+    // If the request was canceled, re-throw the error as-is without logging
+    if (axios.isCancel(error)) {
+      throw error
+    }
+    // Re-throw the original error to preserve axios error properties (response, status, etc.)
     console.error('Error fetching collection:', error)
-    throw new Error('Failed to fetch collection')
+    throw error
   }
 }
 
@@ -90,6 +101,7 @@ export const searchCollection = async (
     if (filters.folderId) params.append('folder', filters.folderId.toString())
     if (filters.sort) params.append('sort', filters.sort)
     if (filters.sortOrder) params.append('order', filters.sortOrder)
+    if (filters.mode) params.append('mode', filters.mode)
 
     const response = await collectionApi.get<SearchApiResponse>(
       `/api/collection/search?${params.toString()}`,
@@ -97,8 +109,14 @@ export const searchCollection = async (
     )
     return response.data
   } catch (error) {
+    // If the request was canceled, re-throw the error as-is without logging
+    // This allows the caller to handle cancellations appropriately
+    if (axios.isCancel(error)) {
+      throw error
+    }
+    // Re-throw the original error to preserve axios error properties (response, status, etc.)
     console.error('Error searching collection:', error)
-    throw new Error('Failed to search collection')
+    throw error
   }
 }
 
@@ -108,8 +126,9 @@ export const getFolders = async (): Promise<FoldersResponse> => {
     const response = await collectionApi.get<FoldersResponse>('/api/folders')
     return response.data
   } catch (error) {
+    // Re-throw the original error to preserve axios error properties (response, status, etc.)
     console.error('Error fetching folders:', error)
-    throw new Error('Failed to fetch folders')
+    throw error
   }
 }
 

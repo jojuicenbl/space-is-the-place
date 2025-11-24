@@ -1,11 +1,12 @@
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, type Ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useDebounceFn } from '@vueuse/core'
+import axios from 'axios'
 import { getCollection, searchCollection, getFolders } from '@/services/collectionApi'
 import type { CollectionRelease } from '@/types/models/Release'
 import type { DiscogsFolder, SortField, SortOrder } from '@/services/collectionApi'
 
-export function useCollection() {
+export function useCollection(mode?: Ref<'demo' | 'user'>) {
   const route = useRoute()
   const router = useRouter()
 
@@ -18,6 +19,7 @@ export function useCollection() {
   const isLoading = ref(false)
   const isInitialized = ref(false)
   const error = ref<string | null>(null)
+  const isRateLimited = ref(false)
 
   // Pagination info from server
   const totalPages = ref(0)
@@ -27,6 +29,10 @@ export function useCollection() {
   // Search state
   const isSearchActive = ref(false)
   const lastSearchQuery = ref('')
+
+  // Collection mode state from server response
+  const collectionMode = ref<'demo' | 'user' | 'unlinked' | 'empty'>('demo')
+  const discogsUsername = ref<string | null>(null)
 
   // Filters state - initialized from URL params
   const currentFolder = ref<number>(Number(route.query.folder) || 0)
@@ -39,6 +45,11 @@ export function useCollection() {
   const isSearching = computed(() => {
     return searchQuery.value.trim().length > 0
   })
+
+  const isDemo = computed(() => collectionMode.value === 'demo')
+  const isUser = computed(() => collectionMode.value === 'user')
+  const isUnlinked = computed(() => collectionMode.value === 'unlinked')
+  const isEmpty = computed(() => collectionMode.value === 'empty')
 
   // Update URL params when filters change
   const updateUrlParams = () => {
@@ -69,7 +80,8 @@ export function useCollection() {
         folderId: currentFolder.value,
         sort: currentSort.value,
         sortOrder: currentSortOrder.value,
-        search: searchQuery.value.trim() || undefined
+        search: searchQuery.value.trim() || undefined,
+        mode: mode?.value
       }
 
       let result
@@ -85,10 +97,29 @@ export function useCollection() {
         lastSearchQuery.value = ''
       }
 
-      releases.value = result.releases
-      totalPages.value = result.pagination.pages
-      totalItems.value = result.pagination.items
-      currentPageItems.value = result.releases.length
+      releases.value = result.releases || []
+
+      // Safely access pagination data with fallbacks
+      if (result.pagination) {
+        totalPages.value = result.pagination.pages || 0
+        totalItems.value = result.pagination.items || 0
+        currentPageItems.value = result.releases?.length || 0
+      } else {
+        // Fallback if pagination is missing
+        totalPages.value = 0
+        totalItems.value = 0
+        currentPageItems.value = 0
+      }
+
+      // Update collection mode from server response
+      if (result.mode) {
+        collectionMode.value = result.mode
+      }
+
+      // Update Discogs username if present
+      if (result.discogsUsername) {
+        discogsUsername.value = result.discogsUsername
+      }
 
       // Update folders if they come with the response
       if (result.folders && result.folders.length > 0) {
@@ -97,8 +128,23 @@ export function useCollection() {
 
       updateUrlParams()
     } catch (err) {
-      console.error('Error loading collection:', err)
-      error.value = 'Failed to load collection'
+      // Ignore cancellation errors - these are expected when user changes filters quickly
+      if (!axios.isCancel(err)) {
+        console.error('Error loading collection:', err)
+
+        // Check for rate limit error
+        if (axios.isAxiosError(err)) {
+          const errorCode = err.response?.data?.error
+          if (err.response?.status === 429 || errorCode === 'discogs_rate_limited') {
+            isRateLimited.value = true
+            error.value = 'discogs_rate_limited'
+            return
+          }
+        }
+
+        isRateLimited.value = false
+        error.value = 'Failed to load collection'
+      }
     } finally {
       isLoading.value = false
       isInitialized.value = true
@@ -129,20 +175,53 @@ export function useCollection() {
         perPage: 48,
         folderId: currentFolder.value,
         sort: currentSort.value,
-        sortOrder: currentSortOrder.value
+        sortOrder: currentSortOrder.value,
+        mode: mode?.value
       }
       const res = await searchCollection(q.trim(), filters, { signal: controller.signal })
-      releases.value = res.releases
-      totalPages.value = res.pagination.pages
-      totalItems.value = res.pagination.items
+      releases.value = res.releases || []
+
+      // Safely access pagination data with fallbacks
+      if (res.pagination) {
+        totalPages.value = res.pagination.pages || 0
+        totalItems.value = res.pagination.items || 0
+      } else {
+        totalPages.value = 0
+        totalItems.value = 0
+      }
+
       isSearchActive.value = true
       lastSearchQuery.value = q.trim()
+
+      // Update collection mode from server response
+      if (res.mode) {
+        collectionMode.value = res.mode
+      }
+
+      // Update Discogs username if present
+      if (res.discogsUsername) {
+        discogsUsername.value = res.discogsUsername
+      }
     } catch (e) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      if ((e as any).name !== 'CanceledError' && (e as any).name !== 'AbortError') {
-        console.error(e)
+      // Ignore cancellation errors (user typed before previous request finished)
+      // These are expected and should not be treated as errors
+      if (!axios.isCancel(e)) {
+        console.error('Search error:', e)
+
+        // Check for rate limit error
+        if (axios.isAxiosError(e)) {
+          const errorCode = e.response?.data?.error
+          if (e.response?.status === 429 || errorCode === 'discogs_rate_limited') {
+            isRateLimited.value = true
+            error.value = 'discogs_rate_limited'
+            return
+          }
+        }
+
+        isRateLimited.value = false
         error.value = 'Failed to load collection'
       }
+      // If canceled, silently ignore - this is normal behavior with debounced search
     } finally {
       isLoading.value = false
       isInitialized.value = true
@@ -179,6 +258,18 @@ export function useCollection() {
       folders.value = data.folders
     } catch (err) {
       console.error('Error loading folders:', err)
+
+      // Check for rate limit error
+      if (axios.isAxiosError(err)) {
+        const errorCode = err.response?.data?.error
+        if (err.response?.status === 429 || errorCode === 'discogs_rate_limited') {
+          isRateLimited.value = true
+          error.value = 'discogs_rate_limited'
+          return
+        }
+      }
+
+      isRateLimited.value = false
       error.value = 'Failed to load folders'
     }
   }
@@ -254,6 +345,7 @@ export function useCollection() {
     isLoading,
     isInitialized,
     error,
+    isRateLimited,
 
     // Pagination
     totalPages,
@@ -263,6 +355,14 @@ export function useCollection() {
     // Search state
     isSearchActive: isSearching,
     lastSearchQuery,
+
+    // Collection mode state
+    collectionMode,
+    discogsUsername,
+    isDemo,
+    isUser,
+    isUnlinked,
+    isEmpty,
 
     // Filters
     currentFolder,
