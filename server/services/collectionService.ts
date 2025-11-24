@@ -141,6 +141,36 @@ export class CollectionService {
 
     const data = await client.getCollectionPage(username, folderId, page, perPage, sort, sortOrder)
 
+    // Start background warmup if cache is not present and not already loading
+    const cacheKey = this.getCacheKeyForMode(mode, folderId, currentUser)
+
+    if (!this.cache.has(cacheKey) && !this.loadingPromises.has(cacheKey)) {
+      console.log(
+        `Warmup: starting background load for mode=${mode}, folderId=${folderId}, user=${currentUser?.discogsAuth?.discogsUsername ?? 'demo'}`
+      )
+
+      const warmupPromise = this.fetchAndCacheCollectionForMode(
+        client,
+        username,
+        folderId,
+        folders,
+        cacheKey
+      )
+
+      this.loadingPromises.set(cacheKey, warmupPromise)
+
+      warmupPromise
+        .then(() => {
+          console.log(`Warmup: completed for ${cacheKey}`)
+        })
+        .catch(error => {
+          console.error(`Warmup failed for ${cacheKey}:`, error)
+        })
+        .finally(() => {
+          this.loadingPromises.delete(cacheKey)
+        })
+    }
+
     // Check if empty collection for user mode
     const actualMode =
       mode === 'user' && data.pagination.items === 0
