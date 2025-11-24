@@ -390,7 +390,7 @@ export class DiscogsClient {
     folderId: number = 0,
     sort: string = 'added',
     sortOrder: string = 'desc',
-    perPage: number = 50
+    perPage: number = 100
   ): Promise<DiscogsCollectionResponse> {
     console.log(`Fetching all releases for folder ${folderId}...`)
 
@@ -406,8 +406,8 @@ export class DiscogsClient {
     if (totalPages > 1) {
       for (let page = 2; page <= totalPages; page++) {
         try {
-          // Rate limiting: 250ms between requests (Discogs limit is 60/min)
-          await this.sleep(250)
+          // Rate limiting: ~1 req/sec to stay comfortable with Discogs limits
+          await this.sleep(1000)
 
           const pageData = await this.getCollectionPage(
             username,
@@ -419,7 +419,7 @@ export class DiscogsClient {
           )
           allReleases.push(...pageData.releases)
 
-          console.log(`Fetched page ${page}/${totalPages}`)
+          console.log(`Fetched collection page ${page}/${totalPages} for folder ${folderId}`)
         } catch (error) {
           console.error(`Failed to fetch page ${page}:`, error)
           // Continue with other pages
