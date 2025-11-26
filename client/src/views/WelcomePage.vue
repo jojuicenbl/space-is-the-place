@@ -3,7 +3,7 @@ import Button from '@/components/UI/Button.vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ref, onMounted } from 'vue'
 import { getCollection, getFolders } from '@/services/collectionApi'
-import { requestDiscogsAuth } from '@/services/authDiscogs'
+// import { requestDiscogsAuth } from '@/services/authDiscogs'
 import { useUserStore } from '@/stores/userStore'
 import axios from 'axios'
 
@@ -13,7 +13,7 @@ const userStore = useUserStore()
 
 const isNavigating = ref(false)
 const isPrefetching = ref(false)
-const isConnecting = ref(false)
+// const isConnecting = ref(false)
 const showSuccessMessage = ref(false)
 
 // Check if user just connected their Discogs account
@@ -88,18 +88,18 @@ const navigateToCollection = async (mode: 'demo' | 'user' = 'demo') => {
   }
 }
 
-const handleConnectDiscogs = async () => {
-  if (isConnecting.value) return
+// const handleConnectDiscogs = async () => {
+//   if (isConnecting.value) return
 
-  isConnecting.value = true
-  try {
-    await requestDiscogsAuth()
-  } catch (error) {
-    console.error('Failed to connect to Discogs:', error)
-    alert('Failed to connect to Discogs. Please try again.')
-    isConnecting.value = false
-  }
-}
+//   isConnecting.value = true
+//   try {
+//     await requestDiscogsAuth()
+//   } catch (error) {
+//     console.error('Failed to connect to Discogs:', error)
+//     alert('Failed to connect to Discogs. Please try again.')
+//     isConnecting.value = false
+//   }
+// }
 
 const handleDisconnectDiscogs = async () => {
   const confirmed = confirm(
@@ -158,6 +158,7 @@ const handleButtonHover = () => {
         </div>
 
         <!-- Connect Button (when not connected) -->
+        <!-- 
         <Button
           v-else
           variant="ghost"
@@ -168,6 +169,7 @@ const handleButtonHover = () => {
         >
           Connect Your Discogs Account
         </Button>
+        -->
 
         <!-- Main CTAs -->
         <Button
