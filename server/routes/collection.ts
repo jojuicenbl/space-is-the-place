@@ -5,9 +5,9 @@
 
 import { Router, Request, Response } from 'express'
 import { collectionService, CollectionQuery } from '../services/collectionService'
-import { userService } from '../services/userService'
 import type { SortField, SortOrder } from '../types/discogs'
 import { DiscogsRateLimitError } from '../services/discogs/discogsClient'
+import type { User } from '../types/user'
 
 const router = Router()
 
@@ -56,9 +56,15 @@ router.get('/', async (req: Request, res: Response): Promise<void> => {
       return
     }
 
-    // Get current user (for user mode)
-    // TODO: Replace with session-based auth when full auth system is implemented
-    const currentUser = userService.getDefaultUser()
+    // Get Discogs auth from session (for user mode)
+    const currentUser: User | null = req.session.discogsAuth
+      ? {
+          id: req.sessionID,
+          email: '', // Not needed for collection service
+          createdAt: new Date(),
+          discogsAuth: req.session.discogsAuth
+        }
+      : null
 
     // Build query
     const query: CollectionQuery = {
@@ -133,8 +139,15 @@ router.get('/search', async (req: Request, res: Response): Promise<void> => {
     const sort = (req.query.sort as SortField) || 'added'
     const sortOrder = (req.query.order as SortOrder) || 'desc'
 
-    // Get current user (for user mode)
-    const currentUser = userService.getDefaultUser()
+    // Get Discogs auth from session (for user mode)
+    const currentUser: User | null = req.session.discogsAuth
+      ? {
+          id: req.sessionID,
+          email: '', // Not needed for collection service
+          createdAt: new Date(),
+          discogsAuth: req.session.discogsAuth
+        }
+      : null
 
     // Use new getCollectionByMode method with search
     const result = await collectionService.getCollectionByMode({

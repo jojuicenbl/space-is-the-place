@@ -10,35 +10,56 @@
 
 import { Router, Request, Response } from 'express'
 import { discogsOAuthClient } from '../services/discogsOAuthClient'
-import { userService } from '../services/userService'
+import { monitoringService } from '../services/monitoringService'
 import crypto from 'crypto'
 
 const router = Router()
 
 /**
  * Temporary in-memory store for OAuth tokens
- * Maps stateId -> { oauthToken, oauthTokenSecret, timestamp }
+ * Maps oauth_token -> { oauthTokenSecret, sessionId, timestamp }
+ *
+ * After successful OAuth, we also store the result temporarily keyed by sessionId
+ * so the frontend can retrieve it.
  *
  * TODO: In production, this should be stored in:
  * - Redis (recommended for distributed systems)
  * - Database with expiration
- * - Session store
  */
 interface OAuthState {
-  oauthToken: string
   oauthTokenSecret: string
+  sessionId: string
+  timestamp: number
+}
+
+interface OAuthResult {
+  discogsUsername: string
+  accessToken: string
+  accessTokenSecret: string
+  linkedAt: Date
   timestamp: number
 }
 
 const oauthStateStore = new Map<string, OAuthState>()
+const oauthResultStore = new Map<string, OAuthResult>()
 
-// Cleanup expired states every 10 minutes
+// Cleanup expired states and results every 10 minutes
 const OAUTH_STATE_TTL = 15 * 60 * 1000 // 15 minutes
+const OAUTH_RESULT_TTL = 5 * 60 * 1000 // 5 minutes
 setInterval(() => {
   const now = Date.now()
-  for (const [stateId, state] of oauthStateStore.entries()) {
+
+  // Cleanup OAuth states
+  for (const [token, state] of oauthStateStore.entries()) {
     if (now - state.timestamp > OAUTH_STATE_TTL) {
-      oauthStateStore.delete(stateId)
+      oauthStateStore.delete(token)
+    }
+  }
+
+  // Cleanup OAuth results
+  for (const [sessionId, result] of oauthResultStore.entries()) {
+    if (now - result.timestamp > OAUTH_RESULT_TTL) {
+      oauthResultStore.delete(sessionId)
     }
   }
 }, 10 * 60 * 1000)
@@ -49,40 +70,44 @@ setInterval(() => {
  */
 router.post('/request', async (req: Request, res: Response): Promise<void> => {
   try {
-    // Check if user exists (using default user for now)
-    // TODO: Replace with session-based auth when full auth system is implemented
-    const currentUser = userService.getDefaultUser()
-    if (!currentUser) {
-      res.status(401).json({ error: 'Unauthorized - No user found' })
+    // Track OAuth request
+    monitoringService.trackOAuthRequest()
+
+    // Ensure session exists (create it if needed)
+    if (!req.session) {
+      res.status(500).json({ error: 'Session not initialized' })
       return
     }
 
     // Generate callback URL
-    const protocol = req.protocol
-    const host = req.get('host')
-    const callbackUrl = `${protocol}://${host}/api/auth/discogs/callback`
+    // In development, use the frontend URL (Vite proxy) to maintain session
+    // In production, use the backend URL
+    const frontendUrl = process.env.VITE_CLIENT_URL || 'http://localhost:5173'
+    const callbackUrl = `${frontendUrl}/api/auth/discogs/callback`
 
     // Get request token from Discogs
     const { oauthToken, oauthTokenSecret, authorizeUrl } =
       await discogsOAuthClient.getRequestToken(callbackUrl)
 
-    // Generate state ID for CSRF protection
-    const stateId = crypto.randomBytes(16).toString('hex')
-
-    // Store token secret temporarily (needed for next step)
-    oauthStateStore.set(stateId, {
-      oauthToken,
+    // Store token secret with session ID (keyed by oauth_token for callback lookup)
+    oauthStateStore.set(oauthToken, {
       oauthTokenSecret,
+      sessionId: req.sessionID,
       timestamp: Date.now()
     })
 
-    // Return authorization URL and state ID
+    // Update monitoring metrics
+    monitoringService.updateMetrics({
+      oauthActiveStates: oauthStateStore.size
+    })
+
+    // Return authorization URL
     res.json({
-      authorizeUrl,
-      stateId
+      authorizeUrl
     })
   } catch (error) {
     console.error('OAuth request error:', error)
+    monitoringService.trackOAuthFailure()
     res.status(500).json({
       error: 'Failed to initiate OAuth flow',
       message: (error as Error).message
@@ -100,6 +125,7 @@ router.get('/callback', async (req: Request, res: Response): Promise<void> => {
     const { oauth_token, oauth_verifier } = req.query
 
     if (!oauth_token || !oauth_verifier) {
+      monitoringService.trackOAuthFailure()
       res.status(400).json({
         error: 'Missing OAuth parameters',
         message: 'oauth_token and oauth_verifier are required'
@@ -108,18 +134,11 @@ router.get('/callback', async (req: Request, res: Response): Promise<void> => {
     }
 
     // Find stored state by oauth_token
-    let storedState: OAuthState | undefined
-    let stateId: string | undefined
+    const storedState = oauthStateStore.get(oauth_token as string)
 
-    for (const [id, state] of oauthStateStore.entries()) {
-      if (state.oauthToken === oauth_token) {
-        storedState = state
-        stateId = id
-        break
-      }
-    }
-
-    if (!storedState || !stateId) {
+    if (!storedState) {
+      console.error('OAuth state not found for token:', oauth_token)
+      monitoringService.trackOAuthFailure()
       res.status(400).json({
         error: 'Invalid or expired OAuth state',
         message: 'OAuth token not found or expired. Please restart the authorization flow.'
@@ -137,44 +156,118 @@ router.get('/callback', async (req: Request, res: Response): Promise<void> => {
     // Get user identity from Discogs
     const discogsIdentity = await discogsOAuthClient.getIdentity(accessToken, accessTokenSecret)
 
-    // Clean up state
-    oauthStateStore.delete(stateId)
+    // Clean up OAuth state
+    oauthStateStore.delete(oauth_token as string)
 
-    // Get current user (for now, using default user)
-    // TODO: Replace with session-based user lookup when full auth is implemented
-    const currentUser = userService.getDefaultUser()
-
-    if (!currentUser) {
-      res.status(500).json({
-        error: 'User not found',
-        message: 'Unable to find current user'
-      })
-      return
-    }
-
-    // Store access tokens in user
-    const updatedUser = userService.updateDiscogsAuth(currentUser.id, {
+    // Store the OAuth result temporarily (keyed by the original sessionId)
+    // The frontend will claim it using a separate endpoint
+    const result: OAuthResult = {
       discogsUsername: discogsIdentity.username,
       accessToken,
-      accessTokenSecret
+      accessTokenSecret,
+      linkedAt: new Date(),
+      timestamp: Date.now()
+    }
+
+    oauthResultStore.set(storedState.sessionId, result)
+
+    // Track success and update metrics
+    monitoringService.trackOAuthSuccess()
+    monitoringService.updateMetrics({
+      oauthActiveStates: oauthStateStore.size,
+      oauthPendingResults: oauthResultStore.size
     })
 
-    if (!updatedUser) {
-      res.status(500).json({
-        error: 'Failed to update user',
-        message: 'Unable to store Discogs authentication'
+    // Redirect to frontend with session ID in URL
+    // Frontend will use this to claim the OAuth result
+    const frontendUrl = process.env.VITE_CLIENT_URL || 'http://localhost:5173'
+    res.redirect(`${frontendUrl}/collection?discogs_auth_session=${storedState.sessionId}`)
+  } catch (error) {
+    console.error('OAuth callback error:', error)
+    monitoringService.trackOAuthFailure()
+    res.status(500).json({
+      error: 'Failed to complete OAuth flow',
+      message: (error as Error).message
+    })
+  }
+})
+
+/**
+ * POST /api/auth/discogs/claim
+ * Claim OAuth result and store in current session
+ * Called by frontend after OAuth redirect
+ */
+router.post('/claim', async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { authSessionId } = req.body
+
+    if (!authSessionId) {
+      res.status(400).json({
+        error: 'Missing authSessionId',
+        message: 'authSessionId parameter is required'
       })
       return
     }
 
-    // Redirect to frontend with success indicator
-    // Frontend can then call /api/me to get updated user data
-    const frontendUrl = process.env.VITE_CLIENT_URL || 'http://localhost:5173'
-    res.redirect(`${frontendUrl}/collection?discogs_connected=1`)
+    // Retrieve the OAuth result from temporary store
+    const oauthResult = oauthResultStore.get(authSessionId)
+
+    if (!oauthResult) {
+      console.error('OAuth result not found for session:', authSessionId)
+      res.status(404).json({
+        error: 'OAuth result not found',
+        message: 'OAuth result expired or invalid. Please try connecting again.'
+      })
+      return
+    }
+
+    // Check if result is not too old (5 minutes max)
+    const age = Date.now() - oauthResult.timestamp
+    if (age > 5 * 60 * 1000) {
+      oauthResultStore.delete(authSessionId)
+      res.status(410).json({
+        error: 'OAuth result expired',
+        message: 'OAuth result expired. Please try connecting again.'
+      })
+      return
+    }
+
+    // Store in current session
+    req.session.discogsAuth = {
+      discogsUsername: oauthResult.discogsUsername,
+      accessToken: oauthResult.accessToken,
+      accessTokenSecret: oauthResult.accessTokenSecret,
+      linkedAt: oauthResult.linkedAt
+    }
+
+    // Clean up temporary store
+    oauthResultStore.delete(authSessionId)
+
+    // Update metrics
+    monitoringService.updateMetrics({
+      oauthPendingResults: oauthResultStore.size
+    })
+
+    // Save session
+    req.session.save((err) => {
+      if (err) {
+        console.error('Session save error:', err)
+        res.status(500).json({
+          error: 'Failed to save session',
+          message: err.message
+        })
+        return
+      }
+
+      res.json({
+        success: true,
+        username: oauthResult.discogsUsername
+      })
+    })
   } catch (error) {
-    console.error('OAuth callback error:', error)
+    console.error('Claim error:', error)
     res.status(500).json({
-      error: 'Failed to complete OAuth flow',
+      error: 'Failed to claim OAuth result',
       message: (error as Error).message
     })
   }
@@ -184,26 +277,10 @@ router.get('/callback', async (req: Request, res: Response): Promise<void> => {
  * POST /api/auth/discogs/disconnect
  * Disconnect user's Discogs account
  */
-router.post('/disconnect', async (_req: Request, res: Response): Promise<void> => {
+router.post('/disconnect', async (req: Request, res: Response): Promise<void> => {
   try {
-    // Get current user
-    const currentUser = userService.getDefaultUser()
-
-    if (!currentUser) {
-      res.status(401).json({ error: 'Unauthorized - No user found' })
-      return
-    }
-
-    // Remove Discogs authentication from user
-    const updatedUser = userService.removeDiscogsAuth(currentUser.id)
-
-    if (!updatedUser) {
-      res.status(500).json({
-        error: 'Failed to disconnect',
-        message: 'Unable to remove Discogs authentication'
-      })
-      return
-    }
+    // Remove Discogs authentication from session
+    req.session.discogsAuth = undefined
 
     res.json({
       success: true,
