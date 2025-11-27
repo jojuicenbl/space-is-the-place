@@ -178,9 +178,10 @@ onMounted(async () => {
     // Don't override it
   }
 
-  // Start with all sections hidden for staggered animation
+  // Show content immediately to display skeleton loader during initial load
+  // Only filters and pager use staggered animation
   isFiltersVisible.value = false
-  isContentVisible.value = false
+  isContentVisible.value = true // Show immediately for skeleton loader
   isPagerVisible.value = false
 
   // Listen to screen size changes
@@ -195,13 +196,10 @@ onMounted(async () => {
   }
 
   // Staggered reveal with tight timing (≤350ms total)
-  // Show sections in order: filters (0ms) → content (60ms) → pager (120ms)
+  // Show sections in order: filters (0ms) → pager (120ms)
+  // Content is already visible to show skeleton during loading
   await nextTick()
   isFiltersVisible.value = true
-
-  setTimeout(() => {
-    isContentVisible.value = true
-  }, 60)
 
   setTimeout(() => {
     isPagerVisible.value = true
