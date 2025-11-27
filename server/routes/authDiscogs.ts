@@ -11,7 +11,6 @@
 import { Router, Request, Response } from 'express'
 import { discogsOAuthClient } from '../services/discogsOAuthClient'
 import { monitoringService } from '../services/monitoringService'
-import crypto from 'crypto'
 
 const router = Router()
 

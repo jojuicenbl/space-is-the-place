@@ -27,5 +27,8 @@
     "@vueuse/core": "^13.9.0",
     "nodemailer": "^7.0.6",
     "vuetify": "^3.7.0-beta.1"
+  },
+  "optionalDependencies": {
+    "@rollup/rollup-linux-x64-gnu": "4.6.1"
   }
 }

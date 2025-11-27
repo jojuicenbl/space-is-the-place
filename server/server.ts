@@ -11,15 +11,25 @@ import { URL } from 'url'
 
 const app = express()
 
+const allowedOrigins = [
+  process.env.VITE_CLIENT_URL,        // prod : https://spaceistheplace.app (Render)
+  'http://localhost:5173',            // dev Vite
+  'http://localhost:4173'             // dev preview Vite (npm run preview)
+].filter(Boolean) as string[]
+
 // Security: Configure CORS properly
-const corsOptions = {
-  origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
-    // Allow requests from localhost on any port (dev only)
-    if (!origin || origin.startsWith('http://localhost:')) {
-      callback(null, true)
-    } else {
-      callback(new Error('Not allowed by CORS'))
+const corsOptions: cors.CorsOptions = {
+  origin: (origin, callback) => {
+    // Requêtes sans origin (curl, Postman, health checks, etc.) -> on autorise
+    if (!origin) {
+      return callback(null, true)
     }
+
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true)
+    }
+
+    return callback(new Error(`Not allowed by CORS: ${origin}`))
   },
   methods: ['GET', 'POST'],
   optionsSuccessStatus: 200,
