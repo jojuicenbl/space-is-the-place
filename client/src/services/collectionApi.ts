@@ -1,11 +1,14 @@
 import axios from 'axios'
 import type { CollectionResponse, CollectionRelease } from '@/types/models/Release'
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000'
+// In development, use relative URLs so Vite proxy handles it (same-origin)
+// In production, use the full API URL
+const API_URL = import.meta.env.DEV ? '' : (import.meta.env.VITE_API_URL || 'http://localhost:3000')
 
 const collectionApi = axios.create({
   baseURL: API_URL,
-  timeout: 30000 // Increased timeout for initial collection loading
+  timeout: 30000, // Increased timeout for initial collection loading
+  withCredentials: true // Important: send session cookies
 })
 
 export interface DiscogsFolder {

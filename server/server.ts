@@ -5,6 +5,7 @@ dotenv.config()
 
 import express, { Request, Response, RequestHandler, NextFunction } from 'express'
 import cors from 'cors'
+import session from 'express-session'
 import axios, { AxiosError } from 'axios'
 import { URL } from 'url'
 
@@ -37,10 +38,28 @@ const corsOptions: cors.CorsOptions = {
 app.use(cors(corsOptions))
 app.use(express.json())
 
+// Session middleware for per-visitor Discogs OAuth isolation
+app.use(
+  session({
+    secret: process.env.SESSION_SECRET || 'dev-secret-change-in-production',
+    resave: false,
+    saveUninitialized: true, // Create session even if empty (needed for OAuth flow)
+    cookie: {
+      httpOnly: true,
+      secure: false, // Must be false in dev
+      sameSite: 'lax', // 'lax' works for localhost
+      maxAge: 1000 * 60 * 60 * 24 * 7 // 7 days
+    },
+    name: 'sessionId' // Custom cookie name for clarity
+  })
+)
+
 import { sendContactMail } from './services/contactService'
+import { monitoringService } from './services/monitoringService'
 import authDiscogsRouter from './routes/authDiscogs'
 import userRouter from './routes/user'
 import collectionRouter from './routes/collection'
+import healthRouter from './routes/health'
 // ...middlewares...
 
 interface ImageRouteParams {
@@ -129,10 +148,17 @@ const asyncHandler = (fn: AsyncHandler) => (req: Request, res: Response, next: N
   Promise.resolve(fn(req, res)).catch(next)
 }
 
+// Middleware to track API requests
+app.use('/api', (req, res, next) => {
+  monitoringService.trackApiRequest()
+  next()
+})
+
 // Route pour le formulaire de contact
 app.post('/api/contact', asyncHandler(sendContactMail))
 
 // Register routes
+app.use('/api/health', healthRouter)
 app.use('/api/auth/discogs', authDiscogsRouter)
 app.use('/api', userRouter)
 app.use('/api/collection', collectionRouter)
@@ -144,6 +170,7 @@ app.get('/api/proxy/images/*', setCacheHeaders, proxyImageHandler)
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 app.use((err: Error, _req: Request, res: Response, next: NextFunction) => {
   console.error('Unhandled error:', err)
+  monitoringService.trackApiError()
 
   // Don't send stack trace in production
   const errorResponse = {
@@ -156,13 +183,17 @@ app.use((err: Error, _req: Request, res: Response, next: NextFunction) => {
 
 const PORT = process.env.PORT || 3000
 app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`)
-  console.log('Endpoints:')
+  console.log(`\n🚀 Server running on port ${PORT}`)
+  console.log('📡 Endpoints:')
+  console.log('  - GET  /api/health              (monitoring)')
+  console.log('  - GET  /api/health/metrics      (detailed metrics)')
   console.log('  - GET  /api/collection?mode=demo|user')
   console.log('  - GET  /api/collection/search')
   console.log('  - GET  /api/collection/folders')
   console.log('  - POST /api/collection/refresh')
   console.log('  - GET  /api/me')
-  console.log('  - GET  /api/auth/discogs/request')
+  console.log('  - POST /api/auth/discogs/request')
   console.log('  - GET  /api/auth/discogs/callback')
+  console.log('  - POST /api/auth/discogs/claim')
+  console.log('\n💡 View metrics: http://localhost:' + PORT + '/api/health\n')
 })

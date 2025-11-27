@@ -3,9 +3,8 @@ import Button from '@/components/UI/Button.vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ref, onMounted } from 'vue'
 import { getCollection, getFolders } from '@/services/collectionApi'
-// import { requestDiscogsAuth } from '@/services/authDiscogs'
+import { requestDiscogsAuth, claimDiscogsAuth } from '@/services/authDiscogs'
 import { useUserStore } from '@/stores/userStore'
-import axios from 'axios'
 
 const router = useRouter()
 const route = useRoute()
@@ -13,25 +12,38 @@ const userStore = useUserStore()
 
 const isNavigating = ref(false)
 const isPrefetching = ref(false)
-// const isConnecting = ref(false)
+const isConnecting = ref(false)
 const showSuccessMessage = ref(false)
 
 // Check if user just connected their Discogs account
 onMounted(async () => {
-  if (route.query.discogs_connected === '1') {
-    showSuccessMessage.value = true
-    // Reload user data to get updated Discogs info
-    await userStore.loadUser()
-    // Remove the query parameter
-    await router.replace({ query: {} })
+  const authSessionId = route.query.discogs_auth_session as string | undefined
 
-    // Auto-redirect to user's collection after 1.5 seconds
-    setTimeout(() => {
-      if (userStore.discogsIsLinked) {
-        userStore.setCollectionMode('user')
-        router.push('/collection?mode=user')
-      }
-    }, 1500)
+  if (authSessionId) {
+    try {
+      // Claim the OAuth result and store in current session
+      await claimDiscogsAuth(authSessionId)
+
+      showSuccessMessage.value = true
+
+      // Reload user data to get updated Discogs info
+      await userStore.loadUser()
+
+      // Remove the query parameter
+      await router.replace({ query: {} })
+
+      // Auto-redirect to user's collection after 1.5 seconds
+      setTimeout(() => {
+        if (userStore.discogsIsLinked) {
+          userStore.setCollectionMode('user')
+          router.push('/collection?mode=user')
+        }
+      }, 1500)
+    } catch (error) {
+      console.error('Failed to claim Discogs auth:', error)
+      alert('Failed to complete Discogs connection. Please try again.')
+      await router.replace({ query: {} })
+    }
   }
 })
 
@@ -88,36 +100,22 @@ const navigateToCollection = async (mode: 'demo' | 'user' = 'demo') => {
   }
 }
 
-// const handleConnectDiscogs = async () => {
-//   if (isConnecting.value) return
+const handleConnectDiscogs = async () => {
+  if (isConnecting.value) return
 
-//   isConnecting.value = true
-//   try {
-//     await requestDiscogsAuth()
-//   } catch (error) {
-//     console.error('Failed to connect to Discogs:', error)
-//     alert('Failed to connect to Discogs. Please try again.')
-//     isConnecting.value = false
-//   }
-// }
+  isConnecting.value = true
+  try {
+    await requestDiscogsAuth()
+  } catch (error) {
+    console.error('Failed to connect to Discogs:', error)
+    alert('Failed to connect to Discogs. Please try again.')
+    isConnecting.value = false
+  }
+}
 
 const handleDisconnectDiscogs = async () => {
-  const confirmed = confirm(
-    'Are you sure you want to disconnect your Discogs account? You will need to reconnect to access your collection.'
-  )
-
-  if (!confirmed) return
-
   try {
-    // Call backend to disconnect
-    await axios.post(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/auth/discogs/disconnect`)
-
-    // Reset userStore
-    userStore.discogsIsLinked = false
-    userStore.discogsUsername = null
-    userStore.setCollectionMode('demo')
-
-    alert('Discogs account disconnected successfully.')
+    await userStore.disconnect()
   } catch (error) {
     console.error('Failed to disconnect Discogs:', error)
     alert('Failed to disconnect from Discogs. Please try again.')
@@ -158,7 +156,6 @@ const handleButtonHover = () => {
         </div>
 
         <!-- Connect Button (when not connected) -->
-        <!-- 
         <Button
           v-else
           variant="ghost"
@@ -169,7 +166,6 @@ const handleButtonHover = () => {
         >
           Connect Your Discogs Account
         </Button>
-        -->
 
         <!-- Main CTAs -->
         <Button

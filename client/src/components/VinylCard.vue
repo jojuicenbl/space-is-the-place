@@ -65,9 +65,9 @@ const artistName = computed(() =>
       @error="ImageUtils.handleImageError"
     />
 
-    <!-- Hover overlay with release info -->
+    <!-- Hover overlay with release info (desktop only) -->
     <div
-      class="vinyl-overlay absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/90 via-black/60 to-transparent
+      class="vinyl-overlay hidden md:block absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/90 via-black/60 to-transparent
              p-3 pt-8 translate-y-full opacity-0 transition-all duration-300 ease-out
              group-hover:translate-y-0 group-hover:opacity-100"
     >
@@ -80,14 +80,3 @@ const artistName = computed(() =>
     </div>
   </Card>
 </template>
-
-<style scoped>
-/* Sur les appareils tactiles (sans hover), l'overlay est toujours visible avec un gradient plus léger */
-@media (hover: none) {
-  .vinyl-overlay {
-    transform: translateY(0);
-    opacity: 1;
-    --tw-gradient-from: rgb(0 0 0 / 0.7);
-  }
-}
-</style>

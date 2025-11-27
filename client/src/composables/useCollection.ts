@@ -31,7 +31,8 @@ export function useCollection(mode?: Ref<'demo' | 'user'>) {
   const lastSearchQuery = ref('')
 
   // Collection mode state from server response
-  const collectionMode = ref<'demo' | 'user' | 'unlinked' | 'empty'>('demo')
+  // Initialize with the passed mode parameter to avoid flashing the wrong banner
+  const collectionMode = ref<'demo' | 'user' | 'unlinked' | 'empty'>(mode?.value || 'demo')
   const discogsUsername = ref<string | null>(null)
 
   // Filters state - initialized from URL params
@@ -337,6 +338,13 @@ export function useCollection(mode?: Ref<'demo' | 'user'>) {
   watch([currentFolder, currentSort, currentSortOrder, searchQuery, currentPage], () => {
     updateUrlParams()
   })
+
+  // Watch for mode changes from parent
+  if (mode) {
+    watch(mode, (newMode) => {
+      collectionMode.value = newMode
+    })
+  }
 
   return {
     // State
