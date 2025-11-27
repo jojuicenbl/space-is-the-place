@@ -46,8 +46,8 @@ app.use(
     saveUninitialized: true, // Create session even if empty (needed for OAuth flow)
     cookie: {
       httpOnly: true,
-      secure: false, // Must be false in dev
-      sameSite: 'lax', // 'lax' works for localhost
+      secure: process.env.NODE_ENV === 'production', // HTTPS required in production
+      sameSite: 'lax', // 'lax' works for cross-site redirects (OAuth)
       maxAge: 1000 * 60 * 60 * 24 * 7 // 7 days
     },
     name: 'sessionId' // Custom cookie name for clarity
