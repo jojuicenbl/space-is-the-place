@@ -366,7 +366,7 @@ onUnmounted(() => {
                     Start building your vinyl collection on Discogs to see it here.
                   </div>
                   <a
-                    href="https://www.discogs.com/my-collection"
+                    :href="`https://www.discogs.com/user/${userStore.discogsUsername}/collection`"
                     target="_blank"
                     rel="noopener noreferrer"
                     class="external-link"

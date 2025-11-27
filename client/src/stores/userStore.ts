@@ -94,6 +94,23 @@ export const useUserStore = defineStore('user', () => {
     discogsUsername.value = username
   }
 
+  const disconnect = async () => {
+    try {
+      // Call the disconnect API
+      await axios.post(`${API_URL}/api/auth/discogs/disconnect`, {}, {
+        withCredentials: true
+      })
+
+      // Reset Discogs-related state
+      discogsIsLinked.value = false
+      discogsUsername.value = null
+      collectionMode.value = 'demo'
+    } catch (error) {
+      console.error('Failed to disconnect Discogs:', error)
+      throw error
+    }
+  }
+
   const reset = () => {
     isAuthenticated.value = false
     id.value = null
@@ -119,6 +136,7 @@ export const useUserStore = defineStore('user', () => {
     loadUser,
     setCollectionMode,
     setDiscogsLinked,
+    disconnect,
     reset
   }
 })

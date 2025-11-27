@@ -5,7 +5,6 @@ import { ref, onMounted } from 'vue'
 import { getCollection, getFolders } from '@/services/collectionApi'
 import { requestDiscogsAuth, claimDiscogsAuth } from '@/services/authDiscogs'
 import { useUserStore } from '@/stores/userStore'
-import axios from 'axios'
 
 const router = useRouter()
 const route = useRoute()
@@ -115,22 +114,8 @@ const handleConnectDiscogs = async () => {
 }
 
 const handleDisconnectDiscogs = async () => {
-  const confirmed = confirm(
-    'Are you sure you want to disconnect your Discogs account? You will need to reconnect to access your collection.'
-  )
-
-  if (!confirmed) return
-
   try {
-    // Call backend to disconnect
-    await axios.post(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/auth/discogs/disconnect`)
-
-    // Reset userStore
-    userStore.discogsIsLinked = false
-    userStore.discogsUsername = null
-    userStore.setCollectionMode('demo')
-
-    alert('Discogs account disconnected successfully.')
+    await userStore.disconnect()
   } catch (error) {
     console.error('Failed to disconnect Discogs:', error)
     alert('Failed to disconnect from Discogs. Please try again.')

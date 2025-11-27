@@ -56,3 +56,20 @@ export async function claimDiscogsAuth(authSessionId: string): Promise<string> {
     throw new Error('Failed to complete Discogs connection. Please try again.')
   }
 }
+
+/**
+ * Disconnects the user's Discogs account by removing the authentication
+ * from their session. This will clear stored Discogs tokens.
+ */
+export async function disconnectDiscogs(): Promise<void> {
+  try {
+    await axios.post(
+      `${API_URL}/api/auth/discogs/disconnect`,
+      {},
+      { withCredentials: true } // Important: send cookies
+    )
+  } catch (error) {
+    console.error('Failed to disconnect Discogs:', error)
+    throw new Error('Failed to disconnect from Discogs. Please try again.')
+  }
+}
