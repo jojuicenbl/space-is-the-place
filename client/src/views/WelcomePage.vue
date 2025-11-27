@@ -17,12 +17,12 @@ const showSuccessMessage = ref(false)
 
 // Check if user just connected their Discogs account
 onMounted(async () => {
-  const authSessionId = route.query.discogs_auth_session as string | undefined
+  const authStateId = route.query.discogs_auth_state as string | undefined
 
-  if (authSessionId) {
+  if (authStateId) {
     try {
       // Claim the OAuth result and store in current session
-      await claimDiscogsAuth(authSessionId)
+      await claimDiscogsAuth(authStateId)
 
       showSuccessMessage.value = true
 
