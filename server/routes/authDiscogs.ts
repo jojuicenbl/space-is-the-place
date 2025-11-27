@@ -79,10 +79,13 @@ router.post('/request', async (req: Request, res: Response): Promise<void> => {
     }
 
     // Generate callback URL
-    // In development, use the frontend URL (Vite proxy) to maintain session
-    // In production, use the backend URL
-    const frontendUrl = process.env.VITE_CLIENT_URL || 'http://localhost:5173'
-    const callbackUrl = `${frontendUrl}/api/auth/discogs/callback`
+    // In development, use the frontend URL (Vite proxy handles /api routes)
+    // In production, use the backend API URL directly (no proxy in production)
+    const isDevelopment = process.env.NODE_ENV === 'development'
+    const callbackBaseUrl = isDevelopment
+      ? (process.env.VITE_CLIENT_URL || 'http://localhost:5173')
+      : (process.env.VITE_API_URL || 'http://localhost:3000')
+    const callbackUrl = `${callbackBaseUrl}/api/auth/discogs/callback`
 
     // Get request token from Discogs
     const { oauthToken, oauthTokenSecret, authorizeUrl } =
