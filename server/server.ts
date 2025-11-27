@@ -46,8 +46,12 @@ app.use(
     saveUninitialized: true, // Create session even if empty (needed for OAuth flow)
     cookie: {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production', // HTTPS required in production
-      sameSite: 'lax', // 'lax' works for cross-site redirects (OAuth)
+      // secure MUST be true when sameSite is 'none'
+      secure: process.env.NODE_ENV === 'production',
+      // 'none' required for cross-domain cookies (frontend and backend on different domains)
+      // In dev: 'lax' works because localhost proxy makes it same-origin
+      // In prod: 'none' needed because spaceistheplace.app ≠ space-is-the-place-api.onrender.com
+      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
       maxAge: 1000 * 60 * 60 * 24 * 7 // 7 days
     },
     name: 'sessionId' // Custom cookie name for clarity
