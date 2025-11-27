@@ -17,6 +17,11 @@ coverage
 /cypress/videos/
 /cypress/screenshots/
 
+# Dependencies
+node_modules/
+client/node_modules/
+server/node_modules/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
