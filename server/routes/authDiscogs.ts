@@ -9,6 +9,7 @@
  */
 
 import { Router, Request, Response } from 'express'
+import { v4 as uuidv4 } from 'uuid'
 import { discogsOAuthClient } from '../services/discogsOAuthClient'
 import { monitoringService } from '../services/monitoringService'
 
@@ -16,10 +17,13 @@ const router = Router()
 
 /**
  * Temporary in-memory store for OAuth tokens
- * Maps oauth_token -> { oauthTokenSecret, sessionId, timestamp }
+ * Maps oauth_token -> { oauthTokenSecret, stateId, timestamp }
  *
- * After successful OAuth, we also store the result temporarily keyed by sessionId
+ * After successful OAuth, we also store the result temporarily keyed by stateId
  * so the frontend can retrieve it.
+ *
+ * stateId is a unique UUID generated for each OAuth flow, independent of sessions.
+ * This allows the flow to work across different domains (frontend/backend on separate domains).
  *
  * TODO: In production, this should be stored in:
  * - Redis (recommended for distributed systems)
@@ -27,7 +31,7 @@ const router = Router()
  */
 interface OAuthState {
   oauthTokenSecret: string
-  sessionId: string
+  stateId: string // Unique ID for this OAuth flow
   timestamp: number
 }
 
@@ -72,11 +76,8 @@ router.post('/request', async (req: Request, res: Response): Promise<void> => {
     // Track OAuth request
     monitoringService.trackOAuthRequest()
 
-    // Ensure session exists (create it if needed)
-    if (!req.session) {
-      res.status(500).json({ error: 'Session not initialized' })
-      return
-    }
+    // Generate a unique state ID for this OAuth flow (independent of sessions)
+    const stateId = uuidv4()
 
     // Generate callback URL
     // In development, use the frontend URL (Vite proxy handles /api routes)
@@ -91,10 +92,10 @@ router.post('/request', async (req: Request, res: Response): Promise<void> => {
     const { oauthToken, oauthTokenSecret, authorizeUrl } =
       await discogsOAuthClient.getRequestToken(callbackUrl)
 
-    // Store token secret with session ID (keyed by oauth_token for callback lookup)
+    // Store token secret with unique state ID (keyed by oauth_token for callback lookup)
     oauthStateStore.set(oauthToken, {
       oauthTokenSecret,
-      sessionId: req.sessionID,
+      stateId,
       timestamp: Date.now()
     })
 
@@ -161,7 +162,7 @@ router.get('/callback', async (req: Request, res: Response): Promise<void> => {
     // Clean up OAuth state
     oauthStateStore.delete(oauth_token as string)
 
-    // Store the OAuth result temporarily (keyed by the original sessionId)
+    // Store the OAuth result temporarily (keyed by the unique stateId)
     // The frontend will claim it using a separate endpoint
     const result: OAuthResult = {
       discogsUsername: discogsIdentity.username,
@@ -171,7 +172,7 @@ router.get('/callback', async (req: Request, res: Response): Promise<void> => {
       timestamp: Date.now()
     }
 
-    oauthResultStore.set(storedState.sessionId, result)
+    oauthResultStore.set(storedState.stateId, result)
 
     // Track success and update metrics
     monitoringService.trackOAuthSuccess()
@@ -180,10 +181,10 @@ router.get('/callback', async (req: Request, res: Response): Promise<void> => {
       oauthPendingResults: oauthResultStore.size
     })
 
-    // Redirect to frontend with session ID in URL
+    // Redirect to frontend with unique state ID in URL
     // Frontend will use this to claim the OAuth result
     const frontendUrl = process.env.VITE_CLIENT_URL || 'http://localhost:5173'
-    res.redirect(`${frontendUrl}/collection?discogs_auth_session=${storedState.sessionId}`)
+    res.redirect(`${frontendUrl}/collection?discogs_auth_state=${storedState.stateId}`)
   } catch (error) {
     console.error('OAuth callback error:', error)
     monitoringService.trackOAuthFailure()
@@ -201,21 +202,21 @@ router.get('/callback', async (req: Request, res: Response): Promise<void> => {
  */
 router.post('/claim', async (req: Request, res: Response): Promise<void> => {
   try {
-    const { authSessionId } = req.body
+    const { authStateId } = req.body
 
-    if (!authSessionId) {
+    if (!authStateId) {
       res.status(400).json({
-        error: 'Missing authSessionId',
-        message: 'authSessionId parameter is required'
+        error: 'Missing authStateId',
+        message: 'authStateId parameter is required'
       })
       return
     }
 
     // Retrieve the OAuth result from temporary store
-    const oauthResult = oauthResultStore.get(authSessionId)
+    const oauthResult = oauthResultStore.get(authStateId)
 
     if (!oauthResult) {
-      console.error('OAuth result not found for session:', authSessionId)
+      console.error('OAuth result not found for state:', authStateId)
       res.status(404).json({
         error: 'OAuth result not found',
         message: 'OAuth result expired or invalid. Please try connecting again.'
@@ -226,11 +227,17 @@ router.post('/claim', async (req: Request, res: Response): Promise<void> => {
     // Check if result is not too old (5 minutes max)
     const age = Date.now() - oauthResult.timestamp
     if (age > 5 * 60 * 1000) {
-      oauthResultStore.delete(authSessionId)
+      oauthResultStore.delete(authStateId)
       res.status(410).json({
         error: 'OAuth result expired',
         message: 'OAuth result expired. Please try connecting again.'
       })
+      return
+    }
+
+    // Ensure session exists
+    if (!req.session) {
+      res.status(500).json({ error: 'Session not initialized' })
       return
     }
 
@@ -243,7 +250,7 @@ router.post('/claim', async (req: Request, res: Response): Promise<void> => {
     }
 
     // Clean up temporary store
-    oauthResultStore.delete(authSessionId)
+    oauthResultStore.delete(authStateId)
 
     // Update metrics
     monitoringService.updateMetrics({

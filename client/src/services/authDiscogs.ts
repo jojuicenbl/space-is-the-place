@@ -42,11 +42,11 @@ export async function requestDiscogsAuth(): Promise<void> {
  * Claims the OAuth result after callback redirect
  * This stores the Discogs tokens in the current session
  */
-export async function claimDiscogsAuth(authSessionId: string): Promise<string> {
+export async function claimDiscogsAuth(authStateId: string): Promise<string> {
   try {
     const response = await axios.post<DiscogsAuthClaimResponse>(
       `${API_URL}/api/auth/discogs/claim`,
-      { authSessionId },
+      { authStateId },
       { withCredentials: true } // Important: send cookies
     )
 
