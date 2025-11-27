@@ -7,10 +7,12 @@
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
-    "forceConsistentCasingInFileNames": true
+    "forceConsistentCasingInFileNames": true,
+    "typeRoots": ["./node_modules/@types", "./types"]
   },
-  "include": ["**/*"],
+  "include": ["**/*", "types/**/*"],
   "exclude": ["node_modules", "dist", "__tests__"],
-  "allowSyntheticDefaultImports": true,
-  "esModuleInterop": true
+  "ts-node": {
+    "files": true
+  }
 }

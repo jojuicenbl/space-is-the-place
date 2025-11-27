@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, nextTick, computed } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import VinylCard from '../components/VinylCard.vue'
 
 import Pager from '@/components/UI/Pager.vue'
@@ -11,9 +11,10 @@ import SkeletonLoader from '@/components/UI/SkeletonLoader.vue'
 import Button from '@/components/UI/Button.vue'
 import { useCollection } from '@/composables/useCollection'
 import { useUserStore } from '@/stores/userStore'
-import { requestDiscogsAuth } from '@/services/authDiscogs'
+import { requestDiscogsAuth, claimDiscogsAuth } from '@/services/authDiscogs'
 
 const route = useRoute()
+const router = useRouter()
 const userStore = useUserStore()
 
 // UI state
@@ -129,6 +130,26 @@ const handlePageChange = async (page: number) => {
 }
 
 onMounted(async () => {
+  // FIRST: Check if user just connected their Discogs account
+  const authSessionId = route.query.discogs_auth_session as string | undefined
+
+  if (authSessionId) {
+    try {
+      // Claim the OAuth result and store in current session
+      await claimDiscogsAuth(authSessionId)
+
+      // Reload user data to get updated Discogs info
+      await userStore.loadUser()
+
+      // Remove the query parameter and set mode to user
+      await router.replace({ path: '/collection', query: { mode: 'user' } })
+    } catch (error) {
+      console.error('Failed to claim Discogs auth:', error)
+      alert('Failed to complete Discogs connection. Please try again.')
+      await router.replace({ path: '/collection', query: { mode: 'demo' } })
+    }
+  }
+
   // Wait for userStore to be initialized before proceeding
   // This prevents race conditions when returning from OAuth
   let attempts = 0

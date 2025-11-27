@@ -2,7 +2,9 @@ import { ref } from 'vue'
 import { defineStore } from 'pinia'
 import axios from 'axios'
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000'
+// In development, use relative URLs so Vite proxy handles it (same-origin)
+// In production, use the full API URL
+const API_URL = import.meta.env.DEV ? '' : (import.meta.env.VITE_API_URL || 'http://localhost:3000')
 
 export interface UserState {
   isAuthenticated: boolean
@@ -43,7 +45,9 @@ export const useUserStore = defineStore('user', () => {
 
     isLoading.value = true
     try {
-      const response = await axios.get<MeApiResponse>(`${API_URL}/api/me`)
+      const response = await axios.get<MeApiResponse>(`${API_URL}/api/me`, {
+        withCredentials: true // Important: send session cookies
+      })
       const data = response.data
 
       isAuthenticated.value = true

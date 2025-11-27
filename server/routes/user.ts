@@ -4,18 +4,17 @@
  */
 
 import { Router, Request, Response } from 'express'
-import { userService } from '../services/userService'
 
 const router = Router()
 
 /**
  * GET /api/me
- * Returns current user's public data
+ * Returns current session's public data
  *
  * Response format:
  * {
- *   "id": "user-uuid",
- *   "email": "user@example.com",
+ *   "id": "session-id",
+ *   "email": "session@visitor.local",
  *   "discogs": {
  *     "isLinked": true | false,
  *     "username": "discogs-username" | null
@@ -30,20 +29,18 @@ const router = Router()
  */
 router.get('/me', async (req: Request, res: Response): Promise<void> => {
   try {
-    // Get current user (using default user for now)
-    // TODO: Replace with session-based auth when full auth system is implemented
-    const currentUser = userService.getDefaultUser()
+    // Get Discogs auth from session
+    const discogsAuth = req.session.discogsAuth
 
-    if (!currentUser) {
-      res.status(401).json({
-        error: 'Unauthorized',
-        message: 'No user found'
-      })
-      return
+    // Return public data (strips sensitive OAuth tokens)
+    const publicData = {
+      id: req.sessionID,
+      email: 'session@visitor.local', // Placeholder for session-based visitors
+      discogs: {
+        isLinked: !!discogsAuth,
+        username: discogsAuth?.discogsUsername || null
+      }
     }
-
-    // Convert to public data (strips sensitive OAuth tokens)
-    const publicData = userService.toPublicData(currentUser)
 
     res.json(publicData)
   } catch (error) {
@@ -57,34 +54,23 @@ router.get('/me', async (req: Request, res: Response): Promise<void> => {
 
 /**
  * POST /api/me/discogs/unlink
- * Unlink Discogs account from current user
+ * Unlink Discogs account from current session
  */
 router.post('/me/discogs/unlink', async (req: Request, res: Response): Promise<void> => {
   try {
-    // Get current user
-    const currentUser = userService.getDefaultUser()
-
-    if (!currentUser) {
-      res.status(401).json({
-        error: 'Unauthorized',
-        message: 'No user found'
-      })
-      return
-    }
-
-    // Remove Discogs auth
-    const updatedUser = userService.removeDiscogsAuth(currentUser.id)
-
-    if (!updatedUser) {
-      res.status(500).json({
-        error: 'Failed to unlink account',
-        message: 'Unable to remove Discogs authentication'
-      })
-      return
-    }
+    // Remove Discogs auth from session
+    req.session.discogsAuth = undefined
 
     // Return updated public data
-    const publicData = userService.toPublicData(updatedUser)
+    const publicData = {
+      id: req.sessionID,
+      email: 'session@visitor.local',
+      discogs: {
+        isLinked: false,
+        username: null
+      }
+    }
+
     res.json({
       success: true,
       user: publicData,

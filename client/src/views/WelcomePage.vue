@@ -3,7 +3,7 @@ import Button from '@/components/UI/Button.vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ref, onMounted } from 'vue'
 import { getCollection, getFolders } from '@/services/collectionApi'
-import { requestDiscogsAuth } from '@/services/authDiscogs'
+import { requestDiscogsAuth, claimDiscogsAuth } from '@/services/authDiscogs'
 import { useUserStore } from '@/stores/userStore'
 import axios from 'axios'
 
@@ -18,20 +18,33 @@ const showSuccessMessage = ref(false)
 
 // Check if user just connected their Discogs account
 onMounted(async () => {
-  if (route.query.discogs_connected === '1') {
-    showSuccessMessage.value = true
-    // Reload user data to get updated Discogs info
-    await userStore.loadUser()
-    // Remove the query parameter
-    await router.replace({ query: {} })
+  const authSessionId = route.query.discogs_auth_session as string | undefined
 
-    // Auto-redirect to user's collection after 1.5 seconds
-    setTimeout(() => {
-      if (userStore.discogsIsLinked) {
-        userStore.setCollectionMode('user')
-        router.push('/collection?mode=user')
-      }
-    }, 1500)
+  if (authSessionId) {
+    try {
+      // Claim the OAuth result and store in current session
+      await claimDiscogsAuth(authSessionId)
+
+      showSuccessMessage.value = true
+
+      // Reload user data to get updated Discogs info
+      await userStore.loadUser()
+
+      // Remove the query parameter
+      await router.replace({ query: {} })
+
+      // Auto-redirect to user's collection after 1.5 seconds
+      setTimeout(() => {
+        if (userStore.discogsIsLinked) {
+          userStore.setCollectionMode('user')
+          router.push('/collection?mode=user')
+        }
+      }, 1500)
+    } catch (error) {
+      console.error('Failed to claim Discogs auth:', error)
+      alert('Failed to complete Discogs connection. Please try again.')
+      await router.replace({ query: {} })
+    }
   }
 })
 
