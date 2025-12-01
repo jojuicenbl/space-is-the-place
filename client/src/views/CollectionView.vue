@@ -131,12 +131,12 @@ const handlePageChange = async (page: number) => {
 
 onMounted(async () => {
   // FIRST: Check if user just connected their Discogs account
-  const authStateId = route.query.discogs_auth_state as string | undefined
+  const authSessionId = route.query.discogs_auth_session as string | undefined
 
-  if (authStateId) {
+  if (authSessionId) {
     try {
       // Claim the OAuth result and store in current session
-      await claimDiscogsAuth(authStateId)
+      await claimDiscogsAuth(authSessionId)
 
       // Reload user data to get updated Discogs info
       await userStore.loadUser()

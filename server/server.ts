@@ -11,11 +11,34 @@ import { URL } from 'url'
 
 const app = express()
 
-const allowedOrigins = [
-  process.env.VITE_CLIENT_URL,        // prod : https://spaceistheplace.app (Render)
-  'http://localhost:5173',            // dev Vite
-  'http://localhost:4173'             // dev preview Vite (npm run preview)
-].filter(Boolean) as string[]
+const isProduction = process.env.NODE_ENV === 'production' || process.env.RENDER === 'true'
+const clientUrl = process.env.VITE_CLIENT_URL || 'http://localhost:5173'
+const apiBaseUrl =
+  process.env.API_BASE_URL ||
+  process.env.RENDER_EXTERNAL_URL ||
+  process.env.VITE_API_URL ||
+  'http://localhost:3000'
+const extraOrigins =
+  process.env.CORS_ALLOWED_ORIGINS?.split(',').map(origin => origin.trim()).filter(Boolean) || []
+
+const allowedOrigins = Array.from(
+  new Set(
+    [
+      clientUrl, // Netlify / prod frontend
+      ...extraOrigins, // Additional origins (preview deploys, etc.)
+      'http://localhost:5173', // dev Vite
+      'http://localhost:4173' // dev preview Vite (npm run preview)
+    ].filter(Boolean)
+  )
+)
+
+if (isProduction) {
+  // Required so secure cookies work behind Render/Netlify proxies
+  app.set('trust proxy', 1)
+}
+
+console.log('CORS allowed origins:', allowedOrigins)
+console.log('API base URL (for reference):', apiBaseUrl)
 
 // Security: Configure CORS properly
 const corsOptions: cors.CorsOptions = {
@@ -38,25 +61,47 @@ const corsOptions: cors.CorsOptions = {
 app.use(cors(corsOptions))
 app.use(express.json())
 
+const sessionCookieConfig: session.CookieOptions = {
+  httpOnly: true,
+  secure: isProduction, // Required for cross-site cookies over HTTPS
+  sameSite: (isProduction ? 'none' : 'lax') as session.CookieOptions['sameSite'],
+  maxAge: 1000 * 60 * 60 * 24 * 7, // 7 days
+  ...(process.env.COOKIE_DOMAIN ? { domain: process.env.COOKIE_DOMAIN } : {})
+}
+console.log('Session cookie config:', {
+  sameSite: sessionCookieConfig.sameSite,
+  secure: sessionCookieConfig.secure,
+  domain: sessionCookieConfig.domain || 'default',
+  trustProxy: isProduction
+})
+
 // Session middleware for per-visitor Discogs OAuth isolation
 app.use(
   session({
     secret: process.env.SESSION_SECRET || 'dev-secret-change-in-production',
     resave: false,
     saveUninitialized: true, // Create session even if empty (needed for OAuth flow)
-    cookie: {
-      httpOnly: true,
-      // secure MUST be true when sameSite is 'none'
-      secure: process.env.NODE_ENV === 'production',
-      // 'none' required for cross-domain cookies (frontend and backend on different domains)
-      // In dev: 'lax' works because localhost proxy makes it same-origin
-      // In prod: 'none' needed because spaceistheplace.app ≠ space-is-the-place-api.onrender.com
-      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
-      maxAge: 1000 * 60 * 60 * 24 * 7 // 7 days
-    },
+    cookie: sessionCookieConfig,
     name: 'sessionId' // Custom cookie name for clarity
   })
 )
+
+// Session observability (helps debug prod cookie issues)
+app.use((req, _res, next) => {
+  if (req.path.startsWith('/api')) {
+    const discogsUser = req.session?.discogsAuth?.discogsUsername
+    console.log('[session]', {
+      path: req.path,
+      method: req.method,
+      origin: req.headers.origin || 'none',
+      hasCookieHeader: Boolean(req.headers.cookie),
+      sessionId: req.sessionID,
+      hasSession: Boolean(req.session),
+      discogsUser: discogsUser || 'none'
+    })
+  }
+  next()
+})
 
 import { sendContactMail } from './services/contactService'
 import { monitoringService } from './services/monitoringService'
