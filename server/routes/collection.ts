@@ -47,6 +47,20 @@ router.get('/', async (req: Request, res: Response): Promise<void> => {
     const sortOrder = (req.query.order as SortOrder) || 'desc'
     const search = req.query.search as string | undefined
 
+    console.log('[collection][get]', {
+      mode,
+      page,
+      perPage,
+      folderId,
+      sort,
+      sortOrder,
+      search: search || 'none',
+      sessionId: req.sessionID,
+      discogsUser: req.session?.discogsAuth?.discogsUsername || 'none',
+      origin: req.headers.origin || 'none',
+      hasCookieHeader: Boolean(req.headers.cookie)
+    })
+
     // Validate mode
     if (mode !== 'demo' && mode !== 'user') {
       res.status(400).json({

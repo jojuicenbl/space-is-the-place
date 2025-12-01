@@ -13,6 +13,22 @@ import { discogsOAuthClient } from '../services/discogsOAuthClient'
 import { monitoringService } from '../services/monitoringService'
 
 const router = Router()
+const isProduction = process.env.NODE_ENV === 'production' || process.env.RENDER === 'true'
+const frontendUrl = process.env.VITE_CLIENT_URL || 'http://localhost:5173'
+const apiBaseUrl =
+  process.env.API_BASE_URL ||
+  process.env.RENDER_EXTERNAL_URL ||
+  process.env.VITE_API_URL ||
+  'http://localhost:3000'
+
+const getCallbackUrl = () => {
+  // In production, hit the backend directly so session cookies are not dropped
+  if (isProduction) {
+    return `${apiBaseUrl}/api/auth/discogs/callback`
+  }
+  // In dev, go through Vite proxy to keep same-site cookies
+  return `${frontendUrl}/api/auth/discogs/callback`
+}
 
 /**
  * Temporary in-memory store for OAuth tokens
@@ -74,15 +90,22 @@ router.post('/request', async (req: Request, res: Response): Promise<void> => {
 
     // Ensure session exists (create it if needed)
     if (!req.session) {
+      console.error('[oauth][request] Missing session object', {
+        sessionId: req.sessionID,
+        origin: req.headers.origin || 'none'
+      })
       res.status(500).json({ error: 'Session not initialized' })
       return
     }
 
     // Generate callback URL
-    // In development, use the frontend URL (Vite proxy) to maintain session
-    // In production, use the backend URL
-    const frontendUrl = process.env.VITE_CLIENT_URL || 'http://localhost:5173'
-    const callbackUrl = `${frontendUrl}/api/auth/discogs/callback`
+    const callbackUrl = getCallbackUrl()
+    console.log('[oauth][request] start', {
+      sessionId: req.sessionID,
+      origin: req.headers.origin || 'none',
+      hasCookieHeader: Boolean(req.headers.cookie),
+      callbackUrl
+    })
 
     // Get request token from Discogs
     const { oauthToken, oauthTokenSecret, authorizeUrl } =
@@ -93,6 +116,13 @@ router.post('/request', async (req: Request, res: Response): Promise<void> => {
       oauthTokenSecret,
       sessionId: req.sessionID,
       timestamp: Date.now()
+    })
+
+    console.log('[oauth][request] token issued', {
+      sessionId: req.sessionID,
+      oauthToken,
+      authorizeUrl,
+      storedForSession: req.sessionID
     })
 
     // Update monitoring metrics
@@ -122,6 +152,14 @@ router.post('/request', async (req: Request, res: Response): Promise<void> => {
 router.get('/callback', async (req: Request, res: Response): Promise<void> => {
   try {
     const { oauth_token, oauth_verifier } = req.query
+
+    console.log('[oauth][callback] received', {
+      sessionId: req.sessionID,
+      origin: req.headers.origin || 'none',
+      hasCookieHeader: Boolean(req.headers.cookie),
+      oauth_token,
+      hasSession: Boolean(req.session)
+    })
 
     if (!oauth_token || !oauth_verifier) {
       monitoringService.trackOAuthFailure()
@@ -170,6 +208,13 @@ router.get('/callback', async (req: Request, res: Response): Promise<void> => {
 
     oauthResultStore.set(storedState.sessionId, result)
 
+    console.log('[oauth][callback] success', {
+      callbackSessionId: req.sessionID,
+      originalSessionId: storedState.sessionId,
+      discogsUser: discogsIdentity.username,
+      pendingResults: oauthResultStore.size
+    })
+
     // Track success and update metrics
     monitoringService.trackOAuthSuccess()
     monitoringService.updateMetrics({
@@ -199,6 +244,13 @@ router.get('/callback', async (req: Request, res: Response): Promise<void> => {
 router.post('/claim', async (req: Request, res: Response): Promise<void> => {
   try {
     const { authSessionId } = req.body
+
+    console.log('[oauth][claim] start', {
+      requesterSessionId: req.sessionID,
+      authSessionId,
+      hasSession: Boolean(req.session),
+      hasDiscogs: Boolean(req.session?.discogsAuth)
+    })
 
     if (!authSessionId) {
       res.status(400).json({
@@ -258,6 +310,12 @@ router.post('/claim', async (req: Request, res: Response): Promise<void> => {
         return
       }
 
+      console.log('[oauth][claim] success', {
+        requesterSessionId: req.sessionID,
+        claimedFromSession: authSessionId,
+        discogsUser: oauthResult.discogsUsername
+      })
+
       res.json({
         success: true,
         username: oauthResult.discogsUsername
@@ -280,6 +338,11 @@ router.post('/disconnect', async (req: Request, res: Response): Promise<void> =>
   try {
     // Remove Discogs authentication from session
     req.session.discogsAuth = undefined
+
+    console.log('[oauth][disconnect]', {
+      sessionId: req.sessionID,
+      origin: req.headers.origin || 'none'
+    })
 
     res.json({
       success: true,
