@@ -105,7 +105,8 @@ app.use((req, _res, next) => {
 
 import { sendContactMail } from './services/contactService'
 import { monitoringService } from './services/monitoringService'
-import authDiscogsRouter from './routes/authDiscogs'
+// OAuth disabled - demo mode only
+// import authDiscogsRouter from './routes/authDiscogs'
 import userRouter from './routes/user'
 import collectionRouter from './routes/collection'
 import healthRouter from './routes/health'
@@ -208,7 +209,8 @@ app.post('/api/contact', asyncHandler(sendContactMail))
 
 // Register routes
 app.use('/api/health', healthRouter)
-app.use('/api/auth/discogs', authDiscogsRouter)
+// OAuth disabled - demo mode only
+// app.use('/api/auth/discogs', authDiscogsRouter)
 app.use('/api', userRouter)
 app.use('/api/collection', collectionRouter)
 // Backwards compatibility for /api/folders (redirects to /api/collection/folders)
@@ -236,13 +238,10 @@ app.listen(PORT, () => {
   console.log('📡 Endpoints:')
   console.log('  - GET  /api/health              (monitoring)')
   console.log('  - GET  /api/health/metrics      (detailed metrics)')
-  console.log('  - GET  /api/collection?mode=demo|user')
+  console.log('  - GET  /api/collection')
   console.log('  - GET  /api/collection/search')
   console.log('  - GET  /api/collection/folders')
   console.log('  - POST /api/collection/refresh')
   console.log('  - GET  /api/me')
-  console.log('  - POST /api/auth/discogs/request')
-  console.log('  - GET  /api/auth/discogs/callback')
-  console.log('  - POST /api/auth/discogs/claim')
   console.log('\n💡 View metrics: http://localhost:' + PORT + '/api/health\n')
 })

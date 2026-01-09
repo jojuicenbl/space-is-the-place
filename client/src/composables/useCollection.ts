@@ -1,4 +1,4 @@
-import { ref, computed, watch, type Ref } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useDebounceFn } from '@vueuse/core'
 import axios from 'axios'
@@ -6,7 +6,8 @@ import { getCollection, searchCollection, getFolders } from '@/services/collecti
 import type { CollectionRelease } from '@/types/models/Release'
 import type { DiscogsFolder, SortField, SortOrder } from '@/services/collectionApi'
 
-export function useCollection(mode?: Ref<'demo' | 'user'>) {
+// Demo mode only - OAuth disabled
+export function useCollection() {
   const route = useRoute()
   const router = useRouter()
 
@@ -30,11 +31,6 @@ export function useCollection(mode?: Ref<'demo' | 'user'>) {
   const isSearchActive = ref(false)
   const lastSearchQuery = ref('')
 
-  // Collection mode state from server response
-  // Initialize with the passed mode parameter to avoid flashing the wrong banner
-  const collectionMode = ref<'demo' | 'user' | 'unlinked' | 'empty'>(mode?.value || 'demo')
-  const discogsUsername = ref<string | null>(null)
-
   // Filters state - initialized from URL params
   const currentFolder = ref<number>(Number(route.query.folder) || 0)
   const currentSort = ref<SortField>((route.query.sort as SortField) || 'added')
@@ -46,11 +42,6 @@ export function useCollection(mode?: Ref<'demo' | 'user'>) {
   const isSearching = computed(() => {
     return searchQuery.value.trim().length > 0
   })
-
-  const isDemo = computed(() => collectionMode.value === 'demo')
-  const isUser = computed(() => collectionMode.value === 'user')
-  const isUnlinked = computed(() => collectionMode.value === 'unlinked')
-  const isEmpty = computed(() => collectionMode.value === 'empty')
 
   // Update URL params when filters change
   const updateUrlParams = () => {
@@ -81,8 +72,7 @@ export function useCollection(mode?: Ref<'demo' | 'user'>) {
         folderId: currentFolder.value,
         sort: currentSort.value,
         sortOrder: currentSortOrder.value,
-        search: searchQuery.value.trim() || undefined,
-        mode: mode?.value
+        search: searchQuery.value.trim() || undefined
       }
 
       let result
@@ -110,16 +100,6 @@ export function useCollection(mode?: Ref<'demo' | 'user'>) {
         totalPages.value = 0
         totalItems.value = 0
         currentPageItems.value = 0
-      }
-
-      // Update collection mode from server response
-      if (result.mode) {
-        collectionMode.value = result.mode
-      }
-
-      // Update Discogs username if present
-      if (result.discogsUsername) {
-        discogsUsername.value = result.discogsUsername
       }
 
       // Update folders if they come with the response
@@ -162,8 +142,6 @@ export function useCollection(mode?: Ref<'demo' | 'user'>) {
       searchQuery.value = q
       isSearchActive.value = false
       currentPage.value = 1
-      // recharge la page normale si tu veux ; sinon vide les résultats:
-      // releases.value = []; totalItems.value = 0; totalPages.value = 0
       return
     }
 
@@ -176,8 +154,7 @@ export function useCollection(mode?: Ref<'demo' | 'user'>) {
         perPage: 48,
         folderId: currentFolder.value,
         sort: currentSort.value,
-        sortOrder: currentSortOrder.value,
-        mode: mode?.value
+        sortOrder: currentSortOrder.value
       }
       const res = await searchCollection(q.trim(), filters, { signal: controller.signal })
       releases.value = res.releases || []
@@ -193,19 +170,8 @@ export function useCollection(mode?: Ref<'demo' | 'user'>) {
 
       isSearchActive.value = true
       lastSearchQuery.value = q.trim()
-
-      // Update collection mode from server response
-      if (res.mode) {
-        collectionMode.value = res.mode
-      }
-
-      // Update Discogs username if present
-      if (res.discogsUsername) {
-        discogsUsername.value = res.discogsUsername
-      }
     } catch (e) {
       // Ignore cancellation errors (user typed before previous request finished)
-      // These are expected and should not be treated as errors
       if (!axios.isCancel(e)) {
         console.error('Search error:', e)
 
@@ -222,7 +188,6 @@ export function useCollection(mode?: Ref<'demo' | 'user'>) {
         isRateLimited.value = false
         error.value = 'Failed to load collection'
       }
-      // If canceled, silently ignore - this is normal behavior with debounced search
     } finally {
       isLoading.value = false
       isInitialized.value = true
@@ -242,13 +207,13 @@ export function useCollection(mode?: Ref<'demo' | 'user'>) {
     isLoading.value = true
     error.value = null
     try {
-      await fetchCollection(false) // <- ta méthode existante de fetch "normal"
+      await fetchCollection(false)
     } finally {
       isLoading.value = false
       isInitialized.value = true
     }
 
-    // (optionnel) Nettoyer l’URL: retirer le paramètre "q"
+    // Nettoyer l'URL: retirer le paramètre "q"
     router.replace({ query: { ...route.query, q: undefined } })
   }
 
@@ -339,13 +304,6 @@ export function useCollection(mode?: Ref<'demo' | 'user'>) {
     updateUrlParams()
   })
 
-  // Watch for mode changes from parent
-  if (mode) {
-    watch(mode, (newMode) => {
-      collectionMode.value = newMode
-    })
-  }
-
   return {
     // State
     releases,
@@ -363,14 +321,6 @@ export function useCollection(mode?: Ref<'demo' | 'user'>) {
     // Search state
     isSearchActive: isSearching,
     lastSearchQuery,
-
-    // Collection mode state
-    collectionMode,
-    discogsUsername,
-    isDemo,
-    isUser,
-    isUnlinked,
-    isEmpty,
 
     // Filters
     currentFolder,

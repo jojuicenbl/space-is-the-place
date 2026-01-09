@@ -1,13 +1,10 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { useUserStore } from '@/stores/userStore'
 
 const router = useRouter()
 const route = useRoute()
-const userStore = useUserStore()
 const isMobileMenuOpen = ref(false)
-const isLoggingOut = ref(false)
 
 const goToHome = () => {
   router.push('/collection')
@@ -31,22 +28,6 @@ const goToContact = () => {
 
 const isCurrentRoute = (routeName: string) => {
   return route.name === routeName
-}
-
-const handleLogout = async () => {
-  if (isLoggingOut.value) return
-
-  isLoggingOut.value = true
-  try {
-    await userStore.disconnect()
-    isMobileMenuOpen.value = false
-    // Navigate to collection in demo mode
-    router.push('/collection?mode=demo')
-  } catch (error) {
-    console.error('Logout failed:', error)
-  } finally {
-    isLoggingOut.value = false
-  }
 }
 
 const toggleMobileMenu = () => {
@@ -127,16 +108,6 @@ onUnmounted(() => {
             Contact
           </button>
         </div>
-
-        <!-- Logout Button (Desktop) -->
-        <button
-          v-if="userStore.discogsIsLinked"
-          class="logout-btn ml-3 lg:ml-6 px-4 py-2 lg:px-5 rounded-full text-sm lg:text-base font-medium transition-all duration-300 border-2 border-red-500/40 bg-red-500/5 text-red-600 dark:text-red-400 hover:border-red-500 hover:bg-red-500/15 hover:scale-105 active:scale-95"
-          :disabled="isLoggingOut"
-          @click="handleLogout"
-        >
-          {{ isLoggingOut ? 'Logging out...' : 'Log Out' }}
-        </button>
       </div>
 
       <!-- Mobile Menu Button -->
@@ -202,16 +173,6 @@ onUnmounted(() => {
           >
             Contact
           </button>
-
-          <!-- Logout Button (Mobile) -->
-          <button
-            v-if="userStore.discogsIsLinked"
-            class="logout-btn-mobile w-full text-center px-4 py-3 mt-3 rounded-full text-base font-medium transition-all duration-300 border-2 border-red-500/40 bg-red-500/5 text-red-600 dark:text-red-400 hover:border-red-500 hover:bg-red-500/15 active:scale-95"
-            :disabled="isLoggingOut"
-            @click="handleLogout"
-          >
-            {{ isLoggingOut ? 'Logging out...' : 'Log Out' }}
-          </button>
         </div>
       </div>
     </Transition>
@@ -246,21 +207,6 @@ onUnmounted(() => {
   opacity: 0.3;
 }
 
-/* Logout button styles */
-.logout-btn {
-  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.15);
-}
-
-.logout-btn:hover {
-  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.25);
-}
-
-.logout-btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-  transform: none !important;
-}
-
 /* Mobile menu transition */
 .mobile-menu-enter-active,
 .mobile-menu-leave-active {
@@ -282,20 +228,5 @@ onUnmounted(() => {
 /* Mobile nav links */
 .nav-link-mobile {
   letter-spacing: 0.01em;
-}
-
-/* Mobile logout button */
-.logout-btn-mobile {
-  box-shadow: 0 2px 10px rgba(239, 68, 68, 0.2);
-}
-
-.logout-btn-mobile:hover {
-  box-shadow: 0 4px 14px rgba(239, 68, 68, 0.3);
-}
-
-.logout-btn-mobile:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-  transform: none !important;
 }
 </style>

@@ -31,7 +31,6 @@ export interface CollectionFilters {
   sort?: SortField
   sortOrder?: SortOrder
   search?: string
-  mode?: 'demo' | 'user'
 }
 
 export interface CollectionApiResponse {
@@ -49,15 +48,13 @@ export interface CollectionApiResponse {
     }
   }
   folders: DiscogsFolder[]
-  mode?: 'demo' | 'user' | 'unlinked' | 'empty'
-  discogsUsername?: string
 }
 
 export interface SearchApiResponse extends CollectionApiResponse {
   totalResults: number
 }
 
-// Get paginated collection with filters
+// Get paginated collection with filters (demo mode only)
 export const getCollection = async (
   filters: CollectionFilters = {},
   opts?: { signal?: AbortSignal }
@@ -71,7 +68,6 @@ export const getCollection = async (
     if (filters.sort) params.append('sort', filters.sort)
     if (filters.sortOrder) params.append('order', filters.sortOrder)
     if (filters.search) params.append('search', filters.search)
-    if (filters.mode) params.append('mode', filters.mode)
 
     const response = await collectionApi.get<CollectionApiResponse>(
       `/api/collection?${params.toString()}`,
@@ -89,11 +85,11 @@ export const getCollection = async (
   }
 }
 
-// Search collection
+// Search collection (demo mode only)
 export const searchCollection = async (
   query: string,
   filters: CollectionFilters = {},
-  opts?: { signal?: AbortSignal } // +++
+  opts?: { signal?: AbortSignal }
 ): Promise<SearchApiResponse> => {
   try {
     const params = new URLSearchParams()
@@ -104,16 +100,14 @@ export const searchCollection = async (
     if (filters.folderId) params.append('folder', filters.folderId.toString())
     if (filters.sort) params.append('sort', filters.sort)
     if (filters.sortOrder) params.append('order', filters.sortOrder)
-    if (filters.mode) params.append('mode', filters.mode)
 
     const response = await collectionApi.get<SearchApiResponse>(
       `/api/collection/search?${params.toString()}`,
-      { signal: opts?.signal } // +++
+      { signal: opts?.signal }
     )
     return response.data
   } catch (error) {
     // If the request was canceled, re-throw the error as-is without logging
-    // This allows the caller to handle cancellations appropriately
     if (axios.isCancel(error)) {
       throw error
     }
