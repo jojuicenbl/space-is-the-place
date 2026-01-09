@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, nextTick, computed } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
 import VinylCard from '../components/VinylCard.vue'
 
 import Pager from '@/components/UI/Pager.vue'
@@ -10,12 +9,6 @@ import SearchIndicator from '@/components/UI/SearchIndicator.vue'
 import SkeletonLoader from '@/components/UI/SkeletonLoader.vue'
 import Button from '@/components/UI/Button.vue'
 import { useCollection } from '@/composables/useCollection'
-import { useUserStore } from '@/stores/userStore'
-import { requestDiscogsAuth, claimDiscogsAuth } from '@/services/authDiscogs'
-
-const route = useRoute()
-const router = useRouter()
-const userStore = useUserStore()
 
 // UI state
 const isFiltersVisible = ref(true)
@@ -70,7 +63,7 @@ const scrollToCollection = async () => {
   }
 }
 
-// Use collection composable - pass userStore.collectionMode as a ref
+// Use collection composable - always demo mode
 const {
   releases,
   folders,
@@ -86,9 +79,6 @@ const {
   currentPage,
   totalPages,
   isSearchActive,
-  isDemo,
-  isUnlinked,
-  isEmpty,
   fetchFolders,
   fetchCollection,
   initializeFromUrl,
@@ -97,27 +87,7 @@ const {
   handleSortChange,
   handleSortOrderChange,
   handlePageChange: originalHandlePageChange
-} = useCollection(computed(() => userStore.collectionMode))
-
-// Handle mode toggle
-const handleModeToggle = async (mode: 'demo' | 'user') => {
-  if (mode === 'user' && !userStore.discogsIsLinked) {
-    // Cannot switch to user mode without linked Discogs account
-    return
-  }
-  userStore.setCollectionMode(mode)
-  // Reload collection with new mode
-  await fetchCollection(true)
-}
-
-const handleConnectDiscogs = async () => {
-  try {
-    await requestDiscogsAuth()
-  } catch (error) {
-    console.error('Failed to connect to Discogs:', error)
-    alert('Failed to connect to Discogs. Please try again.')
-  }
-}
+} = useCollection()
 
 // Enhanced page change with smooth scroll and transitions
 const handlePageChange = async (page: number) => {
@@ -130,54 +100,6 @@ const handlePageChange = async (page: number) => {
 }
 
 onMounted(async () => {
-  // FIRST: Check if user just connected their Discogs account
-  const authSessionId = route.query.discogs_auth_session as string | undefined
-
-  if (authSessionId) {
-    try {
-      // Claim the OAuth result and store in current session
-      await claimDiscogsAuth(authSessionId)
-
-      // Reload user data to get updated Discogs info
-      await userStore.loadUser()
-
-      // Remove the query parameter and set mode to user
-      await router.replace({ path: '/collection', query: { mode: 'user' } })
-    } catch (error) {
-      console.error('Failed to claim Discogs auth:', error)
-      alert('Failed to complete Discogs connection. Please try again.')
-      await router.replace({ path: '/collection', query: { mode: 'demo' } })
-    }
-  }
-
-  // Wait for userStore to be initialized before proceeding
-  // This prevents race conditions when returning from OAuth
-  let attempts = 0
-  while (!userStore.isInitialized && attempts < 50) {
-    await new Promise(resolve => setTimeout(resolve, 100))
-    attempts++
-  }
-
-  // Initialize collection mode from URL if present, otherwise use userStore default
-  const modeParam = route.query.mode as 'demo' | 'user' | undefined
-
-  if (modeParam === 'user') {
-    // User explicitly requested their collection
-    if (userStore.discogsIsLinked) {
-      userStore.setCollectionMode('user')
-    } else {
-      // Not linked, force demo
-      userStore.setCollectionMode('demo')
-    }
-  } else if (modeParam === 'demo') {
-    // User explicitly requested demo
-    userStore.setCollectionMode('demo')
-  } else {
-    // No mode param: respect userStore's default
-    // (which is 'user' if Discogs linked, 'demo' otherwise)
-    // Don't override it
-  }
-
   // Show content immediately to display skeleton loader during initial load
   // Only filters and pager use staggered animation
   isFiltersVisible.value = false
@@ -217,31 +139,6 @@ onUnmounted(() => {
         <!-- Page Header - always visible -->
         <div class="collection-header">
           <h1 class="page-title">THE COLLECTION</h1>
-
-          <!-- Mode Toggle -->
-          <div class="mode-toggle-container">
-            <div class="mode-toggle">
-              <Button
-                variant="ghost"
-                size="sm"
-                :class="['mode-btn', { active: userStore.collectionMode === 'user' }]"
-                :disabled="!userStore.discogsIsLinked"
-                :title="!userStore.discogsIsLinked ? 'Connect your Discogs account to enable this' : 'View your personal collection'"
-                @click="handleModeToggle('user')"
-              >
-                My Collection
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                :class="['mode-btn', { active: userStore.collectionMode === 'demo' }]"
-                title="Explore the demo collection"
-                @click="handleModeToggle('demo')"
-              >
-                Demo Collection
-              </Button>
-            </div>
-          </div>
 
           <div class="text-center text-xs mt-2 mb-4 text-gray-600 dark:text-gray-400">
             Data provided by
@@ -309,7 +206,7 @@ onUnmounted(() => {
                 <!-- RATE LIMIT ERROR -->
                 <div v-if="isRateLimited" class="error-state">
                   <div class="text-2xl font-bold mb-3 text-gray-900 dark:text-gray-100">
-                    ⏱️ Rate Limit Reached
+                    Rate Limit Reached
                   </div>
                   <div class="text-base mb-4 text-gray-600 dark:text-gray-400 max-w-md text-center">
                     Discogs is currently throttling requests. Please try again in a few seconds.
@@ -333,52 +230,13 @@ onUnmounted(() => {
                   </div>
                 </div>
               </div>
-              <!-- EMPTY STATES -->
+              <!-- EMPTY STATE -->
               <div
                 v-else-if="releases.length === 0 && isInitialized"
                 key="empty"
                 class="flex flex-col justify-center items-center min-height-300"
               >
-                <!-- UNLINKED STATE: User tried to access their collection but hasn't linked Discogs -->
-                <div v-if="isUnlinked" class="empty-state">
-                  <div class="text-2xl font-bold mb-3 text-gray-900 dark:text-gray-100">
-                    Connect Your Discogs Account
-                  </div>
-                  <div class="text-base mb-4 text-gray-600 dark:text-gray-400 max-w-md text-center">
-                    To view your personal vinyl collection, you need to connect your Discogs account.
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="lg"
-                    class="connect-discogs-btn"
-                    @click="handleConnectDiscogs"
-                  >
-                    Connect to Discogs
-                  </Button>
-                </div>
-
-                <!-- EMPTY STATE: User has Discogs linked but collection is empty -->
-                <div v-else-if="isEmpty" class="empty-state">
-                  <div class="text-2xl font-bold mb-3 text-gray-900 dark:text-gray-100">
-                    Your Collection is Empty
-                  </div>
-                  <div class="text-base mb-4 text-gray-600 dark:text-gray-400 max-w-md text-center">
-                    Start building your vinyl collection on Discogs to see it here.
-                  </div>
-                  <a
-                    :href="`https://www.discogs.com/user/${userStore.discogsUsername}/collection`"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    class="external-link"
-                  >
-                    <Button variant="ghost" size="lg">
-                      Add Releases on Discogs
-                    </Button>
-                  </a>
-                </div>
-
-                <!-- REGULAR EMPTY: Search/filter returned no results -->
-                <div v-else class="empty-state">
+                <div class="empty-state">
                   <div class="text-xl font-semibold mb-2 text-gray-900 dark:text-gray-100">No releases found</div>
                   <div class="text-sm text-gray-600 dark:text-gray-400">
                     <span v-if="isSearchActive">Try adjusting your search terms or filters.</span>
@@ -388,17 +246,6 @@ onUnmounted(() => {
               </div>
               <!-- GRID -->
               <div v-else key="grid" class="mt-4 mb-4 w-full">
-                <!-- Demo mode banner -->
-                <Transition name="fade">
-                  <div v-if="isDemo" class="demo-banner">
-                    <span class="demo-banner-icon">ℹ️</span>
-                    <span>You are exploring a demo collection.</span>
-                    <a v-if="!userStore.discogsIsLinked" class="demo-banner-link" @click="handleConnectDiscogs">
-                      Connect your Discogs account
-                    </a>
-                  </div>
-                </Transition>
-
                 <div
                   class="vinyl-grid"
                   :class="{ 'single-item': releases.length === 1 }"
@@ -608,48 +455,6 @@ onUnmounted(() => {
 }
 
 /* ====================================
-   Mode Toggle
-   ==================================== */
-.mode-toggle-container {
-  width: 100%;
-  display: flex;
-  justify-content: center;
-  margin-top: 1rem;
-  margin-bottom: 1rem;
-}
-
-.mode-toggle {
-  display: inline-flex;
-  gap: 0.5rem;
-  padding: 0.25rem;
-  background: rgba(0, 0, 0, 0.05);
-  border-radius: 8px;
-  border: 1px solid rgba(0, 0, 0, 0.1);
-}
-
-.mode-btn {
-  padding: 0.5rem 1.5rem !important;
-  font-size: 0.875rem !important;
-  font-weight: 500 !important;
-  border-radius: 6px !important;
-  transition: all 0.2s ease !important;
-  background: transparent !important;
-  border: none !important;
-  color: var(--color-text) !important;
-}
-
-.mode-btn.active {
-  background: var(--color-background) !important;
-  color: var(--color-heading) !important;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) !important;
-}
-
-.mode-btn:disabled {
-  opacity: 0.4 !important;
-  cursor: not-allowed !important;
-}
-
-/* ====================================
    Empty States & Error States
    ==================================== */
 .empty-state,
@@ -661,45 +466,8 @@ onUnmounted(() => {
   padding: 2rem;
 }
 
-.connect-discogs-btn,
-.retry-btn,
-.external-link {
+.retry-btn {
   margin-top: 0.5rem;
-}
-
-.external-link {
-  text-decoration: none;
-}
-
-/* ====================================
-   Demo Banner
-   ==================================== */
-.demo-banner {
-  background: rgba(59, 130, 246, 0.1);
-  border: 1px solid rgba(59, 130, 246, 0.3);
-  border-radius: 8px;
-  padding: 0.75rem 1rem;
-  margin-bottom: 1rem;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-size: 0.875rem;
-  color: var(--color-text);
-}
-
-.demo-banner-icon {
-  font-size: 1.125rem;
-}
-
-.demo-banner-link {
-  color: rgb(59, 130, 246);
-  text-decoration: underline;
-  cursor: pointer;
-  margin-left: 0.25rem;
-}
-
-.demo-banner-link:hover {
-  color: rgb(37, 99, 235);
 }
 
 /* Transition styles */

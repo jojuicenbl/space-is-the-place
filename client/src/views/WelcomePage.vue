@@ -1,51 +1,13 @@
 <script setup lang="ts">
 import Button from '@/components/UI/Button.vue'
-import { useRouter, useRoute } from 'vue-router'
-import { ref, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
+import { ref } from 'vue'
 import { getCollection, getFolders } from '@/services/collectionApi'
-import { requestDiscogsAuth, claimDiscogsAuth } from '@/services/authDiscogs'
-import { useUserStore } from '@/stores/userStore'
 
 const router = useRouter()
-const route = useRoute()
-const userStore = useUserStore()
 
 const isNavigating = ref(false)
 const isPrefetching = ref(false)
-const isConnecting = ref(false)
-const showSuccessMessage = ref(false)
-
-// Check if user just connected their Discogs account
-onMounted(async () => {
-  const authSessionId = route.query.discogs_auth_session as string | undefined
-
-  if (authSessionId) {
-    try {
-      // Claim the OAuth result and store in current session
-      await claimDiscogsAuth(authSessionId)
-
-      showSuccessMessage.value = true
-
-      // Reload user data to get updated Discogs info
-      await userStore.loadUser()
-
-      // Remove the query parameter
-      await router.replace({ query: {} })
-
-      // Auto-redirect to user's collection after 1.5 seconds
-      setTimeout(() => {
-        if (userStore.discogsIsLinked) {
-          userStore.setCollectionMode('user')
-          router.push('/collection?mode=user')
-        }
-      }, 1500)
-    } catch (error) {
-      console.error('Failed to claim Discogs auth:', error)
-      alert('Failed to complete Discogs connection. Please try again.')
-      await router.replace({ query: {} })
-    }
-  }
-})
 
 // Prefetch collection data to warm the cache
 const prefetchCollectionData = async () => {
@@ -73,17 +35,10 @@ const prefetchCollectionData = async () => {
   }
 }
 
-const navigateToCollection = async (mode: 'demo' | 'user' = 'demo') => {
+const navigateToCollection = async () => {
   if (isNavigating.value) return
 
   isNavigating.value = true
-
-  // Set collection mode before navigation
-  if (mode === 'user' && userStore.discogsIsLinked) {
-    userStore.setCollectionMode('user')
-  } else {
-    userStore.setCollectionMode('demo')
-  }
 
   // Start prefetching immediately on click if not already started
   if (!isPrefetching.value) {
@@ -94,31 +49,9 @@ const navigateToCollection = async (mode: 'demo' | 'user' = 'demo') => {
   await new Promise(resolve => setTimeout(resolve, 200))
 
   try {
-    await router.push(`/collection?mode=${userStore.collectionMode}`)
+    await router.push('/collection')
   } finally {
     isNavigating.value = false
-  }
-}
-
-const handleConnectDiscogs = async () => {
-  if (isConnecting.value) return
-
-  isConnecting.value = true
-  try {
-    await requestDiscogsAuth()
-  } catch (error) {
-    console.error('Failed to connect to Discogs:', error)
-    alert('Failed to connect to Discogs. Please try again.')
-    isConnecting.value = false
-  }
-}
-
-const handleDisconnectDiscogs = async () => {
-  try {
-    await userStore.disconnect()
-  } catch (error) {
-    console.error('Failed to disconnect Discogs:', error)
-    alert('Failed to disconnect from Discogs. Please try again.')
   }
 }
 
@@ -137,57 +70,15 @@ const handleButtonHover = () => {
         <p class="cosmic-subtitle">Where we escape the limitations of earthly existence</p>
       </header>
       <section class="cta-section">
-        <!-- Success message when returning from Discogs OAuth -->
-        <Transition name="fade">
-          <div v-if="showSuccessMessage" class="success-message">
-            Discogs account connected successfully!
-          </div>
-        </Transition>
-
-        <!-- Discogs Status Badge (when connected) -->
-        <div v-if="userStore.discogsIsLinked" class="discogs-status">
-          <div class="status-badge">
-            <span class="status-icon">✓</span>
-            <span class="status-text">Connected as <strong>{{ userStore.discogsUsername }}</strong></span>
-          </div>
-          <button class="disconnect-btn" title="Disconnect Discogs account" @click="handleDisconnectDiscogs">
-            Disconnect
-          </button>
-        </div>
-
-        <!-- Connect Button (when not connected) -->
         <Button
-          v-else
           variant="ghost"
           size="lg"
-          :class="['enter-btn', 'primary-btn', { navigating: isConnecting }]"
-          :disabled="isConnecting"
-          @click="handleConnectDiscogs"
-        >
-          Connect Your Discogs Account
-        </Button>
-
-        <!-- Main CTAs -->
-        <Button
-          v-if="userStore.discogsIsLinked"
-          variant="ghost"
-          size="lg"
-          :class="['enter-btn', 'user-btn', { navigating: isNavigating }]"
+          :class="['enter-btn', { navigating: isNavigating }]"
           :disabled="isNavigating"
-          @click="navigateToCollection('user')"
-        >
-          View My Collection
-        </Button>
-
-        <Button
-          variant="ghost"
-          size="lg"
-          :class="['enter-btn', 'secondary-btn', { navigating: isNavigating }]"
-          :disabled="isNavigating"
-          @click="navigateToCollection('demo')"
+          @click="navigateToCollection"
           @mouseenter="handleButtonHover"
         >
-          Explore the Demo Collection
+          Explore my universe
         </Button>
       </section>
     </main>
@@ -307,71 +198,6 @@ const handleButtonHover = () => {
   flex-direction: column;
   gap: 1rem;
   align-items: center;
-}
-
-/* Success message */
-.success-message {
-  background: rgba(0, 255, 255, 0.1);
-  border: 1px solid rgba(0, 255, 255, 0.3);
-  color: #00ffff;
-  padding: 0.75rem 1.5rem;
-  border-radius: 8px;
-  font-size: 0.9rem;
-  letter-spacing: 0.05em;
-  margin-bottom: 0.5rem;
-}
-
-/* Discogs Status Badge */
-.discogs-status {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 50px;
-  padding: 0.75rem 1.5rem;
-  margin-bottom: 0.5rem;
-}
-
-.status-badge {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.status-icon {
-  font-size: 1.2rem;
-  color: #00ffff;
-}
-
-.status-text {
-  font-size: 0.95rem;
-  color: rgba(255, 255, 255, 0.9);
-  letter-spacing: 0.02em;
-}
-
-.status-text strong {
-  color: #ffffff;
-  font-weight: 600;
-}
-
-.disconnect-btn {
-  background: transparent;
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  color: rgba(255, 255, 255, 0.7);
-  padding: 0.4rem 1rem;
-  border-radius: 20px;
-  font-size: 0.85rem;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  letter-spacing: 0.05em;
-  font-weight: 500;
-}
-
-.disconnect-btn:hover {
-  background: rgba(255, 0, 0, 0.1);
-  border-color: rgba(255, 0, 0, 0.5);
-  color: #ff6b6b;
 }
 
 /* Bouton CTA minimal avec bordures pills */
