@@ -7,7 +7,9 @@ const API_URL = import.meta.env.DEV ? '' : (import.meta.env.VITE_API_URL || 'htt
 
 const collectionApi = axios.create({
   baseURL: API_URL,
-  timeout: 30000, // Increased timeout for initial collection loading
+  // L'API tourne sur une instance Render qui s'endort après inactivité :
+  // le premier appel doit absorber un cold start (~50s) sans timeout.
+  timeout: 90000,
   withCredentials: true // Important: send session cookies
 })
 
@@ -120,7 +122,7 @@ export const searchCollection = async (
 // Get folders
 export const getFolders = async (): Promise<FoldersResponse> => {
   try {
-    const response = await collectionApi.get<FoldersResponse>('/api/folders')
+    const response = await collectionApi.get<FoldersResponse>('/api/collection/folders')
     return response.data
   } catch (error) {
     // Re-throw the original error to preserve axios error properties (response, status, etc.)

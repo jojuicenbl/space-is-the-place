@@ -17,10 +17,13 @@ export function useCollection() {
   // State - much simplified since server handles caching and processing
   const releases = ref<CollectionRelease[]>([])
   const folders = ref<DiscogsFolder[]>([])
-  const isLoading = ref(false)
+  // Vrai dès le départ : le premier fetch part au montage, sans ça la vue
+  // affiche une grille vide au lieu du skeleton pendant tout le chargement.
+  const isLoading = ref(true)
   const isInitialized = ref(false)
   const error = ref<string | null>(null)
   const isRateLimited = ref(false)
+  const isBackendUnreachable = ref(false)
 
   // Pagination info from server
   const totalPages = ref(0)
@@ -37,6 +40,38 @@ export function useCollection() {
   const currentSortOrder = ref<SortOrder>((route.query.order as SortOrder) || 'desc')
   const searchQuery = ref<string>((route.query.search as string) || '')
   const currentPage = ref<number>(Number(route.query.page) || 1)
+
+  // Traduit une erreur en état affichable. On sépare trois cas qui se soignent
+  // différemment : requête annulée (on ignore), throttling Discogs, et API
+  // injoignable (instance endormie/suspendue, réseau coupé, timeout).
+  const applyError = (err: unknown, fallbackMessage: string, logLabel: string) => {
+    if (axios.isCancel(err)) return
+
+    console.error(logLabel, err)
+
+    if (axios.isAxiosError(err)) {
+      const errorCode = err.response?.data?.error
+      if (err.response?.status === 429 || errorCode === 'discogs_rate_limited') {
+        isRateLimited.value = true
+        isBackendUnreachable.value = false
+        error.value = 'discogs_rate_limited'
+        return
+      }
+
+      // Aucune réponse (DNS, CORS, coupure), timeout, ou erreur de passerelle
+      const status = err.response?.status
+      if (!err.response || err.code === 'ECONNABORTED' || (status !== undefined && status >= 502)) {
+        isRateLimited.value = false
+        isBackendUnreachable.value = true
+        error.value = 'backend_unreachable'
+        return
+      }
+    }
+
+    isRateLimited.value = false
+    isBackendUnreachable.value = false
+    error.value = fallbackMessage
+  }
 
   // Computed
   const isSearching = computed(() => {
@@ -65,6 +100,8 @@ export function useCollection() {
     try {
       isLoading.value = true
       error.value = null
+      isRateLimited.value = false
+      isBackendUnreachable.value = false
 
       const filters = {
         page: currentPage.value,
@@ -109,23 +146,7 @@ export function useCollection() {
 
       updateUrlParams()
     } catch (err) {
-      // Ignore cancellation errors - these are expected when user changes filters quickly
-      if (!axios.isCancel(err)) {
-        console.error('Error loading collection:', err)
-
-        // Check for rate limit error
-        if (axios.isAxiosError(err)) {
-          const errorCode = err.response?.data?.error
-          if (err.response?.status === 429 || errorCode === 'discogs_rate_limited') {
-            isRateLimited.value = true
-            error.value = 'discogs_rate_limited'
-            return
-          }
-        }
-
-        isRateLimited.value = false
-        error.value = 'Failed to load collection'
-      }
+      applyError(err, 'Failed to load collection', 'Error loading collection:')
     } finally {
       isLoading.value = false
       isInitialized.value = true
@@ -148,6 +169,8 @@ export function useCollection() {
     try {
       isLoading.value = true
       error.value = null
+      isRateLimited.value = false
+      isBackendUnreachable.value = false
       currentPage.value = page
       const filters = {
         page: currentPage.value,
@@ -171,23 +194,7 @@ export function useCollection() {
       isSearchActive.value = true
       lastSearchQuery.value = q.trim()
     } catch (e) {
-      // Ignore cancellation errors (user typed before previous request finished)
-      if (!axios.isCancel(e)) {
-        console.error('Search error:', e)
-
-        // Check for rate limit error
-        if (axios.isAxiosError(e)) {
-          const errorCode = e.response?.data?.error
-          if (e.response?.status === 429 || errorCode === 'discogs_rate_limited') {
-            isRateLimited.value = true
-            error.value = 'discogs_rate_limited'
-            return
-          }
-        }
-
-        isRateLimited.value = false
-        error.value = 'Failed to load collection'
-      }
+      applyError(e, 'Failed to load collection', 'Search error:')
     } finally {
       isLoading.value = false
       isInitialized.value = true
@@ -223,20 +230,7 @@ export function useCollection() {
       const data = await getFolders()
       folders.value = data.folders
     } catch (err) {
-      console.error('Error loading folders:', err)
-
-      // Check for rate limit error
-      if (axios.isAxiosError(err)) {
-        const errorCode = err.response?.data?.error
-        if (err.response?.status === 429 || errorCode === 'discogs_rate_limited') {
-          isRateLimited.value = true
-          error.value = 'discogs_rate_limited'
-          return
-        }
-      }
-
-      isRateLimited.value = false
-      error.value = 'Failed to load folders'
+      applyError(err, 'Failed to load folders', 'Error loading folders:')
     }
   }
 
@@ -290,10 +284,8 @@ export function useCollection() {
     if (route.query.search) searchQuery.value = route.query.search as string
     if (route.query.page) currentPage.value = Number(route.query.page)
 
-    // Fetch folders first
-    await fetchFolders()
-
-    // Then fetch collection with the current params
+    // Un seul aller-retour : /api/collection renvoie déjà les folders dans sa
+    // réponse, un fetch dédié ne ferait que retarder le premier rendu.
     await fetchCollection()
 
     return true
@@ -312,6 +304,7 @@ export function useCollection() {
     isInitialized,
     error,
     isRateLimited,
+    isBackendUnreachable,
 
     // Pagination
     totalPages,
