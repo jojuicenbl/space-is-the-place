@@ -32,7 +32,7 @@ import Card from '@/components/UI/Card.vue'
               But collections aren't meant to stay hidden. They are meant to breathe, to be shared, to echo through others.
             </p>
             <p class="text-base sm:text-lg md:text-xl leading-relaxed text-gray-700 dark:text-gray-300">
-              Space Is The Place is now a home for all diggers. A place where anyone can connect their Discogs collection, explore it through a modern visual interface, and rediscover the music that shaped them. This is a space built for curiosity, for the joy of crate digging, for the stories pressed into wax. A space to wander, to listen, to remember.
+              So this one is open to anyone who wants to dig through it. Every record I've gathered, pulled from Discogs and laid out as a visual archive rather than a list. This is a space built for curiosity, for the joy of crate digging, for the stories pressed into wax. A space to wander, to listen, to remember.
             </p>
           </div>
         </div>
@@ -46,10 +46,10 @@ import Card from '@/components/UI/Card.vue'
         <div class="grid sm:grid-cols-2 md:grid-cols-3 gap-6 md:gap-8">
           <Card variant="bordered" padding="lg" class="hover:shadow-lg transition-shadow duration-300">
             <h3 class="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white mb-3">
-              A visual way to explore your Discogs collection
+              A visual way to explore a record collection
             </h3>
             <p class="text-sm sm:text-base text-gray-600 dark:text-gray-400 leading-relaxed">
-              Not just data — an experience. Your records become a navigable universe instead of a static list.
+              Not just data — an experience. The records become a navigable universe instead of a static list.
             </p>
           </Card>
 
@@ -70,50 +70,6 @@ import Card from '@/components/UI/Card.vue'
               Designed around how collectors actually think about their shelves, their discoveries, and their rituals.
             </p>
           </Card>
-        </div>
-      </section>
-
-      <!-- How It Works Section -->
-      <section class="mb-16 md:mb-24">
-        <h2 class="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-8 md:mb-12 text-center">
-          How it works
-        </h2>
-        <div class="grid sm:grid-cols-2 md:grid-cols-3 gap-6 md:gap-10">
-          <div class="flex flex-col items-center text-center space-y-4">
-            <div class="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-gray-200 dark:bg-gray-800 flex items-center justify-center text-xl sm:text-2xl font-bold text-gray-900 dark:text-white border-2 border-gray-300 dark:border-gray-700">
-              1
-            </div>
-            <h3 class="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white">
-              Connect your Discogs account
-            </h3>
-            <p class="text-sm sm:text-base text-gray-600 dark:text-gray-400 leading-relaxed">
-              Use a simple OAuth flow to link your collection securely.
-            </p>
-          </div>
-
-          <div class="flex flex-col items-center text-center space-y-4">
-            <div class="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-gray-200 dark:bg-gray-800 flex items-center justify-center text-xl sm:text-2xl font-bold text-gray-900 dark:text-white border-2 border-gray-300 dark:border-gray-700">
-              2
-            </div>
-            <h3 class="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white">
-              Explore your collection visually
-            </h3>
-            <p class="text-sm sm:text-base text-gray-600 dark:text-gray-400 leading-relaxed">
-              Filter, search, and browse through albums with a clean, responsive grid.
-            </p>
-          </div>
-
-          <div class="flex flex-col items-center text-center space-y-4 sm:col-span-2 md:col-span-1">
-            <div class="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-gray-200 dark:bg-gray-800 flex items-center justify-center text-xl sm:text-2xl font-bold text-gray-900 dark:text-white border-2 border-gray-300 dark:border-gray-700">
-              3
-            </div>
-            <h3 class="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white">
-              Stream on Apple Music
-            </h3>
-            <p class="text-sm sm:text-base text-gray-600 dark:text-gray-400 leading-relaxed">
-              Smart matching pulls in streaming links so you can listen as you explore.
-            </p>
-          </div>
         </div>
       </section>
 

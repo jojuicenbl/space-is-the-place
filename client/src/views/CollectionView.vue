@@ -72,6 +72,7 @@ const {
   totalItems,
   error,
   isRateLimited,
+  isBackendUnreachable,
   currentFolder,
   currentSort,
   currentSortOrder,
@@ -79,7 +80,6 @@ const {
   currentPage,
   totalPages,
   isSearchActive,
-  fetchFolders,
   fetchCollection,
   initializeFromUrl,
   handleSearch,
@@ -109,9 +109,8 @@ onMounted(async () => {
   // Listen to screen size changes
   window.addEventListener('resize', updateGridColumns)
 
-  await fetchFolders()
-
-  // Try to initialize from URL params first, fallback to regular fetch
+  // initializeFromUrl() fait déjà le seul appel nécessaire (/api/collection
+  // renvoie les folders avec les releases).
   const wasInitializedFromUrl = await initializeFromUrl()
   if (!wasInitializedFromUrl) {
     await fetchCollection()
@@ -210,6 +209,24 @@ onUnmounted(() => {
                   </div>
                   <div class="text-base mb-4 text-gray-600 dark:text-gray-400 max-w-md text-center">
                     Discogs is currently throttling requests. Please try again in a few seconds.
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="lg"
+                    class="retry-btn"
+                    @click="fetchCollection(false)"
+                  >
+                    Retry
+                  </Button>
+                </div>
+                <!-- BACKEND UNREACHABLE -->
+                <div v-else-if="isBackendUnreachable" class="error-state">
+                  <div class="text-2xl font-bold mb-3 text-gray-900 dark:text-gray-100">
+                    Collection Unavailable
+                  </div>
+                  <div class="text-base mb-4 text-gray-600 dark:text-gray-400 max-w-md text-center">
+                    The server is waking up or temporarily unreachable. This can take up to a
+                    minute after a period of inactivity.
                   </div>
                   <Button
                     variant="ghost"

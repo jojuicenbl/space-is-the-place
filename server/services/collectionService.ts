@@ -59,12 +59,14 @@ interface CachedCollection {
 
 export class CollectionService {
   private cache: InMemoryCacheService<CachedCollection>
+  private foldersCache: InMemoryCacheService<DiscogsFolder[]>
   private readonly DEFAULT_PER_PAGE = 50
   private loadingPromises: Map<string, Promise<CachedData<CachedCollection>>> = new Map()
   private demoUsername: string
 
   constructor() {
     this.cache = new InMemoryCacheService<CachedCollection>(15) // 15min TTL
+    this.foldersCache = new InMemoryCacheService<DiscogsFolder[]>(15)
     // Get demo username from environment
     this.demoUsername = process.env.DISCOGS_APP_DEMO_USERNAME || ''
   }
@@ -94,6 +96,26 @@ export class CollectionService {
         username: discogsUsername
       }
     }
+  }
+
+  /**
+   * Récupère les dossiers via un cache court.
+   * Chaque appel à /api/collection les redemandait à Discogs alors qu'ils ne
+   * changent quasiment jamais : c'était ~40% du temps de réponse.
+   */
+  private async getFoldersCached(
+    client: DiscogsClient,
+    username: string
+  ): Promise<DiscogsFolder[]> {
+    const key = `discogs:folders:${username}`
+    const cached = this.foldersCache.get(key)
+    if (cached) {
+      return cached.data
+    }
+
+    const folders = await client.getFolders(username)
+    this.foldersCache.set(key, createCacheEntry(folders))
+    return folders
   }
 
   /**
@@ -128,8 +150,8 @@ export class CollectionService {
     // Create appropriate client
     const { client, username } = this.createDiscogsClient(query)
 
-    // Get folders
-    const folders = await client.getFolders(username)
+    // Get folders (mémorisés : voir getFoldersCached)
+    const folders = await this.getFoldersCached(client, username)
 
     // If there's a search query, use search mode
     if (search && search.trim() !== '') {
@@ -434,7 +456,7 @@ export class CollectionService {
    */
   async getFolders(): Promise<DiscogsFolder[]> {
     const client = createDemoDiscogsClient()
-    return client.getFolders(this.demoUsername)
+    return this.getFoldersCached(client, this.demoUsername)
   }
 
   /**
@@ -452,6 +474,7 @@ export class CollectionService {
 
     // Clear cache and search index
     this.cache.delete(cacheKey)
+    this.foldersCache.delete(`discogs:folders:${this.demoUsername}`)
     searchService.clearIndex(folderId)
 
     try {
