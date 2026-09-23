@@ -58,11 +58,11 @@ const folderOptions = computed(() =>
     }))
 )
 
-// Sort options with Date Added as default (adapted for Select component)
+// Sort options with Artist as default (adapted for Select component)
 const sortOptions: SelectOption[] = [
-  { label: 'Date Added', value: 'added' },
   { label: 'Artist', value: 'artist' },
-  { label: 'Album', value: 'title' }
+  { label: 'Album', value: 'title' },
+  { label: 'Date Added', value: 'added' }
 ]
 
 // Handlers

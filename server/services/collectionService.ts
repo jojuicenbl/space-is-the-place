@@ -127,8 +127,8 @@ export class CollectionService {
       page = 1,
       perPage = this.DEFAULT_PER_PAGE,
       folderId = 0,
-      sort = 'added',
-      sortOrder = 'desc',
+      sort = 'artist',
+      sortOrder = 'asc',
       search,
       currentUser
     } = query
@@ -227,8 +227,8 @@ export class CollectionService {
       page = 1,
       perPage = this.DEFAULT_PER_PAGE,
       folderId = 0,
-      sort = 'added',
-      sortOrder = 'desc',
+      sort = 'artist',
+      sortOrder = 'asc',
       search,
       currentUser
     } = query
@@ -351,8 +351,8 @@ export class CollectionService {
       page = 1,
       perPage = this.DEFAULT_PER_PAGE,
       folderId = 0,
-      sort = 'added',
-      sortOrder = 'desc',
+      sort = 'artist',
+      sortOrder = 'asc',
       search
     } = filters
 
