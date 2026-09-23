@@ -23,8 +23,8 @@ const prefetchCollectionData = async () => {
         page: 1,
         perPage: 48,
         folderId: 0,
-        sort: 'added',
-        sortOrder: 'desc'
+        sort: 'artist',
+        sortOrder: 'asc'
       })
     ])
   } catch (error) {

@@ -390,8 +390,8 @@ export class DiscogsClient {
   async getAllCollectionReleases(
     username: string,
     folderId: number = 0,
-    sort: string = 'added',
-    sortOrder: string = 'desc',
+    sort: string = 'artist',
+    sortOrder: string = 'asc',
     perPage: number = 100
   ): Promise<DiscogsCollectionResponse> {
     console.log(`Fetching all releases for folder ${folderId}...`)

@@ -36,8 +36,8 @@ export function useCollection() {
 
   // Filters state - initialized from URL params
   const currentFolder = ref<number>(Number(route.query.folder) || 0)
-  const currentSort = ref<SortField>((route.query.sort as SortField) || 'added')
-  const currentSortOrder = ref<SortOrder>((route.query.order as SortOrder) || 'desc')
+  const currentSort = ref<SortField>((route.query.sort as SortField) || 'artist')
+  const currentSortOrder = ref<SortOrder>((route.query.order as SortOrder) || 'asc')
   const searchQuery = ref<string>((route.query.search as string) || '')
   const currentPage = ref<number>(Number(route.query.page) || 1)
 
@@ -83,8 +83,8 @@ export function useCollection() {
     const query: Record<string, string> = {}
 
     if (currentFolder.value !== 0) query.folder = currentFolder.value.toString()
-    if (currentSort.value !== 'added') query.sort = currentSort.value
-    if (currentSortOrder.value !== 'desc') query.order = currentSortOrder.value
+    if (currentSort.value !== 'artist') query.sort = currentSort.value
+    if (currentSortOrder.value !== 'asc') query.order = currentSortOrder.value
     if (searchQuery.value.trim()) query.search = searchQuery.value.trim()
     if (currentPage.value !== 1) query.page = currentPage.value.toString()
 

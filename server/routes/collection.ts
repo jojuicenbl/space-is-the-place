@@ -20,8 +20,8 @@ const router = Router()
  * - page: number (default: 1)
  * - perPage: number (default: 50)
  * - folder: number (default: 0)
- * - sort: 'added' | 'artist' | 'title' | 'year' (default: 'added')
- * - order: 'asc' | 'desc' (default: 'desc')
+ * - sort: 'added' | 'artist' | 'title' | 'year' (default: 'artist')
+ * - order: 'asc' | 'desc' (default: 'asc')
  * - search: string (optional)
  *
  * Response:
@@ -43,8 +43,8 @@ router.get('/', async (req: Request, res: Response): Promise<void> => {
     const page = req.query.page ? parseInt(req.query.page as string) : 1
     const perPage = req.query.perPage ? parseInt(req.query.perPage as string) : 50
     const folderId = req.query.folder ? parseInt(req.query.folder as string) : 0
-    const sort = (req.query.sort as SortField) || 'added'
-    const sortOrder = (req.query.order as SortOrder) || 'desc'
+    const sort = (req.query.sort as SortField) || 'artist'
+    const sortOrder = (req.query.order as SortOrder) || 'asc'
     const search = req.query.search as string | undefined
 
     console.log('[collection][get]', {
@@ -150,8 +150,8 @@ router.get('/search', async (req: Request, res: Response): Promise<void> => {
     const page = req.query.page ? parseInt(req.query.page as string) : 1
     const perPage = req.query.perPage ? parseInt(req.query.perPage as string) : 50
     const folderId = req.query.folder ? parseInt(req.query.folder as string) : 0
-    const sort = (req.query.sort as SortField) || 'added'
-    const sortOrder = (req.query.order as SortOrder) || 'desc'
+    const sort = (req.query.sort as SortField) || 'artist'
+    const sortOrder = (req.query.order as SortOrder) || 'asc'
 
     // Get Discogs auth from session (for user mode)
     const currentUser: User | null = req.session.discogsAuth
